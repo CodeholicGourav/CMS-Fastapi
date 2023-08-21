@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from fastapi import Depends
 from database import get_db
 from .controller import create_user, all_backend_users, verify_email, create_auth_token
-from dependencies import authenticate_token
+from middleware import authenticate_token
 from .model import BackendUser
 
 backendUserRoutes = APIRouter()
