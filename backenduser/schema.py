@@ -25,7 +25,7 @@ class RegisterUser(BaseModel):
 class showRole(BaseModel):
     role: str = ""
     class Config():
-        orm_mode = True
+        from_attributes = True
 
 class ShowUser(BaseModel):
     uuid : Optional[str]

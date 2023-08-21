@@ -2,7 +2,8 @@ from .schema import RegisterUser
 from sqlalchemy.orm import Session
 from dependencies import Hash
 from .model import BackendUser
-# from fastapi import Depends
+import datetime
+from fastapi import HTTPException,status
 # from database import get_db
 
 
@@ -20,3 +21,14 @@ def create_user(user: RegisterUser, db: Session):
     db.commit()
     db.refresh(new_user)
     return new_user
+
+def verify_email(token: str, db: Session):
+    user = db.query(BackendUser).filter(BackendUser.verification_token == token).first()
+    if user:
+        # Mark the email as verified by setting email_verified_at to the current time
+        user.email_verified_at = datetime.datetime.utcnow()
+        user.verification_token = None 
+        db.commit()
+        return {"message": "Email verified successfully"}
+    else:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid verification token")

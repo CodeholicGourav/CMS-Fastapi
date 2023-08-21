@@ -1,7 +1,9 @@
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from database import Base
 import datetime
+import uuid as uuid_lib
 
 class BackendUser(Base):
         __tablename__ = 'backendusers'
@@ -12,9 +14,10 @@ class BackendUser(Base):
                 index=True
             )
         uuid = Column(
-                String, 
+                UUID(as_uuid=True), 
+                default=uuid_lib.uuid4, 
                 unique=True, 
-                index=True
+                nullable=False
             )
         username = Column(
                 String, 
@@ -71,9 +74,10 @@ class BackendRole(Base):
                 index=True
             )
         ruid = Column(
-                String, 
+                UUID(as_uuid=True), 
+                default=uuid_lib.uuid4, 
                 unique=True, 
-                index=True
+                nullable=False
             )
         role = Column(
                 String
