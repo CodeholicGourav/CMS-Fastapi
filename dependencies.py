@@ -3,17 +3,25 @@ from dotenv import load_dotenv
 from pathlib import Path
 import os
 import secrets
-from fastapi import Header
+from fastapi import Header, HTTPException, status
 from passlib.context import CryptContext
-from backenduser.model import BackendUser
+from backenduser.model import BackendUser, BackendToken
+from sqlalchemy.orm import Session
+from fastapi import Depends
+from database import get_db
+
+
 
 env_path = Path(__file__).parent / ".env"
 load_dotenv(dotenv_path=env_path)
 
 
-async def authenticate_token(authtoken: Annotated[str, Header()]):
-    if authtoken != "123456789":
-        return {'status': False, 'data': "User not authenticated"}
+async def authenticate_token(authtoken: Annotated[str, Header()], db : Session = Depends(get_db)):
+    user_token = db.query(BackendToken).filter(BackendToken.token==authtoken).first()
+    if not user_token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid verification token")
+    
+    return user_token.user
 
 
 def generate_token(len:int):

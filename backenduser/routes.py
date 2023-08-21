@@ -5,11 +5,13 @@ from sqlalchemy.orm import Session
 from fastapi import Depends
 from database import get_db
 from .controller import create_user, all_backend_users, verify_email, create_auth_token
+from dependencies import authenticate_token
+from .model import BackendUser
 
 backendUserRoutes = APIRouter()
 
 @backendUserRoutes.get("/get", response_model=List[ShowUser])
-async def get_users_list(db : Session = Depends(get_db)):
+async def get_users_list(db : Session = Depends(get_db), current_user: BackendUser = Depends(authenticate_token)):
     return all_backend_users(db)
 
 
@@ -19,7 +21,7 @@ def register(request: RegisterUser, db: Session = Depends(get_db)):
 
 
 @backendUserRoutes.get("/verify-token", status_code=status.HTTP_200_OK)
-def varify_token(token: str = Query(..., description="Email verification token"), db: Session = Depends(get_db)):
+def verify_token(token: str = Query(..., description="Email verification token"), db: Session = Depends(get_db)):
     return verify_email(token, db)
 
 

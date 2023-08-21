@@ -8,11 +8,19 @@ from fastapi import HTTPException,status
 # from database import get_db
 
 
-def all_backend_users( db: Session):
+def all_backend_users(db: Session):
     return db.query(BackendUser).all()
 
 
 def create_user(user: RegisterUser, db: Session):
+    existing_user = db.query(BackendUser).filter((BackendUser.email == user.email) | (BackendUser.username == user.username)).first()
+    if existing_user:
+        if user.username == existing_user.username :
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Username already in use")
+        
+        if user.email == existing_user.email :
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Email already in use")
+    
     new_user = BackendUser(
         username=user.username,
         email=user.email,

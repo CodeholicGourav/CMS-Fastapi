@@ -1,4 +1,4 @@
-from pydantic import BaseModel, UUID4, constr
+from pydantic import BaseModel, UUID4, constr, EmailStr
 import datetime
 from typing import Optional
 
@@ -25,7 +25,7 @@ class RegisterUser(BaseModel):
         max_length=15,
         pattern='^[a-z]*$'
     )
-    email: str
+    email: EmailStr
     password: str
 
 class showRole(BaseModel):
