@@ -25,7 +25,6 @@ def create_user(user: RegisterUser, db: Session):
 def verify_email(token: str, db: Session):
     user = db.query(BackendUser).filter(BackendUser.verification_token == token).first()
     if user:
-        # Mark the email as verified by setting email_verified_at to the current time
         user.email_verified_at = datetime.datetime.utcnow()
         user.verification_token = None 
         db.commit()
