@@ -160,3 +160,5 @@ class BackendToken(Base):
                 DateTime, 
                 default=datetime.datetime.utcnow
             )
+        
+        user = relationship("BackendUser")

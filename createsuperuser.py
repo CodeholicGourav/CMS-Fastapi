@@ -51,12 +51,8 @@ def createsuperuser():
     db = SessionLocal()
     db.add(superuser)
     db.commit()
-
-    db2 = SessionLocal()  # Another session
-    superuser = db2.merge(superuser)
+    db.refresh(superuser)
     BackendEmail.sendVerificationToken(superuser)
-    db.close()
-    db2.close()
     print("Superuser account created successfully.")
 
 if __name__ == '__main__':

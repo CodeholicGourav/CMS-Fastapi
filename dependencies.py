@@ -2,7 +2,8 @@ from typing import Annotated
 from dotenv import load_dotenv
 from pathlib import Path
 import os
-from fastapi import Header, Query
+import secrets
+from fastapi import Header
 from passlib.context import CryptContext
 from backenduser.model import BackendUser
 
@@ -13,6 +14,10 @@ load_dotenv(dotenv_path=env_path)
 async def authenticate_token(authtoken: Annotated[str, Header()]):
     if authtoken != "123456789":
         return {'status': False, 'data': "User not authenticated"}
+
+
+def generate_token(len:int):
+    return secrets.token_urlsafe(len)  # Generates a URL-safe token of 32 characters
 
 
 pwd_cxt = CryptContext(schemes=["bcrypt"], deprecated="auto")
