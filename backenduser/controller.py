@@ -2,8 +2,8 @@ from .schema import RegisterUser
 from sqlalchemy.orm import Session
 from dependencies import Hash
 from .model import BackendUser
-from fastapi import Depends
-from database import get_db
+# from fastapi import Depends
+# from database import get_db
 
 
 def all_backend_users( db: Session):

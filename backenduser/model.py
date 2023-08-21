@@ -50,7 +50,7 @@ class BackendUser(Base):
                 Boolean, 
                 default=False
             )
-        cretaed_at = Column(
+        created_at = Column(
                 DateTime, 
                 default=datetime.datetime.utcnow
             )
@@ -82,7 +82,7 @@ class BackendRole(Base):
                 Boolean,
                 default=False
             )
-        cretaed_at = Column(
+        created_at = Column(
                 DateTime, 
                 default=datetime.datetime.utcnow
             )
@@ -148,7 +148,7 @@ class BackendToken(Base):
                 Integer, 
                 ForeignKey("backendusers.id")
             )
-        cretaed_at = Column(
+        created_at = Column(
                 DateTime, 
                 default=datetime.datetime.utcnow
             )

@@ -6,7 +6,7 @@ from database import engine
 
 app = FastAPI()
 
-backendModel.Base.metadata.create_all(engine)
+backendModel.Base.metadata.create_all(bind=engine)
 
 # app.include_router(agorameter.router)
 app.include_router(

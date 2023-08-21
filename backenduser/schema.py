@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 import datetime
+from typing import Optional
 
 
 class User(BaseModel):
@@ -13,7 +14,7 @@ class User(BaseModel):
     email_verified_at : datetime.datetime
     is_active : bool
     is_deleted : bool
-    cretaed_at : datetime.datetime
+    created_at : datetime.datetime
     updated_at : datetime.datetime
 
 class RegisterUser(BaseModel):
@@ -27,6 +28,13 @@ class showRole(BaseModel):
         orm_mode = True
 
 class ShowUser(BaseModel):
-    username:str
-    email:str
-    role_id: int
+    uuid : Optional[str]
+    username : str
+    email : str
+    role: Optional[showRole]
+    email_verified_at : Optional[datetime.datetime]
+    is_active : bool
+    is_deleted : bool
+    created_at: datetime.datetime
+    updated_at : datetime.datetime
+    
