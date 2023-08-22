@@ -1,16 +1,15 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-
-DB_USER = "postgres"
-DB_PASSWORD = "root"  # Password with @ symbol
-DB_HOST = "localhost"
-DB_PORT = "5432"
-DB_NAME = "codecms"
+from dotenv import load_dotenv
+from pathlib import Path
+import os
 
 
-# SQLALCHEMY_DATABASE_URL = "sqlite:///./sql_app.db"
-SQLALCHEMY_DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+env_path = Path(__file__).parent / ".env"
+load_dotenv(dotenv_path=env_path)
+
+SQLALCHEMY_DATABASE_URL = os.getenv("DB_URL")
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 
