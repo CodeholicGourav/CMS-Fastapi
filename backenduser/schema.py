@@ -1,6 +1,6 @@
 from pydantic import BaseModel, UUID4, constr, EmailStr, validator
-from typing import Optional
-import datetime
+from typing import Optional, List
+from datetime import datetime
 import re
 
 
@@ -12,11 +12,11 @@ class User(BaseModel):
     password : str
     role_id : int
     verification_token : str
-    email_verified_at : datetime.datetime
+    email_verified_at : datetime
     is_active : bool
     is_deleted : bool
-    created_at : datetime.datetime
-    updated_at : datetime.datetime
+    created_at : datetime
+    updated_at : datetime
 
 
 class RegisterUser(BaseModel):
@@ -49,11 +49,11 @@ class ShowUser(BaseModel):
     username : str
     email : str
     role: Optional[showRole]
-    email_verified_at : Optional[datetime.datetime]
+    email_verified_at : Optional[datetime]
     is_active : bool
     is_deleted : bool
-    created_at: datetime.datetime
-    updated_at : datetime.datetime
+    created_at: datetime
+    updated_at : datetime
 
 
 class LoginUser(BaseModel):
@@ -63,7 +63,7 @@ class LoginUser(BaseModel):
 
 class ShowToken(BaseModel):
     token: str
-    expire_at: datetime.datetime
+    expire_at: datetime
     user: ShowUser
 
 
@@ -71,8 +71,30 @@ class ForgotPassword(BaseModel):
     token : str
     password : str
 
-class ShowBackendPermission(BaseModel):
+
+class ShowPermission(BaseModel):
     id : int
     permission : str
     type : str
     codename : str
+
+
+class ShowRole(BaseModel):
+    ruid : UUID4
+    role : str
+    is_deleted : bool
+    created_by : ShowUser
+    created_at : datetime
+    updated_at : datetime
+    permissions : List[ShowPermission]
+
+class CreateRole(BaseModel):
+    role : constr(
+        min_length=3, 
+        max_length=20,
+    )
+
+class AssignPermissions(BaseModel):
+    ruid : UUID4
+    permissions : List[str]
+    

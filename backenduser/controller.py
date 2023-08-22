@@ -1,7 +1,7 @@
-from .schema import RegisterUser, LoginUser, ForgotPassword
 from sqlalchemy.orm import Session
 from dependencies import Hash, BackendEmail, generate_token
-from .model import BackendUser, BackendToken
+from .schema import RegisterUser, LoginUser, ForgotPassword, CreateRole, AssignPermissions
+from .model import BackendUser, BackendToken, BackendRole, BackendPermission, BackendRolePermission
 from datetime import datetime, timedelta
 from fastapi import HTTPException,status
 from typing import Optional
@@ -132,3 +132,33 @@ def create_new_password(request: ForgotPassword, db: Session):
     db.commit()
     db.refresh(user)
     return user
+
+def add_role(request: CreateRole, user: BackendUser, db : Session):
+    new_role = BackendRole(
+        role = request.role,
+        created_by = user.uuid
+    )
+    db.add(new_role)
+    db.commit()
+    db.refresh(new_role)
+    return new_role
+
+
+def assign_permissions(request : AssignPermissions, db : Session):
+    role = db.query(BackendRole).filter(BackendRole.ruid==request.ruid, BackendRole.is_deleted==False).first()
+    if not role:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Role not found!")
+    
+    codenames = request.permissions
+    permissions = db.query(BackendPermission).filter(BackendPermission.codename.in_(codenames)).all()
+    # if len(permissions) != len(codenames):
+    #     raise HTTPException(status_code=400, detail="Some permissions do not exist")
+
+    # Associate permissions with the role
+    for permission in permissions:
+        role_permission = BackendRolePermission(role=role.id, permission=permission.codename)
+        db.add(role_permission)
+    
+    db.commit()
+    db.refresh(role)
+    return role

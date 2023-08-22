@@ -3,7 +3,7 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from fastapi import Depends
 from database import get_db
-from backenduser import controller, model, schema
+from . import controller, model, schema
 from middleware import authenticate_token
 
 backendUserRoutes = APIRouter()
@@ -52,8 +52,31 @@ def create_new_password(
 ): return controller.create_new_password(request, db)
 
 
-@backendUserRoutes.get('/all-permissions', response_model=List[schema.ShowBackendPermission], status_code=status.HTTP_200_OK)
+@backendUserRoutes.get('/permissions', response_model=List[schema.ShowPermission], status_code=status.HTTP_200_OK)
 def get_all_permissions(
     db: Session = Depends(get_db),
     current_user: model.BackendUser = Depends(authenticate_token)
 ): return db.query(model.BackendPermission).all()
+
+
+@backendUserRoutes.get('/roles', response_model=List[schema.ShowRole], status_code=status.HTTP_200_OK)
+def get_all_roles(
+    db: Session = Depends(get_db),
+    current_user: model.BackendUser = Depends(authenticate_token)
+): return db.query(model.BackendRole).all()
+
+
+@backendUserRoutes.post('/add-role', response_model=schema.ShowRole, status_code=status.HTTP_201_CREATED)
+def create_new_roles(
+    request : schema.CreateRole,
+    db: Session = Depends(get_db),
+    current_user: model.BackendUser = Depends(authenticate_token)
+): return controller.add_role(request, current_user, db)
+
+
+@backendUserRoutes.post('/assign-permission', response_model=schema.ShowRole, status_code=status.HTTP_201_CREATED)
+def assign_permission(
+    request : schema.AssignPermissions,
+    db: Session = Depends(get_db),
+    current_user: model.BackendUser = Depends(authenticate_token)
+): return controller.assign_permissions(request, db)

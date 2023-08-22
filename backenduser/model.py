@@ -33,8 +33,8 @@ class BackendUser(Base):
                 String
             )
         role_id = Column(
-                Integer, 
-                ForeignKey("backendroles.id"),
+                UUID(as_uuid=True), 
+                ForeignKey("backendroles.ruid"),
                 nullable=True
             )
         verification_token = Column(
@@ -62,7 +62,7 @@ class BackendUser(Base):
                 default=datetime.datetime.utcnow
             )
 
-        role = relationship("BackendRole", back_populates="users")
+        role = relationship("BackendRole")
 
 
 class BackendRole(Base):
@@ -79,6 +79,10 @@ class BackendRole(Base):
                 unique=True, 
                 nullable=False
             )
+        created_by = Column(
+                UUID(as_uuid=True),
+                ForeignKey("backendusers.uuid")
+        )
         role = Column(
                 String
             )
@@ -97,7 +101,7 @@ class BackendRole(Base):
 
         users = relationship("BackendUser", back_populates="role")
 
-        permissions = relationship("BackendPermission", secondary="backendrolepermissions")
+        permissions = relationship("BackendPermission")
 
 
 class BackendPermission(Base):

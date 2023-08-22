@@ -89,5 +89,7 @@ def main():
     else:
         print("No command found. Try 'run' or 'migrate' instead.")
 
+
 if __name__ == '__main__':
     main()
+
