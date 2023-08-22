@@ -15,6 +15,7 @@ Copy the file `.env.example` and create new file `.env` in the same directory.
 ```bash
   pip install requirements.txt
   py main.py migrate
+  py main.py createsuperuser
 ```
 
 To run the app -
@@ -23,11 +24,6 @@ To run the app -
   py main.py run
 ```
 
-To create a super-user run the following command and verify through email
-
-```bash
-  py createsuperuser.py
-```
 
 API documentation :- "http://127.0.0.1:8000/redoc"
 
