@@ -14,6 +14,11 @@ Copy the file `.env.example` and create new file `.env` in the same directory.
 
 ```bash
   pip install requirements.txt
-  uvicorn main:app --reload
+  py main.py migrate
 ```
-    
+
+To run the app -
+
+```bash
+  py main.py run
+```

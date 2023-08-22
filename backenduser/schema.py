@@ -1,6 +1,7 @@
-from pydantic import BaseModel, UUID4, constr, EmailStr
-import datetime
+from pydantic import BaseModel, UUID4, constr, EmailStr, validator
 from typing import Optional
+import datetime
+import re
 
 
 class User(BaseModel):
@@ -19,14 +20,21 @@ class User(BaseModel):
 
 class RegisterUser(BaseModel):
     username: constr(
-        strip_whitespace=True,
-        to_lower=True,
-        min_length=3,
-        max_length=15,
-        pattern='^[a-z]*$'
+        min_length=6, 
+        max_length=30,
     )
     email: EmailStr
     password: str
+
+    @validator("username")
+    def validate_username(cls, value):
+        pattern=r'^[a-zA-Z0-9_]+$'
+        error_message = "Invalid username. It should contain only letters, numbers, and underscores."
+        
+        if not re.match(pattern, value):
+            raise ValueError(error_message)
+        
+        return value
 
 class showRole(BaseModel):
     role: str = ""

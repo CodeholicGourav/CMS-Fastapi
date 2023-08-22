@@ -25,9 +25,12 @@ def main():
         print("Migrating all tables...")
         backendModel.Base.metadata.create_all(bind=engine)
 
-    if sys.argv[1] == 'run':
+    elif sys.argv[1] == 'run':
         print("Running server")
         run()
+    
+    else:
+        print("No command found. Try 'run' or 'migrate' instead.")
 
 if __name__ == '__main__':
     main()
