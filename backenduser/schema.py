@@ -18,6 +18,7 @@ class User(BaseModel):
     created_at : datetime.datetime
     updated_at : datetime.datetime
 
+
 class RegisterUser(BaseModel):
     username: constr(
         min_length=6, 
@@ -36,10 +37,12 @@ class RegisterUser(BaseModel):
         
         return value
 
+
 class showRole(BaseModel):
     role: str = ""
     class Config():
         from_attributes = True
+
 
 class ShowUser(BaseModel):
     uuid : UUID4
@@ -52,11 +55,18 @@ class ShowUser(BaseModel):
     created_at: datetime.datetime
     updated_at : datetime.datetime
 
+
 class LoginUser(BaseModel):
     username_or_email: str
     password: str
-    
+
+
 class ShowToken(BaseModel):
     token: str
     expire_at: datetime.datetime
     user: ShowUser
+
+
+class ForgotPassword(BaseModel):
+    token : str
+    password : str
