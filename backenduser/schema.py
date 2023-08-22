@@ -70,3 +70,9 @@ class ShowToken(BaseModel):
 class ForgotPassword(BaseModel):
     token : str
     password : str
+
+class ShowBackendPermission(BaseModel):
+    id : int
+    permission : str
+    type : str
+    codename : str

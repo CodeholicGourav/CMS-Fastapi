@@ -97,6 +97,8 @@ class BackendRole(Base):
 
         users = relationship("BackendUser", back_populates="role")
 
+        permissions = relationship("BackendPermission", secondary="backendrolepermissions")
+
 
 class BackendPermission(Base):
         __tablename__ = 'backendpermissions'
@@ -113,7 +115,10 @@ class BackendPermission(Base):
                 String
             )
         codename = Column(
-                String
+                String, 
+                primary_key=True, 
+                unique=True,
+                index=True
             )
 
 
@@ -126,12 +131,12 @@ class BackendRolePermission(Base):
                 index=True
             )
         role = Column(
-                Integer,
-                ForeignKey("backendroles.id")
+                UUID(as_uuid=True),
+                ForeignKey("backendroles.ruid")
         )
         permission = Column(
-                Integer,
-                ForeignKey("backendpermissions.id")
+                String,
+                ForeignKey("backendpermissions.codename")
         )
 
 

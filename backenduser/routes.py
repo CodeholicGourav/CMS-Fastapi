@@ -50,3 +50,10 @@ def create_new_password(
     request: schema.ForgotPassword, 
     db: Session = Depends(get_db)
 ): return controller.create_new_password(request, db)
+
+
+@backendUserRoutes.get('/all-permissions', response_model=List[schema.ShowBackendPermission], status_code=status.HTTP_200_OK)
+def get_all_permissions(
+    db: Session = Depends(get_db),
+    current_user: model.BackendUser = Depends(authenticate_token)
+): return db.query(model.BackendPermission).all()

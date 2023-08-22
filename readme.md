@@ -22,3 +22,13 @@ To run the app -
 ```bash
   py main.py run
 ```
+
+To create a super-user run the following command and verify through email
+
+```bash
+  py createsuperuser.py
+```
+
+API documentation :- "http://127.0.0.1:8000/redoc"
+
+API endpoints :- "http://127.0.0.1:8000/docs"
