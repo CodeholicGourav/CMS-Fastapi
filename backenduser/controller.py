@@ -1,22 +1,19 @@
 from sqlalchemy.orm import Session
 from dependencies import Hash, BackendEmail, generate_token
-from .schema import RegisterUser, LoginUser, ForgotPassword, CreateRole, AssignPermissions
-from .model import BackendUser, BackendToken, BackendRole, BackendPermission, BackendRolePermission
+from . import schema, model
 from datetime import datetime, timedelta
 from fastapi import HTTPException,status
-from typing import Optional
-# from database import get_db
 
 
 def all_backend_users(limit : int, offset : int, db: Session):
-    return db.query(BackendUser).limit(limit).offset(offset).all()
+    return db.query(model.BackendUser).limit(limit).offset(offset).all()
 
 
-def create_user(user: RegisterUser, db: Session):
-    existing_user = db.query(BackendUser).filter(
-        (BackendUser.email == user.email) 
+def create_user(user: schema.RegisterUser, db: Session):
+    existing_user = db.query(model.BackendUser).filter(
+        (model.BackendUser.email == user.email) 
         | 
-        (BackendUser.username == user.username)
+        (model.BackendUser.username == user.username)
     ).first()
 
     if existing_user:
@@ -26,7 +23,7 @@ def create_user(user: RegisterUser, db: Session):
         if user.email == existing_user.email :
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Email already in use")
     
-    new_user = BackendUser(
+    new_user = model.BackendUser(
         username=user.username,
         email=user.email,
         password=Hash.bcrypt(user.password),
@@ -43,9 +40,9 @@ def create_user(user: RegisterUser, db: Session):
 
 
 def verify_email(token: str, db: Session):
-    user = db.query(BackendUser).filter(
-        BackendUser.verification_token == token,
-        BackendUser.is_deleted == False
+    user = db.query(model.BackendUser).filter(
+        model.BackendUser.verification_token == token,
+        model.BackendUser.is_deleted == False
     ).first()
 
     if not user:
@@ -61,11 +58,12 @@ def verify_email(token: str, db: Session):
     return {"message": "Email verified successfully"}
     
 
-def create_auth_token(request: LoginUser, db: Session):
-    user = db.query(BackendUser).filter(
-        (BackendUser.email == request.username_or_email) |
-        ( BackendUser.username == request.username_or_email),
-        BackendUser.is_deleted == False
+def create_auth_token(request: schema.LoginUser, db: Session):
+    user = db.query(model.BackendUser).filter(
+        (model.BackendUser.email == request.username_or_email) 
+        |
+        (model.BackendUser.username == request.username_or_email),
+        model.BackendUser.is_deleted == False
     ).first()
 
     if not user:
@@ -80,9 +78,9 @@ def create_auth_token(request: LoginUser, db: Session):
     if not user.is_active:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Your account is suspended!")
     
-    token = BackendToken(
+    token = model.BackendToken(
         token = generate_token(16),
-        user_id = user.id,
+        user_id = user.uuid,
         expire_at = datetime.utcnow() + timedelta(hours=24)
     )
     db.add(token)
@@ -92,9 +90,9 @@ def create_auth_token(request: LoginUser, db: Session):
 
 
 def send_verification_mail(email: str, db: Session):
-    user = db.query(BackendUser).filter(
-        BackendUser.email == email,
-        BackendUser.is_deleted == False
+    user = db.query(model.BackendUser).filter(
+        model.BackendUser.email == email,
+        model.BackendUser.is_deleted == False
     ).first()
     if not user:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No account found.")
@@ -112,10 +110,10 @@ def send_verification_mail(email: str, db: Session):
         raise HTTPException(status_code=status.HTTP_417_EXPECTATION_FAILED, detail="Cannot send email.")
 
 
-def create_new_password(request: ForgotPassword, db: Session):
-    user = db.query(BackendUser).filter(
-        BackendUser.verification_token == request.token,
-        BackendUser.is_deleted == False
+def create_new_password(request: schema.ForgotPassword, db: Session):
+    user = db.query(model.BackendUser).filter(
+        model.BackendUser.verification_token == request.token,
+        model.BackendUser.is_deleted == False
     ).first()
 
     if not user:
@@ -133,8 +131,26 @@ def create_new_password(request: ForgotPassword, db: Session):
     db.refresh(user)
     return user
 
-def add_role(request: CreateRole, user: BackendUser, db : Session):
-    new_role = BackendRole(
+
+def create_permission(request: schema.BasePermission, db: Session) :
+    existingPermission = db.query(model.BackendPermission).filter(model.BackendPermission.codename==request.codename).first()
+    if existingPermission:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Permission already exist!")
+    
+    newPermission = model.BackendPermission(
+        permission = request.permission,
+        type = request.type,
+        codename = request.codename
+    )
+
+    db.add(newPermission)
+    db.commit()
+    db.refresh(newPermission)
+    return newPermission
+
+
+def add_role(request: schema.CreateRole, user: schema.CreateRole, db : Session):
+    new_role = model.BackendRole(
         role = request.role,
         created_by = user.uuid
     )
@@ -144,19 +160,23 @@ def add_role(request: CreateRole, user: BackendUser, db : Session):
     return new_role
 
 
-def assign_permissions(request : AssignPermissions, db : Session):
-    role = db.query(BackendRole).filter(BackendRole.ruid==request.ruid, BackendRole.is_deleted==False).first()
+def assign_permissions(request : schema.AssignPermissions, db : Session):
+    role = db.query(model.BackendRole).filter(
+        model.BackendRole.ruid==request.ruid, 
+        model.BackendRole.is_deleted==False
+    ).first()
+
     if not role:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Role not found!")
     
     codenames = request.permissions
-    permissions = db.query(BackendPermission).filter(BackendPermission.codename.in_(codenames)).all()
+    permissions = db.query(model.BackendPermission).filter(model.BackendPermission.codename.in_(codenames)).all()
     # if len(permissions) != len(codenames):
     #     raise HTTPException(status_code=400, detail="Some permissions do not exist")
 
     # Associate permissions with the role
     for permission in permissions:
-        role_permission = BackendRolePermission(role=role.id, permission=permission.codename)
+        role_permission = model.BackendRolePermission(role=role.id, permission=permission.codename)
         db.add(role_permission)
     
     db.commit()

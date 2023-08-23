@@ -18,6 +18,9 @@ class User(BaseModel):
     created_at : datetime
     updated_at : datetime
 
+    class Config():
+        from_attributes = True
+
 
 class RegisterUser(BaseModel):
     username: constr(
@@ -26,6 +29,9 @@ class RegisterUser(BaseModel):
     )
     email: EmailStr
     password: str
+
+    class Config():
+        from_attributes = True
 
     @validator("username")
     def validate_username(cls, value):
@@ -37,34 +43,39 @@ class RegisterUser(BaseModel):
         
         return value
 
-
-class showRole(BaseModel):
-    role: str = ""
-    class Config():
-        from_attributes = True
-
+class ShowRoleName(BaseModel):
+    role : str
 
 class ShowUser(BaseModel):
     uuid : UUID4
     username : str
     email : str
-    role: Optional[showRole]
+    role: Optional[ShowRoleName]
     email_verified_at : Optional[datetime]
     is_active : bool
     is_deleted : bool
     created_at: datetime
     updated_at : datetime
+    
+    class Config():
+        from_attributes = True
 
 
 class LoginUser(BaseModel):
     username_or_email: str
     password: str
 
+    class Config():
+        from_attributes = True
+
 
 class ShowToken(BaseModel):
     token: str
     expire_at: datetime
     user: ShowUser
+    
+    class Config():
+        from_attributes = True
 
 
 class ForgotPassword(BaseModel):
@@ -72,21 +83,27 @@ class ForgotPassword(BaseModel):
     password : str
 
 
-class ShowPermission(BaseModel):
-    id : int
-    permission : str
-    type : str
+class BasePermission(BaseModel):
+    permission :str
+    type :int
     codename : str
+
+    class Config():
+        from_attributes = True
 
 
 class ShowRole(BaseModel):
     ruid : UUID4
     role : str
     is_deleted : bool
-    created_by : ShowUser
+    creator : Optional[ShowUser]
     created_at : datetime
     updated_at : datetime
-    permissions : List[ShowPermission]
+    permissions : List[BasePermission]
+
+    class Config():
+        from_attributes = True
+
 
 class CreateRole(BaseModel):
     role : constr(
@@ -94,7 +111,14 @@ class CreateRole(BaseModel):
         max_length=20,
     )
 
+    class Config():
+        from_attributes = True
+
+
 class AssignPermissions(BaseModel):
     ruid : UUID4
     permissions : List[str]
+
+    class Config():
+        from_attributes = True
     

@@ -10,16 +10,16 @@ from database import SessionLocal
 from dependencies import BackendEmail
 import secrets
 
+app = FastAPI()
+
+app.include_router(
+    backendUserRoutes,
+    prefix="/backend-user",
+    tags=["backend-user"],
+    responses={404: {"description": "User not authenticated"}},
+)
+
 def run():
-    app = FastAPI()
-
-    app.include_router(
-        backendUserRoutes,
-        prefix="/backend-user",
-        tags=["backend-user"],
-        responses={404: {"description": "User not authenticated"}},
-    )
-
     host = "127.0.0.1"
     port = 8000
     uvicorn.run(app, host=host, port=port, log_level="info")
@@ -27,7 +27,7 @@ def run():
 
 def createsuperuser():
     db = SessionLocal()
-    superuser = db.query(backendModel.BackendUser).filter(backendModel.BackendUser.role_id==0).first()
+    superuser = db.query(backendModel.BackendUser).filter(backendModel.BackendUser.id==0).first()
     db.close()
 
     if superuser:
@@ -53,13 +53,14 @@ def createsuperuser():
         db = SessionLocal()
         db.add(superuserrole)
         db.commit()
+        db.refresh(superuserrole)
         db.close()
 
     superuser = backendModel.BackendUser(
         username=username,
         email=email,
         password=Hash.bcrypt(password),
-        role_id=0,
+        role_id=superuserrole.ruid,
         verification_token = secrets.token_urlsafe(32)  # Generates a URL-safe token of 32 characters
     )
 
@@ -75,19 +76,20 @@ def createsuperuser():
 
 
 def main():
-    if sys.argv[1] == 'migrate':
-        print("Migrating all tables...")
-        backendModel.Base.metadata.create_all(bind=engine)
+    match sys.argv[1]:
+        case 'migrate':
+            print("Migrating all tables...")
+            backendModel.Base.metadata.create_all(bind=engine)
 
-    elif sys.argv[1] == 'run':
-        print("Running server")
-        run()
+        case 'run':
+            print("Running server")
+            run()
 
-    elif sys.argv[1] == 'createsuperuser':
-        createsuperuser()
-    
-    else:
-        print("No command found. Try 'run' or 'migrate' instead.")
+        case 'createsuperuser':
+            createsuperuser()
+        
+        case _:
+            print("No command found. Try 'run', 'migrate', 'createsuperuser' instead.")
 
 
 if __name__ == '__main__':

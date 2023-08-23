@@ -52,11 +52,19 @@ def create_new_password(
 ): return controller.create_new_password(request, db)
 
 
-@backendUserRoutes.get('/permissions', response_model=List[schema.ShowPermission], status_code=status.HTTP_200_OK)
+@backendUserRoutes.get('/permissions', response_model=List[schema.BasePermission], status_code=status.HTTP_200_OK)
 def get_all_permissions(
     db: Session = Depends(get_db),
     current_user: model.BackendUser = Depends(authenticate_token)
 ): return db.query(model.BackendPermission).all()
+
+
+@backendUserRoutes.post('/create-permission', response_model=schema.BasePermission, status_code=status.HTTP_201_CREATED)
+def create_permission(
+    request : schema.BasePermission,
+    db: Session = Depends(get_db),
+    current_user: model.BackendUser = Depends(authenticate_token)
+): return controller.create_permission(request, db)
 
 
 @backendUserRoutes.get('/roles', response_model=List[schema.ShowRole], status_code=status.HTTP_200_OK)
