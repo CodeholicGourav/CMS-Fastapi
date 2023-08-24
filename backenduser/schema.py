@@ -1,4 +1,4 @@
-from pydantic import BaseModel, UUID4, constr, EmailStr, validator
+from pydantic import BaseModel, constr, EmailStr, validator
 from typing import Optional, List
 from datetime import datetime
 import re
@@ -47,18 +47,9 @@ class ShowRoleName(BaseModel):
     role : str
 
 class ShowUser(BaseModel):
-    uuid : UUID4
+    uuid : str
     username : str
     email : str
-    role: Optional[ShowRoleName]
-    email_verified_at : Optional[datetime]
-    is_active : bool
-    is_deleted : bool
-    created_at: datetime
-    updated_at : datetime
-    
-    class Config():
-        from_attributes = True
 
 
 class LoginUser(BaseModel):
@@ -88,12 +79,16 @@ class BasePermission(BaseModel):
     type :int
     codename : str
 
-    class Config():
-        from_attributes = True
+
+    # class Config():
+    #     from_attributes = True
+
+class BaseRolePermission(BaseModel):
+    permission : BasePermission
 
 
 class ShowRole(BaseModel):
-    ruid : UUID4
+    ruid : str
     role : str
     is_deleted : bool
     creator : Optional[ShowUser]
@@ -116,7 +111,7 @@ class CreateRole(BaseModel):
 
 
 class AssignPermissions(BaseModel):
-    ruid : UUID4
+    ruid : str
     permissions : List[str]
 
     class Config():

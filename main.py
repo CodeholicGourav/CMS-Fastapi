@@ -27,7 +27,7 @@ def run():
 
 def createsuperuser():
     db = SessionLocal()
-    superuser = db.query(backendModel.BackendUser).filter(backendModel.BackendUser.id==0).first()
+    superuser = db.query(backendModel.BackendUser).filter(backendModel.BackendUser.id==1).first()
     db.close()
 
     if superuser:
@@ -57,6 +57,7 @@ def createsuperuser():
         db.close()
 
     superuser = backendModel.BackendUser(
+        id=0,
         username=username,
         email=email,
         password=Hash.bcrypt(password),
@@ -80,6 +81,13 @@ def main():
         case 'migrate':
             print("Migrating all tables...")
             backendModel.Base.metadata.create_all(bind=engine)
+        
+        case 'drop':
+            ans = input("Are you sure to delete all tables? (y/n) :")
+            if ans=="y" or ans=="Y":
+                print("Dropping all tables...")
+                backendModel.Base.metadata.drop_all(bind=engine)
+            print("exited.")
 
         case 'run':
             print("Running server")

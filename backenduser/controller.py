@@ -33,7 +33,7 @@ def create_user(user: schema.RegisterUser, db: Session):
     db.commit()
     db.refresh(new_user)
     backendEmail = BackendEmail()
-    if backendEmail.sendVerificationToken(new_user):
+    if backendEmail.sendEmailVerificationToken(new_user):
         return new_user
     else:
         raise HTTPException(status_code=status.HTTP_417_EXPECTATION_FAILED, detail="Cannot send email.")
@@ -86,6 +86,7 @@ def create_auth_token(request: schema.LoginUser, db: Session):
     db.add(token)
     db.commit()
     db.refresh(token)
+    token.user = user
     return token
 
 
@@ -149,6 +150,18 @@ def create_permission(request: schema.BasePermission, db: Session) :
     return newPermission
 
 
+def get_roles_list(db: Session):
+    roles_list = db.query(model.BackendRole).filter(model.BackendRole.id!=0).all()
+    for role in roles_list:
+        creator = db.query(model.BackendUser).filter(model.BackendUser.uuid==role.created_by).first()
+        permissions = db.query(model.BackendRolePermission).filter(model.BackendRolePermission.role_id==role.ruid).all()
+
+        role.creator = creator
+        role.permissions = permissions
+    
+    return roles_list
+
+
 def add_role(request: schema.CreateRole, user: schema.CreateRole, db : Session):
     new_role = model.BackendRole(
         role = request.role,
@@ -157,10 +170,16 @@ def add_role(request: schema.CreateRole, user: schema.CreateRole, db : Session):
     db.add(new_role)
     db.commit()
     db.refresh(new_role)
+    new_role.creator = user
+    new_role.permissions = []
     return new_role
 
 
 def assign_permissions(request : schema.AssignPermissions, db : Session):
+    # records = db.query(model.BackendRolePermission).all()
+    # for record in records:
+    #     db.delete(record)
+    # db.commit()
     role = db.query(model.BackendRole).filter(
         model.BackendRole.ruid==request.ruid, 
         model.BackendRole.is_deleted==False
@@ -171,14 +190,15 @@ def assign_permissions(request : schema.AssignPermissions, db : Session):
     
     codenames = request.permissions
     permissions = db.query(model.BackendPermission).filter(model.BackendPermission.codename.in_(codenames)).all()
-    # if len(permissions) != len(codenames):
-    #     raise HTTPException(status_code=400, detail="Some permissions do not exist")
-
-    # Associate permissions with the role
+    role.permissions = permissions
+    
     for permission in permissions:
-        role_permission = model.BackendRolePermission(role=role.id, permission=permission.codename)
+        role_permission = model.BackendRolePermission(role_id=role.ruid, permission_id=permission.codename)
         db.add(role_permission)
     
     db.commit()
     db.refresh(role)
+
+    creator = db.query(model.BackendUser).filter(model.BackendUser.uuid==role.created_by).first()
+    role.creator = creator
     return role

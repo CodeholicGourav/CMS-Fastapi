@@ -71,7 +71,7 @@ def create_permission(
 def get_all_roles(
     db: Session = Depends(get_db),
     current_user: model.BackendUser = Depends(authenticate_token)
-): return db.query(model.BackendRole).all()
+): return controller.get_roles_list(db)
 
 
 @backendUserRoutes.post('/add-role', response_model=schema.ShowRole, status_code=status.HTTP_201_CREATED)
