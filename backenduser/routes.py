@@ -1,4 +1,4 @@
-from fastapi import APIRouter, status, Query
+from fastapi import APIRouter, status, Query, Header
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from fastapi import Depends
@@ -82,10 +82,11 @@ def create_new_roles(
 ): return controller.add_role(request, current_user, db)
 
 
-# @backendUserRoutes.post('/assign-permission', response_model=schema.ShowRole, status_code=status.HTTP_201_CREATED)
-# def assign_permission(
-#     request : schema.AssignPermissions,
+# @backendUserRoutes.get('/test-permission', status_code=status.HTTP_200_OK)
+# def test_permission(
 #     db: Session = Depends(get_db),
 #     current_user: model.BackendUser = Depends(authenticate_token),
-#     role: model.BackendRole = Depends(check_permission('create_user'))
-# ): return {"message": "You have access to this route!"}
+#     # permissions: bool = Depends(check_permission(Header().authtoken, 'create_user'))
+# ): 
+#     print(Header())
+#     return {"message": "You have access to this route!"}

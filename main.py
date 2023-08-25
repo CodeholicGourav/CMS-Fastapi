@@ -8,11 +8,18 @@ import uvicorn
 import getpass
 from dependencies import Hash
 from database import SessionLocal
-from dependencies import BackendEmail
 import secrets
+from dotenv import load_dotenv
+from pathlib import Path
+import os
+from dependencies import BackendEmail
+
+
+env_path = Path(__file__).parent / ".env"
+load_dotenv(dotenv_path=env_path)
 
 app = FastAPI()
-allowed_origins = ["http://localhost:3000"]
+allowed_origins = os.getenv('ALLOWED_ORIGINS')
 
 app.add_middleware(
     CORSMiddleware,
@@ -100,7 +107,6 @@ def main():
             print("exited.")
 
         case 'run':
-            print("Running server")
             run()
 
         case 'createsuperuser':

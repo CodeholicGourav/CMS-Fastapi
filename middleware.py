@@ -19,7 +19,7 @@ async def authenticate_token(authtoken: Annotated[str, Header()], db : Session =
     
     return user
 
-async def check_permission(codenames: list[str], authtoken: Annotated[str, Header()], db : Session = Depends(get_db)):
+async def check_permission(authtoken: Annotated[str, Header()], codenames: list[str], db : Session = Depends(get_db)):
     user_token = db.query(BackendToken).filter(BackendToken.token==authtoken).first()
     if not user_token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid auth token")
