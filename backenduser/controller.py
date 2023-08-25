@@ -202,3 +202,4 @@ def assign_permissions(request : schema.AssignPermissions, db : Session):
     creator = db.query(model.BackendUser).filter(model.BackendUser.uuid==role.created_by).first()
     role.creator = creator
     return role
+

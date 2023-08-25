@@ -1,4 +1,5 @@
-from fastapi import Depends, FastAPI
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from backenduser.routes import backendUserRoutes 
 from backenduser import model as backendModel
 from database import engine
@@ -11,6 +12,15 @@ from dependencies import BackendEmail
 import secrets
 
 app = FastAPI()
+allowed_origins = ["http://localhost:3000"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["*"],  # You can restrict HTTP methods if needed
+    allow_headers=["*"],  # You can restrict headers if needed
+)
 
 app.include_router(
     backendUserRoutes,
@@ -27,7 +37,7 @@ def run():
 
 def createsuperuser():
     db = SessionLocal()
-    superuser = db.query(backendModel.BackendUser).filter(backendModel.BackendUser.id==1).first()
+    superuser = db.query(backendModel.BackendUser).filter(backendModel.BackendUser.id==0).first()
     db.close()
 
     if superuser:
