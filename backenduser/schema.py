@@ -23,15 +23,9 @@ class User(BaseModel):
 
 
 class RegisterUser(BaseModel):
-    username: constr(
-        min_length=6, 
-        max_length=30,
-    )
+    username: constr(min_length=6, max_length=30,)
     email: EmailStr
-    password: str
-
-    class Config():
-        from_attributes = True
+    password: constr(min_length=8)
 
     @validator("username")
     def validate_username(cls, value):
@@ -42,6 +36,20 @@ class RegisterUser(BaseModel):
             raise ValueError(error_message)
         
         return value
+    
+    @validator("password")
+    def validate_username(cls, value):
+        pattern=r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@#$%^&+=!]).{8,}$'
+        error_message = "Passwowrd should be : At least 8 characters in length, Contains at least one uppercase letter (A-Z), Contains at least one lowercase letter (a-z), Contains at least one digit (0-9), Contains at least one special character (e.g., !, @, #, $, %, etc.)."
+        
+        if not re.match(pattern, value):
+            raise ValueError(error_message)
+        
+        return value
+    
+    class Config():
+        from_attributes = True
+
 
 class ShowRoleName(BaseModel):
     role : str
