@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Sequence
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Float, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from database import Base
@@ -65,6 +65,9 @@ class BackendUser(Base):
         DateTime, 
         default=datetime.utcnow
     )
+
+    subscriptions = relationship('Subscription', back_populates='creator') # subscriptions created by the user
+
 
 
 class BackendRole(Base):
@@ -172,3 +175,50 @@ class BackendToken(Base):
         DateTime, 
         default=datetime.utcnow
     )
+
+
+class Subscription(Base):
+    __tablename__ = 'subscriptions'
+
+    id = Column(
+        Integer, 
+        primary_key=True,
+        index=True
+    )
+    suid = Column(
+        String(50), 
+        index=True,
+        default=str(uuid_lib.uuid4()),
+    )
+    name = Column(
+        String(50), 
+        unique=True, 
+        index=True,
+        nullable=False
+    )
+    description = Column(
+        String,
+        nullable=True
+    )
+    price = Column(
+        Float
+    )
+    validity = Column(
+        Integer, 
+        comment="In days"
+    )
+    created_by = Column(
+        String(50), 
+        ForeignKey("backendusers.uuid")
+    )
+    is_deleted = Column(
+        Boolean,
+        default=False
+    )
+    created_at = Column(
+        DateTime, 
+        default=datetime.utcnow
+    )
+
+    creator = relationship("BackendUser", back_populates="subscriptions")
+    

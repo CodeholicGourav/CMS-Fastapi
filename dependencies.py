@@ -4,7 +4,6 @@ import os
 import secrets
 from passlib.context import CryptContext
 from backenduser.model import BackendUser
-from frontendurls import *
 
 
 env_path = Path(__file__).parent / ".env"
@@ -50,25 +49,26 @@ class BaseEmail():
 class FrontendEmail(BaseEmail):
     def sendEmailVerificationToken(self, user: BackendUser):
         subject = "Email Verification"
-        verification_link = f"{SERVER_URL}/{EMAIL_VERIFY_URL}?token={user.verification_token}"  # Include the verification token in the link
+        verification_link = f"{os.getenv('SERVER_URL')}/{os.getenv('EMAIL_VERIFY_ENDPOINT')}?token={user.verification_token}"  # Include the verification token in the link
         message = MIMEText(f"Click the following link to verify your email: {verification_link}")
         return self.sendMail(user.email, subject, message)
     
     def sendForgetPasswordToken(self, user: BackendUser):
         subject = "Reset password"
-        verification_link = f"{SERVER_URL}/{CREATE_PASSWORD_URL}?token={user.verification_token}"  # Include the verification token in the link
+        verification_link = f"{os.getenv('SERVER_URL')}/{os.getenv('CREATE_PASSWORD_URL')}?token={user.verification_token}"  # Include the verification token in the link
         message = MIMEText(f"Click the following link to reset your password: {verification_link}")
         return self.sendMail(user.email, subject, message)
+
 
 class BackendEmail(BaseEmail):
     def sendEmailVerificationToken(self, user: BackendUser):
         subject = "Email Verification"
-        verification_link = f"{SERVER_URL}/{EMAIL_VERIFY_URL}?token={user.verification_token}"  # Include the verification token in the link
+        verification_link = f"{os.getenv('SERVER_URL')}/{os.getenv('EMAIL_VERIFY_ENDPOINT')}?token={user.verification_token}"  # Include the verification token in the link
         message = MIMEText(f"Click the following link to verify your email: {verification_link}")
         return self.sendMail(user.email, subject, message)
     
     def sendForgetPasswordToken(self, user: BackendUser):
         subject = "Reset password"
-        verification_link = f"{SERVER_URL}/{CREATE_PASSWORD_URL}?token={user.verification_token}"  # Include the verification token in the link
+        verification_link = f"{os.getenv('SERVER_URL')}/{os.getenv('CREATE_PASSWORD_URL')}?token={user.verification_token}"  # Include the verification token in the link
         message = MIMEText(f"Click the following link to reset your password: {verification_link}")
         return self.sendMail(user.email, subject, message)

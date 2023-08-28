@@ -1,18 +1,18 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from backenduser.routes import backendUserRoutes 
-from backenduser import model as backendModel
-from database import engine
+import os
 import sys
 import uvicorn
 import getpass
-from dependencies import Hash
-from database import SessionLocal
 import secrets
 from dotenv import load_dotenv
 from pathlib import Path
-import os
+from database import engine
+from backenduser import model as backendModel
+from backenduser.routes import backendUserRoutes 
 from dependencies import BackendEmail
+from dependencies import Hash
+from database import SessionLocal
 
 
 env_path = Path(__file__).parent / ".env"

@@ -1,65 +1,76 @@
-from fastapi import APIRouter, status, Query, Request
-from typing import List, Optional
+from fastapi import APIRouter, status, Query, Depends, Path
+from typing import List, Optional, Annotated
 from sqlalchemy.orm import Session
-from fastapi import Depends
 from database import get_db
 from . import controller, model, schema
-from middleware import authenticate_token, check_permission, perm_req
+from middleware import authenticate_token, check_permission
 
 backendUserRoutes = APIRouter()
 
-@backendUserRoutes.get("/get", response_model=List[schema.ShowUser], status_code=status.HTTP_200_OK)
+
+@backendUserRoutes.post("/register", response_model=schema.ShowUser, status_code=status.HTTP_201_CREATED) #Create user
+def register(
+    data: schema.RegisterUser, 
+    db: Session = Depends(get_db),
+    current_user: model.BackendUser = Depends(authenticate_token),
+): return controller.create_user(data, db)
+
+
+@backendUserRoutes.get("/get", response_model=List[schema.ShowUser], status_code=status.HTTP_200_OK) #Read users
 async def get_users_list(
     limit : Optional[int]=10, 
     offset : Optional[int]=0, 
     db : Session = Depends(get_db), 
-    current_user: model.BackendUser = Depends(authenticate_token)
+    current_user: model.BackendUser = Depends(authenticate_token),
+    permissions: model.BackendUser = Depends(check_permission(["view_user"])),
 ): return controller.all_backend_users(limit, offset, db)
 
 
-@backendUserRoutes.post("/register", response_model=schema.ShowUser, status_code=status.HTTP_201_CREATED)
-def register(
-    request: schema.RegisterUser, 
-    db: Session = Depends(get_db)
-): return controller.create_user(request, db)
+@backendUserRoutes.get("/get/{user_id}", response_model=schema.User, status_code=status.HTTP_200_OK) #Read user
+async def get_user_details(
+    user_id: Annotated[int, Path(title="The UUID of the user to get")],
+    db : Session = Depends(get_db), 
+    current_user: model.BackendUser = Depends(authenticate_token),
+    permissions: model.BackendUser = Depends(check_permission(["view_user"])),
+): return controller.userDetails(user_id, db)
 
 
-@backendUserRoutes.get("/verify-token", status_code=status.HTTP_200_OK)
+@backendUserRoutes.get("/verify-token", status_code=status.HTTP_200_OK) #Update email verification
 def verify_token(
     token: str = Query(..., description="Email verification token"), 
     db: Session = Depends(get_db)
 ): return controller.verify_email(token, db)
 
 
-@backendUserRoutes.post("/login", response_model= schema.ShowToken, status_code=status.HTTP_200_OK)
+@backendUserRoutes.post("/login", response_model= schema.ShowToken, status_code=status.HTTP_200_OK) #Create login token
 def login(
     request: schema.LoginUser, 
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ): return controller.create_auth_token(request, db)
 
 
-@backendUserRoutes.get("/send-token", status_code=status.HTTP_200_OK)
+@backendUserRoutes.delete("/logout", status_code=status.HTTP_204_NO_CONTENT, description="Logout from all devices.") #Delete login token
+def logout(
+    db: Session = Depends(get_db),
+    current_user: model.BackendUser = Depends(authenticate_token)
+): return controller.delete_token(current_user, db)
+
+
+@backendUserRoutes.get("/send-token", status_code=status.HTTP_200_OK) #send forget password mail
 def send_token(
     email: str = Query(..., description="Email verification token"), 
     db: Session = Depends(get_db)
 ): return controller.send_verification_mail(email, db)
 
 
-@backendUserRoutes.post('/create-password', response_model=schema.ShowUser, status_code=status.HTTP_200_OK)
+@backendUserRoutes.post('/create-password', response_model=schema.ShowUser, status_code=status.HTTP_201_CREATED) #Update password
 def create_new_password(
     request: schema.ForgotPassword, 
     db: Session = Depends(get_db)
 ): return controller.create_new_password(request, db)
 
 
-@backendUserRoutes.get('/permissions', response_model=List[schema.BasePermission], status_code=status.HTTP_200_OK)
-def get_all_permissions(
-    db: Session = Depends(get_db),
-    current_user: model.BackendUser = Depends(authenticate_token)
-): return db.query(model.BackendPermission).all()
-
-
-@backendUserRoutes.post('/create-permission', response_model=schema.BasePermission, status_code=status.HTTP_201_CREATED)
+@backendUserRoutes.post('/create-permission', response_model=schema.BasePermission, status_code=status.HTTP_201_CREATED) #Create permissions
 def create_permission(
     request : schema.BasePermission,
     db: Session = Depends(get_db),
@@ -67,14 +78,14 @@ def create_permission(
 ): return controller.create_permission(request, db)
 
 
-@backendUserRoutes.get('/roles', response_model=List[schema.ShowRole], status_code=status.HTTP_200_OK)
-def get_all_roles(
+@backendUserRoutes.get('/permissions', response_model=List[schema.BasePermission], status_code=status.HTTP_200_OK) #Read permissions
+def get_all_permissions(
     db: Session = Depends(get_db),
     current_user: model.BackendUser = Depends(authenticate_token)
-): return controller.get_roles_list(db)
+): return db.query(model.BackendPermission).all()
 
 
-@backendUserRoutes.post('/add-role', response_model=schema.ShowRole, status_code=status.HTTP_201_CREATED)
+@backendUserRoutes.post('/add-role', response_model=schema.ShowRole, status_code=status.HTTP_201_CREATED) #Create role
 def create_new_roles(
     request : schema.CreateRole,
     db: Session = Depends(get_db),
@@ -82,12 +93,31 @@ def create_new_roles(
 ): return controller.add_role(request, current_user, db)
 
 
-""" @backendUserRoutes.get('/test-permission', status_code=status.HTTP_200_OK)
-@perm_req(["create_user"], db = Depends(get_db))
-def test_permission(
-    request : Request,
+@backendUserRoutes.get('/roles', response_model=List[schema.ShowRole], status_code=status.HTTP_200_OK) #Read all roles
+def get_all_roles(
     db: Session = Depends(get_db),
+    current_user: model.BackendUser = Depends(authenticate_token)
+): return controller.get_roles_list(db)
+
+
+@backendUserRoutes.post("/add-subscription", response_model=schema.BaseSubscription, status_code=status.HTTP_201_CREATED) #Create subscription
+async def add_subscription(
+    data: schema.CreateSubscription,
+    db : Session = Depends(get_db),
     current_user: model.BackendUser = Depends(authenticate_token),
-    # permissions: bool = Depends(check_permission('create_user', Request()))
 ): 
-    return {"message": "You have access to this route!"} """
+    return controller.add_subscription(data, current_user, db)
+
+
+@backendUserRoutes.get('/subscriptions', response_model=List[schema.BaseSubscription], status_code=status.HTTP_200_OK) #Read all subscriptions
+def all_subscriptions(
+    limit : Optional[int]=10, 
+    offset : Optional[int]=0, 
+    db : Session = Depends(get_db), 
+    current_user: model.BackendUser = Depends(authenticate_token),
+): return controller.all_subscription_plans(limit, offset, db)
+
+
+@backendUserRoutes.get("/test", status_code=status.HTTP_200_OK) #Testing purpose
+async def test(db : Session = Depends(get_db)): 
+    return controller.test(db)
