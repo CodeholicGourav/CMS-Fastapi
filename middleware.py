@@ -15,7 +15,7 @@ async def authenticate_token(authtoken: Annotated[str, Header()], db : Session =
     
     user = db.query(BackendUser).filter(BackendUser.uuid==user_token.user_id).first()
     if not user or not user.is_active or user.is_deleted:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid auth token")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid auth token.")
 
     if(datetime.now() > user_token.expire_at):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token is expired, try login again.")

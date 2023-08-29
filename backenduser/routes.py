@@ -36,13 +36,13 @@ async def get_user_details(
 ): return controller.userDetails(user_id, db)
 
 
-@backendUserRoutes.post("/update-user/{user_id}", response_model=schema.User, status_code=status.HTTP_200_OK) #Update user
+@backendUserRoutes.post("/update-user", response_model=schema.User, status_code=status.HTTP_200_OK) #Update user
 async def update_user_details(
-    user_id: Annotated[int, Path(title="The UUID of the user to get")],
+    data: schema.UpdateUser,
     db : Session = Depends(get_db), 
     current_user: model.BackendUser = Depends(authenticate_token),
     permissions: model.BackendUser = Depends(check_permission(["update_user"])),
-): return controller.userDetails(user_id, db)
+): return controller.updateUserRole(data,  db)
 
 
 

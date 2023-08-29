@@ -67,6 +67,13 @@ class RegisterUser(BaseModel):
         from_attributes = True
 
 
+class UpdateUser(BaseModel):
+    user_id: str
+    role_id: Optional[str] = None
+    is_deleted: Optional[bool] = None
+    is_active: Optional[bool] = None
+    
+
 class ShowRoleName(BaseModel):
     role : str
 

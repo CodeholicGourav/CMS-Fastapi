@@ -55,6 +55,26 @@ def create_user(user: schema.RegisterUser, db: Session):
         raise HTTPException(status_code=status.HTTP_417_EXPECTATION_FAILED, detail="Cannot send email.")
 
 
+def updateUserRole(data: schema.UpdateUser ,  db: Session):
+    user = db.query(model.BackendUser).filter(model.BackendUser.uuid==data.user_id).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="No user found.")
+    
+    if data.role_id:
+        role = db.query(model.BackendRole).filter(model.BackendRole.ruid==data.role_id).first()
+        if not role:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Role not found")
+        user.role_id = data.role_id
+    
+    if data.is_active is not None: user.is_active = data.is_active
+
+    if data.is_deleted is not None: user.is_deleted = data.is_deleted
+
+    db.commit()
+    db.refresh(user)
+    return user
+
+
 def verify_email(token: str, db: Session):
     """ Verify email through token and enable user account login """
     user = db.query(model.BackendUser).filter(
@@ -239,6 +259,9 @@ def all_subscription_plans(limit : int, offset : int, db: Session):
 
 def add_subscription(data: schema.CreateSubscription, current_user: schema.ShowUser, db: Session):
     """ Creates a new subscription plan """
+    if db.query(model.Subscription).filter(model.Subscription.name==data.name).first():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Name already exist!")
+    
     subscription = model.Subscription(
         name = data.name,
         description = data.description,

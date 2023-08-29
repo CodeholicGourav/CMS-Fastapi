@@ -98,6 +98,7 @@ def main():
         case 'migrate':
             print("Migrating all tables...")
             backendModel.Base.metadata.create_all(bind=engine)
+            print(backendModel.create_permissions())
         
         case 'drop':
             ans = input("Are you sure to delete all tables? (y/n) :")

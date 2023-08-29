@@ -1,7 +1,7 @@
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Float, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from database import Base
+from database import Base, SessionLocal
 from datetime import datetime
 import uuid as uuid_lib
 
@@ -127,6 +127,38 @@ class BackendPermission(Base):
         nullable=False
     )
 
+
+def create_permissions():
+    predefined_permissions = [
+        {"permission": "Can create user", "type": 1, "codename": "create_user"},
+        {"permission": "Can read user", "type": 1, "codename": "read_user"},
+        {"permission": "Can update user", "type": 1, "codename": "update_user"},
+        {"permission": "Can delete user", "type": 1, "codename": "delete_user"},
+
+        {"permission": "Can create role", "type": 2, "codename": "create_role"},
+        {"permission": "Can read role", "type": 2, "codename": "read_role"},
+        {"permission": "Can update role", "type": 2, "codename": "update_role"},
+        {"permission": "Can delete role", "type": 2, "codename": "delete_role"},
+
+        {"permission": "Can create permission", "type": 3, "codename": "create_permission"},
+        {"permission": "Can read permission", "type": 3, "codename": "read_permission"},
+        {"permission": "Can update permission", "type": 3, "codename": "update_permission"},
+        {"permission": "Can delete permission", "type": 3, "codename": "delete_permission"},
+
+        {"permission": "Can create subscription", "type": 4, "codename": "create_subscription"},
+        {"permission": "Can read subscription", "type": 4, "codename": "read_subscription"},
+        {"permission": "Can delete subscription", "type": 4, "codename": "delete_subscription"}
+    ]
+
+    db = SessionLocal()
+
+    for permission in predefined_permissions:
+        new_permission = BackendPermission(**permission)
+        db.add(new_permission)
+
+    db.commit()
+    db.close()
+    return "permissions created successfully"
 
 class BackendRolePermission(Base):
     __tablename__ = 'backendrolepermissions'
