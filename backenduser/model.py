@@ -69,7 +69,6 @@ class BackendUser(Base):
     subscriptions = relationship('Subscription', back_populates='creator') # subscriptions created by the user
 
 
-
 class BackendRole(Base):
     __tablename__ = 'backendroles'
 
@@ -222,3 +221,4 @@ class Subscription(Base):
 
     creator = relationship("BackendUser", back_populates="subscriptions")
     
+

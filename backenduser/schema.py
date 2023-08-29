@@ -53,6 +53,7 @@ class RegisterUser(BaseModel):
     username: constr(min_length=6, max_length=30,)
     email: EmailStr
     password: constr(min_length=8)
+    role_id: str
 
     @validator("username")
     def username_valid(cls, value):
@@ -96,7 +97,7 @@ class ForgotPassword(BaseModel):
 
     @validator("password")
     def _password(cls, value):
-        validate_password(cls, value)
+        return validate_password( value)
 
 
 class BasePermission(BaseModel):

@@ -30,9 +30,18 @@ def create_user(user: schema.RegisterUser, db: Session):
         
         if user.email == existing_user.email :
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Email already in use")
+        
+    role = db.query(model.BackendRole).filter(
+        model.BackendRole.ruid == user.role_id,
+        model.BackendRole.is_deleted == False
+        ).first()
+    if not role:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Role does not exist.")
+
     new_user = model.BackendUser(
         username=user.username,
         email=user.email,
+        role_id=user.role_id,
         password=Hash.bcrypt(user.password),
         verification_token = generate_token(32),
     )

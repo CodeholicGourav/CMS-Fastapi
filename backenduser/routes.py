@@ -13,6 +13,7 @@ def register(
     data: schema.RegisterUser, 
     db: Session = Depends(get_db),
     current_user: model.BackendUser = Depends(authenticate_token),
+    permissions: model.BackendUser = Depends(check_permission(["create_user"])),
 ): return controller.create_user(data, db)
 
 
@@ -22,7 +23,7 @@ async def get_users_list(
     offset : Optional[int]=0, 
     db : Session = Depends(get_db), 
     current_user: model.BackendUser = Depends(authenticate_token),
-    permissions: model.BackendUser = Depends(check_permission(["view_user"])),
+    permissions: model.BackendUser = Depends(check_permission(["read_user"])),
 ): return controller.all_backend_users(limit, offset, db)
 
 
@@ -31,8 +32,18 @@ async def get_user_details(
     user_id: Annotated[int, Path(title="The UUID of the user to get")],
     db : Session = Depends(get_db), 
     current_user: model.BackendUser = Depends(authenticate_token),
-    permissions: model.BackendUser = Depends(check_permission(["view_user"])),
+    permissions: model.BackendUser = Depends(check_permission(["read_user"])),
 ): return controller.userDetails(user_id, db)
+
+
+@backendUserRoutes.post("/update-user/{user_id}", response_model=schema.User, status_code=status.HTTP_200_OK) #Update user
+async def update_user_details(
+    user_id: Annotated[int, Path(title="The UUID of the user to get")],
+    db : Session = Depends(get_db), 
+    current_user: model.BackendUser = Depends(authenticate_token),
+    permissions: model.BackendUser = Depends(check_permission(["update_user"])),
+): return controller.userDetails(user_id, db)
+
 
 
 @backendUserRoutes.get("/verify-token", status_code=status.HTTP_200_OK) #Update email verification
@@ -74,14 +85,16 @@ def create_new_password(
 def create_permission(
     request : schema.BasePermission,
     db: Session = Depends(get_db),
-    current_user: model.BackendUser = Depends(authenticate_token)
+    current_user: model.BackendUser = Depends(authenticate_token),
+    permissions: model.BackendUser = Depends(check_permission(["create_permission"])),
 ): return controller.create_permission(request, db)
 
 
 @backendUserRoutes.get('/permissions', response_model=List[schema.BasePermission], status_code=status.HTTP_200_OK) #Read permissions
 def get_all_permissions(
     db: Session = Depends(get_db),
-    current_user: model.BackendUser = Depends(authenticate_token)
+    current_user: model.BackendUser = Depends(authenticate_token),
+    permissions: model.BackendUser = Depends(check_permission(["read_permission"])),
 ): return db.query(model.BackendPermission).all()
 
 
@@ -89,15 +102,26 @@ def get_all_permissions(
 def create_new_roles(
     request : schema.CreateRole,
     db: Session = Depends(get_db),
-    current_user: model.BackendUser = Depends(authenticate_token)
+    current_user: model.BackendUser = Depends(authenticate_token),
+    permissions: model.BackendUser = Depends(check_permission(["create_role"])),
 ): return controller.add_role(request, current_user, db)
 
 
 @backendUserRoutes.get('/roles', response_model=List[schema.ShowRole], status_code=status.HTTP_200_OK) #Read all roles
 def get_all_roles(
     db: Session = Depends(get_db),
-    current_user: model.BackendUser = Depends(authenticate_token)
+    current_user: model.BackendUser = Depends(authenticate_token),
+    permissions: model.BackendUser = Depends(check_permission(["read_role"])),
 ): return controller.get_roles_list(db)
+
+
+@backendUserRoutes.post('/assign-permission', response_model=schema.ShowRole, status_code=status.HTTP_201_CREATED)
+def assign_permission(
+    request : schema.AssignPermissions,
+    db: Session = Depends(get_db),
+    current_user: model.BackendUser = Depends(authenticate_token),
+    permissions: model.BackendUser = Depends(check_permission(["update_role"])),
+): return controller.assign_permissions(request, db)
 
 
 @backendUserRoutes.post("/add-subscription", response_model=schema.BaseSubscription, status_code=status.HTTP_201_CREATED) #Create subscription
@@ -105,6 +129,7 @@ async def add_subscription(
     data: schema.CreateSubscription,
     db : Session = Depends(get_db),
     current_user: model.BackendUser = Depends(authenticate_token),
+    permissions: model.BackendUser = Depends(check_permission(["create_subscription"])),
 ): 
     return controller.add_subscription(data, current_user, db)
 
@@ -115,6 +140,7 @@ def all_subscriptions(
     offset : Optional[int]=0, 
     db : Session = Depends(get_db), 
     current_user: model.BackendUser = Depends(authenticate_token),
+    permissions: model.BackendUser = Depends(check_permission(["read_subscriptions"])),
 ): return controller.all_subscription_plans(limit, offset, db)
 
 
