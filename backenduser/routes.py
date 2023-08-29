@@ -29,7 +29,7 @@ async def get_users_list(
 
 @backendUserRoutes.get("/get/{user_id}", response_model=schema.User, status_code=status.HTTP_200_OK) #Read user
 async def get_user_details(
-    user_id: Annotated[int, Path(title="The UUID of the user to get")],
+    user_id: Annotated[str, Path(title="The UUID of the user to get")],
     db : Session = Depends(get_db), 
     current_user: model.BackendUser = Depends(authenticate_token),
     permissions: model.BackendUser = Depends(check_permission(["read_user"])),
