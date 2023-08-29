@@ -70,6 +70,7 @@ def updateUserRole(data: schema.UpdateUser ,  db: Session):
 
     if data.is_deleted is not None: user.is_deleted = data.is_deleted
 
+    user.updated_at = datetime.utcnow
     db.commit()
     db.refresh(user)
     return user

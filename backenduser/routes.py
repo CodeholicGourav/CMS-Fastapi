@@ -36,18 +36,18 @@ async def get_user_details(
 ): return controller.userDetails(user_id, db)
 
 
-@backendUserRoutes.post("/update-user", response_model=schema.User, status_code=status.HTTP_200_OK) #Update user
+@backendUserRoutes.post("/update-user", response_model=schema.User, status_code=status.HTTP_200_OK) #Update / delete user
 async def update_user_details(
     data: schema.UpdateUser,
     db : Session = Depends(get_db), 
     current_user: model.BackendUser = Depends(authenticate_token),
     permissions: model.BackendUser = Depends(check_permission(["update_user"])),
-): return controller.updateUserRole(data,  db)
+): return controller.updateUserRole(data, db)
 
 
 
-@backendUserRoutes.get("/verify-token", status_code=status.HTTP_200_OK) #Update email verification
-def verify_token(
+@backendUserRoutes.get("/verify-token", status_code=status.HTTP_200_OK, description="Verify the token sent to email to verify your email address.") #Update email verification
+def verify_email_token(
     token: str = Query(..., description="Email verification token"), 
     db: Session = Depends(get_db)
 ): return controller.verify_email(token, db)
