@@ -115,7 +115,7 @@ def get_all_roles(
 ): return controller.get_roles_list(db)
 
 
-@backendUserRoutes.post('/assign-permission', response_model=schema.ShowRole, status_code=status.HTTP_201_CREATED)
+@backendUserRoutes.post('/assign-permission', response_model=schema.ShowRole, status_code=status.HTTP_201_CREATED) #add rolepermission
 def assign_permission(
     request : schema.AssignPermissions,
     db: Session = Depends(get_db),
@@ -140,8 +140,18 @@ def all_subscriptions(
     offset : Optional[int]=0, 
     db : Session = Depends(get_db), 
     current_user: model.BackendUser = Depends(authenticate_token),
-    permissions: model.BackendUser = Depends(check_permission(["read_subscriptions"])),
+    permissions: model.BackendUser = Depends(check_permission(["read_subscription"])),
 ): return controller.all_subscription_plans(limit, offset, db)
+
+
+@backendUserRoutes.put('/delete-subscription', response_model=schema.BaseSubscription, status_code=status.HTTP_200_OK) #Delete a subscriptions
+def delete_subscription(
+    data: schema.UpdateSubscription,
+    db : Session = Depends(get_db), 
+    current_user: model.BackendUser = Depends(authenticate_token),
+    permissions: model.BackendUser = Depends(check_permission(["update_subscription"])),
+): return controller.delete_subscription_plan(data, db)
+
 
 
 @backendUserRoutes.get("/test", status_code=status.HTTP_200_OK) #Testing purpose

@@ -149,3 +149,10 @@ class BaseSubscription(BaseModel):
     is_deleted : bool
     created_at : datetime
 
+
+class UpdateSubscription(BaseModel):
+    suid : str
+    is_deleted : bool
+
+
+

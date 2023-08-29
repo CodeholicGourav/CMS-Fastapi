@@ -169,6 +169,7 @@ def create_new_password(request: schema.ForgotPassword, db: Session):
     
     user.password = Hash.bcrypt(request.password)
     user.verification_token = None 
+    user.updated_at = datetime.utcnow 
     db.commit()
     db.refresh(user)
     return user
@@ -234,8 +235,14 @@ def assign_permissions(request : schema.AssignPermissions, db : Session):
     role.permissions = permissions
     
     for permission in permissions:
-        role_permission = model.BackendRolePermission(role_id=role.ruid, permission_id=permission.codename)
-        db.add(role_permission)
+        if not (
+            db.query(model.BackendRolePermission).filter(
+                model.BackendRolePermission.role_id==role.ruid, 
+                model.BackendRolePermission.permission_id==permission.codename
+            ).first()
+        ) :
+            role_permission = model.BackendRolePermission(role_id=role.ruid, permission_id=permission.codename)
+            db.add(role_permission)
     
     db.commit()
     db.refresh(role)
@@ -274,6 +281,20 @@ def add_subscription(data: schema.CreateSubscription, current_user: schema.ShowU
     db.commit()
     db.refresh(subscription)
     subscription.creator = current_user
+    return subscription
+
+
+def delete_subscription_plan(data: schema.UpdateSubscription, db: Session):
+    subscription = db.query(model.Subscription).filter(model.Subscription.suid==data.suid).first()
+    if not subscription:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Subscription does not exist!")
+    
+    subscription.is_deleted = data.is_deleted
+
+    creator = db.query(model.BackendUser).filter(model.BackendUser.uuid==subscription.created_by).first()
+    db.commit()
+    db.refresh(subscription)
+    subscription.creator = creator
     return subscription
 
 
