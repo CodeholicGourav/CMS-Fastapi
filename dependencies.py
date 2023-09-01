@@ -72,3 +72,10 @@ class BackendEmail(BaseEmail):
         verification_link = f"{os.getenv('SERVER_URL')}/{os.getenv('CREATE_PASSWORD_URL')}?token={user.verification_token}"  # Include the verification token in the link
         message = MIMEText(f"Click the following link to reset your password: {verification_link}")
         return self.sendMail(user.email, subject, message)
+    
+
+# Maximum hours for token validation
+TOKEN_VALIDITY = 72 
+
+# Maximum number of tokens for single user
+TOKEN_LIMIT = 5

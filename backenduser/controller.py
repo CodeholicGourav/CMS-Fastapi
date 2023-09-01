@@ -1,9 +1,11 @@
 from sqlalchemy.orm import Session
-from dependencies import Hash, BackendEmail, generate_token
+from dependencies import Hash, BackendEmail, generate_token, TOKEN_LIMIT, TOKEN_VALIDITY
 from . import schema, model
 from datetime import datetime, timedelta
 from fastapi import HTTPException,status
 from dateutil.relativedelta import relativedelta
+import getpass
+import secrets
 
 
 def all_backend_users(limit : int, offset : int, db: Session):
@@ -13,7 +15,9 @@ def all_backend_users(limit : int, offset : int, db: Session):
 
 def userDetails(user_id: str, db: Session):
     """ Returns all details of the user """
-    return db.query(model.BackendUser).filter(model.BackendUser.uuid==user_id).first()
+    user =  db.query(model.BackendUser).filter(model.BackendUser.uuid==user_id).first()
+    if user: return user
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No user found")
 
 
 def create_user(user: schema.RegisterUser, db: Session):
@@ -53,6 +57,52 @@ def create_user(user: schema.RegisterUser, db: Session):
         return new_user
     else:
         raise HTTPException(status_code=status.HTTP_417_EXPECTATION_FAILED, detail="Cannot send email.")
+
+
+def createsuperuser(db: Session):
+    superuser = db.query(model.BackendUser).filter(model.BackendUser.id==0).first()
+
+    if superuser:
+        print("Superuser already exist!")
+        return
+
+    username = input("Enter username: ")
+    email = input("Enter email: ")
+    password = "garbage"
+    c_password = "garrbage2"
+    while password!=c_password:
+        password = getpass.getpass("Enter password: ")
+        c_password = getpass.getpass("Enter password to confirm: ")
+        if password!=c_password:
+            print("Password did not match, please try again.")
+
+    superuserrole = db.query(model.BackendRole).filter(model.BackendRole.id==0).first()
+    if not superuserrole:
+        superuserrole = model.BackendRole(id=0, role="superuser") 
+
+        db.add(superuserrole)
+        db.commit()
+        db.refresh(superuserrole)
+
+    superuser = model.BackendUser(
+        id=0,
+        username=username,
+        email=email,
+        password=Hash.bcrypt(password),
+        role_id=superuserrole.ruid,
+        verification_token = secrets.token_urlsafe(32)  # Generates a URL-safe token of 32 characters
+    )
+
+    db.add(superuser)
+    db.commit()
+    db.refresh(superuser)
+    backendEmail = BackendEmail()
+    if not backendEmail.sendEmailVerificationToken(superuser):
+        print("Can't send email.")
+
+    print("Superuser account created successfully.")
+    return True
+
 
 
 def updateUserRole(data: schema.UpdateUser ,  db: Session):
@@ -99,8 +149,7 @@ def verify_email(token: str, db: Session):
 def create_auth_token(request: schema.LoginUser, db: Session):
     """ Create a login token for backend user """
     user = db.query(model.BackendUser).filter(
-        (model.BackendUser.email == request.username_or_email) 
-        |
+        (model.BackendUser.email == request.username_or_email) |
         (model.BackendUser.username == request.username_or_email),
         model.BackendUser.is_deleted == False
     ).first()
@@ -117,10 +166,17 @@ def create_auth_token(request: schema.LoginUser, db: Session):
     if not user.is_active:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Your account is suspended!")
     
+    tokens_count = db.query(model.BackendToken).filter(
+        model.BackendToken.user_id == user.uuid, 
+        model.BackendToken.expire_at > datetime.now()
+    ).count()
+    if tokens_count>=TOKEN_LIMIT:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"Login limit exceed (${TOKEN_LIMIT}).")
+    
     token = model.BackendToken(
         token = generate_token(16),
         user_id = user.uuid,
-        expire_at = datetime.utcnow() + timedelta(hours=24)
+        expire_at = datetime.utcnow() + timedelta(hours=int(TOKEN_VALIDITY))
     )
     db.add(token)
     db.commit()
