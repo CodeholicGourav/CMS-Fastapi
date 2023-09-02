@@ -15,7 +15,7 @@ def all_backend_users(limit : int, offset : int, db: Session):
 
 def userDetails(user_id: str, db: Session):
     """ Returns all details of the user """
-    user =  db.query(model.BackendUser).filter_by(model.BackendUser.uuid==user_id).first()
+    user =  db.query(model.BackendUser).filter_by(uuid=user_id).first()
     if not user: 
         CustomValidations.customError(
             type="not_exist", 
