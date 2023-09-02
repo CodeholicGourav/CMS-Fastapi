@@ -36,8 +36,8 @@ class BackendUser(Base):
         nullable=False,
     )
     role_id = Column(
-        String(50), 
-        ForeignKey("backendroles.ruid"),
+        Integer, 
+        ForeignKey("backendroles.id"),
         nullable=True
     )
     verification_token = Column(
@@ -66,6 +66,7 @@ class BackendUser(Base):
         default=datetime.utcnow
     )
 
+    role = relationship('BackendRole', foreign_keys=role_id)
     subscriptions = relationship('Subscription', back_populates='creator') # subscriptions created by the user
 
 
@@ -83,15 +84,16 @@ class BackendRole(Base):
         default=str(uuid_lib.uuid4()),
     )
     role = Column(
-        String(50)
+        String(50),
+        unique=True
     )
     is_deleted = Column(
         Boolean,
         default=False
     )
     created_by = Column(
-        String(50),
-        ForeignKey("backendusers.uuid")
+        Integer,
+        ForeignKey("backendusers.id")
     )
     created_at = Column(
         DateTime, 
@@ -101,6 +103,9 @@ class BackendRole(Base):
         DateTime, 
         default=datetime.utcnow
     )
+
+    creator = relationship('BackendUser', foreign_keys=created_by)
+    permissions = relationship('BackendRolePermission', back_populates='role')
 
 
 class BackendPermission(Base):
@@ -113,8 +118,7 @@ class BackendPermission(Base):
     )
     permission = Column(
         String(255),
-        nullable=False,
-        unique=True
+        nullable=False
     )
     type = Column(
         Integer,
@@ -160,6 +164,7 @@ def create_permissions():
     db.close()
     return "permissions created successfully"
 
+
 class BackendRolePermission(Base):
     __tablename__ = 'backendrolepermissions'
 
@@ -169,15 +174,18 @@ class BackendRolePermission(Base):
         index=True
     )
     role_id = Column(
-        String(50),
-        ForeignKey("backendroles.ruid"),
+        Integer,
+        ForeignKey("backendroles.id"),
         nullable=False
     )
     permission_id = Column(
-        String,
-        ForeignKey("backendpermissions.codename"),
+        Integer,
+        ForeignKey("backendpermissions.id"),
         nullable=False
     )
+
+    role = relationship("BackendRole", foreign_keys=role_id)
+    permission = relationship("BackendPermission", foreign_keys=permission_id)
 
 
 class BackendToken(Base):
@@ -195,8 +203,8 @@ class BackendToken(Base):
         nullable=False
     )
     user_id = Column(
-        String(50), 
-        ForeignKey("backendusers.uuid")
+        Integer, 
+        ForeignKey("backendusers.id")
     )
     created_at = Column(
         DateTime, 
@@ -206,6 +214,8 @@ class BackendToken(Base):
         DateTime, 
         default=datetime.utcnow
     )
+
+    user = relationship('BackendUser', foreign_keys=user_id)
 
 
 class Subscription(Base):
@@ -239,8 +249,8 @@ class Subscription(Base):
         comment="In days"
     )
     created_by = Column(
-        String(50), 
-        ForeignKey("backendusers.uuid")
+        Integer, 
+        ForeignKey("backendusers.id")
     )
     is_deleted = Column(
         Boolean,

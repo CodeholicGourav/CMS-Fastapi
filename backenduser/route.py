@@ -8,16 +8,16 @@ from middleware import authenticate_token, check_permission
 backendUserRoutes = APIRouter()
 
 
-@backendUserRoutes.post("/register", response_model=schema.ShowUser, status_code=status.HTTP_201_CREATED) #Create user
+@backendUserRoutes.post("/register", response_model=schema.BaseUser, status_code=status.HTTP_201_CREATED) #Create user
 def register(
     data: schema.RegisterUser, 
     db: Session = Depends(get_db),
     current_user: model.BackendUser = Depends(authenticate_token),
-    permissions: model.BackendUser = Depends(check_permission(["create_user"])),
+    have_permission: model.BackendUser = Depends(check_permission(["create_user"])),
 ): return controller.create_user(data, db)
 
 
-@backendUserRoutes.get("/get", response_model=List[schema.ShowUser], status_code=status.HTTP_200_OK) #Read users
+@backendUserRoutes.get("/get", response_model=List[schema.BaseUser], status_code=status.HTTP_200_OK) #Read users
 async def get_users_list(
     limit : Optional[int]=10, 
     offset : Optional[int]=0, 
@@ -36,7 +36,7 @@ async def get_user_details(
 ): return controller.userDetails(user_id, db)
 
 
-@backendUserRoutes.post("/update-user", response_model=schema.User, status_code=status.HTTP_200_OK) #Update / delete user
+@backendUserRoutes.post("/update-user", response_model=schema.BaseUser, status_code=status.HTTP_200_OK) #Update / delete user
 async def update_user_details(
     data: schema.UpdateUser,
     db : Session = Depends(get_db), 
@@ -46,7 +46,7 @@ async def update_user_details(
 
 
 
-@backendUserRoutes.get("/verify-token", status_code=status.HTTP_200_OK, description="Verify the token sent to email to verify your email address.") #Update email verification
+@backendUserRoutes.get("/verify-token", status_code=status.HTTP_202_ACCEPTED, description="Verify the token sent to email to verify your email address.") #Update email verification
 def verify_email_token(
     token: str = Query(..., description="Email verification token"), 
     db: Session = Depends(get_db)
@@ -112,7 +112,7 @@ def get_all_roles(
     db: Session = Depends(get_db),
     current_user: model.BackendUser = Depends(authenticate_token),
     permissions: model.BackendUser = Depends(check_permission(["read_role"])),
-): return controller.get_roles_list(db)
+): return db.query(model.BackendRole).filter(model.BackendRole.id!=0).all()
 
 
 @backendUserRoutes.post('/assign-permission', response_model=schema.ShowRole, status_code=status.HTTP_201_CREATED) #add rolepermission

@@ -1,9 +1,11 @@
 from dotenv import load_dotenv
 from pathlib import Path
 import os
+import re
 import secrets
 from passlib.context import CryptContext
 from backenduser.model import BackendUser
+from fastapi import HTTPException,status
 
 
 env_path = Path(__file__).parent / ".env"
@@ -73,6 +75,37 @@ class BackendEmail(BaseEmail):
         message = MIMEText(f"Click the following link to reset your password: {verification_link}")
         return self.sendMail(user.email, subject, message)
     
+
+class CustomValidations():
+    def customError(status_code:int=status.HTTP_422_UNPROCESSABLE_ENTITY, type:str="", loc:str="", msg:str="", inp:str="", ctx: dict={}):
+        detail = {
+            "detail": [{
+                "type": type,
+                "loc": ["body", loc],
+                "msg": msg,
+                "input": inp,
+                "ctx": ctx,
+            }]
+        }
+        raise HTTPException(status_code, detail)
+    
+
+    def validate_username(value):
+        pattern=r'^[a-zA-Z0-9_]+$'
+        if not re.match(pattern, value):
+            raise ValueError("Invalid username. It should contain only letters, numbers, and underscores.")
+        
+        return value
+    
+
+    def validate_password(value):
+        pattern=r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@#$%^&+=!]).{8,}$'
+        if not re.match(pattern, value):
+            raise ValueError("Passwowrd should be : At least 8 characters in length, Contains at least one uppercase letter (A-Z), Contains at least one lowercase letter (a-z), Contains at least one digit (0-9), Contains at least one special character (e.g., !, @, #, $, %, etc.).")
+        
+        return value
+
+
 
 # Maximum hours for token validation
 TOKEN_VALIDITY = 72 

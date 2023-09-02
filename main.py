@@ -2,9 +2,8 @@ import sys
 import uvicorn
 from database import engine
 from backenduser import model as backendModel
+from frontenduser import model as frontendModel
 from backenduser.controller import createsuperuser
-from dependencies import BackendEmail
-from dependencies import Hash
 from database import SessionLocal
 from app import app
 
@@ -21,13 +20,18 @@ def main():
         case 'migrate':
             print("Migrating all tables...")
             backendModel.Base.metadata.create_all(bind=engine)
-            print(backendModel.create_permissions())
+            frontendModel.Base.metadata.create_all(bind=engine)
+            try:
+                print(backendModel.create_permissions())
+            except:
+                pass
         
         case 'drop':
             ans = input("Are you sure to delete all tables? (y/n) :")
             if ans=="y" or ans=="Y":
                 print("Dropping all tables...")
                 backendModel.Base.metadata.drop_all(bind=engine)
+                frontendModel.Base.metadata.drop_all(bind=engine)
             print("exited.")
 
         case 'run':
