@@ -101,7 +101,7 @@ def createsuperuser(db: Session):
     email = input("Enter email: ")
     password = ""
     c_password = ""
-    while password!=c_password and password=="":
+    while password!=c_password or password=="":
         password = getpass.getpass("Enter password: ")
         c_password = getpass.getpass("Enter password to confirm: ")
 

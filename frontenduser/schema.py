@@ -2,6 +2,7 @@ from pydantic import BaseModel, constr, EmailStr, validator
 from typing import Optional, List
 from datetime import datetime
 from dependencies import CustomValidations
+from fastapi import UploadFile
 
 
 
@@ -17,7 +18,7 @@ class RegisterUser(BaseModel):
     password : constr(min_length=8)
     language : Optional[str] = None
     timezone : Optional[str] = None
-    profile_photo : Optional[str] = None
+    profile_photo : Optional[UploadFile] = None
 
     @validator("username")
     def username_valid(cls, value):
