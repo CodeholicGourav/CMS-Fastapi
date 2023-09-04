@@ -49,3 +49,14 @@ class UpdateUser(BaseModel):
     user_id: str
     is_active : Optional[bool] = None
     is_deleted : Optional[bool] = None
+
+
+class ShowToken(BaseModel):
+    token: str
+    expire_at: datetime
+    user: BaseUser
+
+
+class LoginUser(BaseModel):
+    username_or_email: str
+    password: str

@@ -49,11 +49,11 @@ def verify_email_token(
 ): return controller.verify_email(token, db)
 
 
-""" @backendUserRoutes.post("/login", response_model= schema.ShowToken, status_code=status.HTTP_200_OK) #Create login token
+@frontendUserRoutes.post("/login", response_model= schema.ShowToken, status_code=status.HTTP_200_OK) #Create login token
 def login(
     request: schema.LoginUser, 
     db: Session = Depends(get_db),
-): return controller.create_auth_token(request, db) """
+): return controller.create_auth_token(request, db)
 
 
 """ @backendUserRoutes.delete("/logout", status_code=status.HTTP_204_NO_CONTENT, description="Logout from all devices.") #Delete login token

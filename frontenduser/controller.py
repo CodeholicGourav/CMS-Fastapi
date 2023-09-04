@@ -144,3 +144,68 @@ def verify_email(token: str, db: Session):
     db.commit()
     return {"details": "Email verified successfully"}
 
+
+def create_auth_token(request: schema.LoginUser, db: Session):
+    """ Create a login token for backend user """
+    user = db.query(model.FrontendUser).filter(
+        (model.FrontendUser.email == request.username_or_email) |
+        (model.FrontendUser.username == request.username_or_email),
+        model.FrontendUser.is_deleted == False
+    ).first()
+
+    if not user:
+        CustomValidations.customError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            type="verification_failed", 
+            loc= "username_or_email", 
+            msg= "Email/Userame is wrong!", 
+            inp= request.username_or_email,
+            ctx={"username_or_email": "exist"}
+        )
+    
+    if not Hash.verify(user.password, request.password):
+        CustomValidations.customError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            type="verification_failed", 
+            loc= "password", 
+            msg= "Password is wrong!", 
+            inp= request.password,
+            ctx={"password": "match"}
+        )
+    
+    if not user.email_verified_at:
+        CustomValidations.customError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            type="verification_required", 
+            msg= "Verify your email first!", 
+        )
+    
+    if not user.is_active:
+        CustomValidations.customError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            type="suspended", 
+            msg= "Your account is suspended!", 
+        )
+    
+    tokens_count = db.query(model.BackendToken).filter(
+        model.BackendToken.user_id == user.id, 
+        model.BackendToken.expire_at > datetime.now()
+    ).count()
+    if tokens_count>=TOKEN_LIMIT:
+        CustomValidations.customError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            type="limit_exceed", 
+            msg= f"Login limit exceed (${TOKEN_LIMIT}).", 
+        )
+    
+    token = model.BackendToken(
+        token = generate_token(16),
+        user_id = user.id,
+        expire_at = datetime.utcnow() + timedelta(hours=int(TOKEN_VALIDITY))
+    )
+    db.add(token)
+    db.commit()
+    db.refresh(token)
+    return token
+
+

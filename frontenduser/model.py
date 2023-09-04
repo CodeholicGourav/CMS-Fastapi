@@ -101,6 +101,36 @@ class FrontendUser(Base):
     )
 
 
+class BackendToken(Base):
+    __tablename__ = 'frontendtokens'
+
+    id = Column(
+        Integer, 
+        primary_key=True,
+        index=True
+    )
+    token = Column(
+        String, 
+        unique=True, 
+        index=True,
+        nullable=False
+    )
+    user_id = Column(
+        Integer, 
+        ForeignKey("frontendusers.id")
+    )
+    created_at = Column(
+        DateTime, 
+        default=datetime.utcnow
+    )
+    expire_at = Column(
+        DateTime, 
+        default=datetime.utcnow
+    )
+
+    user = relationship('FrontendUser', foreign_keys=user_id)
+
+
 class Timezone(Base):
     __tablename__ = 'timezones'
 
