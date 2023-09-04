@@ -42,3 +42,36 @@ async def update_user_details(
 ): return controller.updateUser(data, db)
 
 
+@frontendUserRoutes.get("/verify-token", status_code=status.HTTP_202_ACCEPTED, description="Verify the token sent to email to verify your email address.") #Update email verification
+def verify_email_token(
+    token: str = Query(..., description="Email verification token"), 
+    db: Session = Depends(get_db)
+): return controller.verify_email(token, db)
+
+
+""" @backendUserRoutes.post("/login", response_model= schema.ShowToken, status_code=status.HTTP_200_OK) #Create login token
+def login(
+    request: schema.LoginUser, 
+    db: Session = Depends(get_db),
+): return controller.create_auth_token(request, db) """
+
+
+""" @backendUserRoutes.delete("/logout", status_code=status.HTTP_204_NO_CONTENT, description="Logout from all devices.") #Delete login token
+def logout(
+    db: Session = Depends(get_db),
+    current_user: model.BackendUser = Depends(authenticate_token)
+): return controller.delete_token(current_user, db) """
+
+
+""" @backendUserRoutes.get("/send-token", status_code=status.HTTP_200_OK) #send forget password mail
+def send_token(
+    email: str = Query(..., description="Email verification token"), 
+    db: Session = Depends(get_db)
+): return controller.send_verification_mail(email, db) """
+
+
+""" @backendUserRoutes.post('/create-password', response_model=schema.ShowUser, status_code=status.HTTP_201_CREATED) #Update password
+def create_new_password(
+    request: schema.ForgotPassword, 
+    db: Session = Depends(get_db)
+): return controller.create_new_password(request, db) """

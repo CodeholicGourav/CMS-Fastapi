@@ -110,3 +110,37 @@ def updateUser(data: schema.UpdateUser, db: Session):
     db.commit()
     db.refresh(user)
     return user
+
+
+def verify_email(token: str, db: Session):
+    """ Verify email through token and enable user account login """
+    user = db.query(model.FrontendUser).filter(
+        model.FrontendUser.verification_token == token,
+        model.FrontendUser.is_deleted == False
+    ).first()
+
+    if not user:
+        CustomValidations.customError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            type="not_exist", 
+            loc= "token", 
+            msg= "Invalid verification token", 
+            inp= token,
+            ctx={"token": "exist"}
+        )
+    
+    if not user.is_active:
+        CustomValidations.customError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            type="deactive", 
+            loc= "account", 
+            msg= "Your account is deactivated!", 
+            inp= token,
+            ctx={"account": "active"}
+        )
+
+    user.email_verified_at = datetime.utcnow()
+    user.verification_token = None 
+    db.commit()
+    return {"details": "Email verified successfully"}
+
