@@ -3,7 +3,8 @@ from typing import List, Optional, Annotated
 from sqlalchemy.orm import Session
 from database import get_db
 from . import controller, model, schema
-from middleware import authenticate_token, check_permission
+from backenduser.middleware import authenticate_token, check_permission
+from .middleware import authenticate_token
 
 frontendUserRoutes = APIRouter()
 
@@ -56,11 +57,11 @@ def login(
 ): return controller.create_auth_token(request, db)
 
 
-""" @backendUserRoutes.delete("/logout", status_code=status.HTTP_204_NO_CONTENT, description="Logout from all devices.") #Delete login token
+@frontendUserRoutes.delete("/logout", status_code=status.HTTP_204_NO_CONTENT, description="Logout from all devices.") #Delete login token
 def logout(
     db: Session = Depends(get_db),
-    current_user: model.BackendUser = Depends(authenticate_token)
-): return controller.delete_token(current_user, db) """
+    current_user: model.FrontendUser = Depends(authenticate_token)
+): return controller.delete_token(current_user, db)
 
 
 """ @backendUserRoutes.get("/send-token", status_code=status.HTTP_200_OK) #send forget password mail

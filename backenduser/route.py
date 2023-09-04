@@ -3,7 +3,7 @@ from typing import List, Optional, Annotated
 from sqlalchemy.orm import Session
 from database import get_db
 from . import controller, model, schema
-from middleware import authenticate_token, check_permission
+from backenduser.middleware import authenticate_token, check_permission
 
 backendUserRoutes = APIRouter()
 

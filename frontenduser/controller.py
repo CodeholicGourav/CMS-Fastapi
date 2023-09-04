@@ -187,9 +187,9 @@ def create_auth_token(request: schema.LoginUser, db: Session):
             msg= "Your account is suspended!", 
         )
     
-    tokens_count = db.query(model.BackendToken).filter(
-        model.BackendToken.user_id == user.id, 
-        model.BackendToken.expire_at > datetime.now()
+    tokens_count = db.query(model.FrontendToken).filter(
+        model.FrontendToken.user_id == user.id, 
+        model.FrontendToken.expire_at > datetime.now()
     ).count()
     if tokens_count>=TOKEN_LIMIT:
         CustomValidations.customError(
@@ -198,7 +198,7 @@ def create_auth_token(request: schema.LoginUser, db: Session):
             msg= f"Login limit exceed (${TOKEN_LIMIT}).", 
         )
     
-    token = model.BackendToken(
+    token = model.FrontendToken(
         token = generate_token(16),
         user_id = user.id,
         expire_at = datetime.utcnow() + timedelta(hours=int(TOKEN_VALIDITY))
@@ -209,3 +209,8 @@ def create_auth_token(request: schema.LoginUser, db: Session):
     return token
 
 
+def delete_token(user: model.FrontendUser, db: Session):
+    """ Deletes the login token """
+    db.query(model.FrontendToken).filter_by(user_id=user.id).delete()
+    db.commit()
+    return True

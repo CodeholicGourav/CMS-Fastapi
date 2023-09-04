@@ -101,7 +101,7 @@ class FrontendUser(Base):
     )
 
 
-class BackendToken(Base):
+class FrontendToken(Base):
     __tablename__ = 'frontendtokens'
 
     id = Column(
