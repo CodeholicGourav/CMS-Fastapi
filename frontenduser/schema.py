@@ -44,3 +44,8 @@ class RegisterUser(BaseModel):
     def password_validate(cls, value):
         return CustomValidations.validate_password(value)
 
+
+class UpdateUser(BaseModel):
+    user_id: str
+    is_active : Optional[bool] = None
+    is_deleted : Optional[bool] = None

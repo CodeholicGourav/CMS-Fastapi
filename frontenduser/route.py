@@ -14,7 +14,7 @@ def register(
 ): return controller.register_user(request, db)
 
 
-@frontendUserRoutes.get("/get", response_model=List[schema.BaseUser], status_code=status.HTTP_200_OK) #read user
+@frontendUserRoutes.get("/get", response_model=List[schema.BaseUser], status_code=status.HTTP_200_OK) #Read users
 async def get_users_list(
     limit : Optional[int]=10, 
     offset : Optional[int]=0, 
@@ -33,10 +33,12 @@ async def get_user_details(
 ): return controller.userDetails(user_id, db)
 
 
-""" @frontendUserRoutes.post("/update-user", response_model=schema.BaseUser, status_code=status.HTTP_200_OK) #Update / delete user
+@frontendUserRoutes.post("/update-user", response_model=schema.BaseUser, status_code=status.HTTP_200_OK) #Update / delete user
 async def update_user_details(
     data: schema.UpdateUser,
     db : Session = Depends(get_db), 
-    current_user: model.BackendUser = Depends(authenticate_token),
-    permissions: model.BackendUser = Depends(check_permission(["update_user"])),
-): return controller.updateUserRole(data, db) """
+    current_user = Depends(authenticate_token),
+    permissions = Depends(check_permission(["update_user"])),
+): return controller.updateUser(data, db)
+
+

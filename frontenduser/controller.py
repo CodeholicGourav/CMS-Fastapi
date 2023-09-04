@@ -92,3 +92,21 @@ def userDetails(user_id: str, db: Session):
         )
     return user
 
+
+def updateUser(data: schema.UpdateUser, db: Session):
+    user = db.query(model.FrontendUser).filter_by(uuid=data.user_id).first()
+    if not user:
+        CustomValidations.customError(
+            type="not_exist", 
+            loc= "user_id", 
+            msg= "No user found.", 
+            inp= data.user_id,
+            ctx={"user_id": "exist"}
+        )
+    
+    if data.is_active is not None: user.is_active = data.is_active
+    if data.is_deleted is not None: user.is_deleted = data.is_deleted
+    user.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(user)
+    return user
