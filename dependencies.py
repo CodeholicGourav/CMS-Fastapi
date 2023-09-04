@@ -106,6 +106,13 @@ class CustomValidations():
         return value
 
 
+    def validate_profile_photo(value):
+        allowed_extensions = ("jpg", "jpeg", "png")
+        file_extension = value.filename.split(".")[-1]
+        if file_extension.lower() not in allowed_extensions:
+            raise ValueError("Only JPG, JPEG, and PNG files are allowed for profile_photo")
+        return value
+    
 
 # Maximum hours for token validation
 TOKEN_VALIDITY = 72 

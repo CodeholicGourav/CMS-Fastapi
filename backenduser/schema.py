@@ -30,6 +30,12 @@ class BasePermission(BaseModel):
     type :int
     codename : str
 
+class permission(BaseModel):
+    permission : str
+
+class RolePermissions(BaseModel):
+    permission : BasePermission
+
 
 class ShowRole(BaseModel):
     ruid : str
@@ -38,7 +44,7 @@ class ShowRole(BaseModel):
     creator : Optional[ShowUser]
     created_at : datetime
     updated_at : datetime
-    permissions : List[BasePermission]
+    permissions : Optional[List[RolePermissions]] = []
 
 
 class ShowRoleName(BaseModel):

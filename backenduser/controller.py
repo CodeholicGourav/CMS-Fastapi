@@ -413,7 +413,6 @@ def assign_permissions(request : schema.AssignPermissions, db : Session):
     
     codenames = request.permissions
     permissions = db.query(model.BackendPermission).filter(model.BackendPermission.codename.in_(codenames)).all()
-    role.permissions = permissions
     
     for permission in permissions:
         if not (
@@ -422,7 +421,7 @@ def assign_permissions(request : schema.AssignPermissions, db : Session):
                 model.BackendRolePermission.permission_id==permission.id
             ).first()
         ) :
-            role_permission = model.BackendRolePermission(role_id=role.ruid, permission_id=permission.codename)
+            role_permission = model.BackendRolePermission(role_id=role.id, permission_id=permission.id)
             db.add(role_permission)
     
     db.commit()

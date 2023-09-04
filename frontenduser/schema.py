@@ -7,7 +7,24 @@ from fastapi import UploadFile
 
 
 class BaseUser(BaseModel):
-    pass
+    uuid : str
+    email : str
+    username: str
+    first_name : Optional[str] = None
+    last_name : Optional[str] = None
+    language : Optional[str] = None
+    timezone : Optional[str] = None
+    profile_photo : Optional[str] = None
+    email_verified_at : Optional[datetime] = None
+    storage_token : Optional[str] = None
+    storage_platform : Optional[str] = None
+    active_plan : Optional[str] = None
+    social_token : Optional[str] = None
+    social_platform : Optional[str] = None
+    is_active : bool
+    is_deleted : bool
+    created_at : datetime
+    updated_at : datetime
 
 
 class RegisterUser(BaseModel):
@@ -18,7 +35,6 @@ class RegisterUser(BaseModel):
     password : constr(min_length=8)
     language : Optional[str] = None
     timezone : Optional[str] = None
-    profile_photo : Optional[UploadFile] = None
 
     @validator("username")
     def username_valid(cls, value):
@@ -27,3 +43,4 @@ class RegisterUser(BaseModel):
     @validator("password")
     def password_validate(cls, value):
         return CustomValidations.validate_password(value)
+

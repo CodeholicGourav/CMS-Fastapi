@@ -65,7 +65,7 @@ class FrontendUser(Base):
     )
     timezone = Column(
         String(10),
-        default="UTC"
+        default="Asia/Kolkata"
     )
     active_plan = Column(
         String,
@@ -101,3 +101,21 @@ class FrontendUser(Base):
     )
 
 
+class Timezone(Base):
+    __tablename__ = 'timezones'
+
+    id = Column(
+        Integer,
+        primary_key=True, 
+        index=True
+    )
+    timezone_name = Column(
+        String(255)
+    )
+    code = Column(
+        String(255),
+        unique=True
+    )
+    time_difference = Column(
+        String(50)
+    )
