@@ -20,7 +20,7 @@ def generate_token(len:int):
 
 
 def generate_uuid(unique_str : str):
-    return f"{base64.b64encode(unique_str.encode('utf-8')).decode('utf-8')}{random.randint(1111, 9999)}{math.floor(time.time())}"
+    return f"{base64.urlsafe_b64encode(unique_str.encode('utf-8')).decode('utf-8')}{random.randint(1111, 9999)}{math.floor(time.time())}"
 
 pwd_cxt = CryptContext(schemes=["bcrypt"], deprecated="auto")
 class Hash():
