@@ -3,7 +3,7 @@ from typing import List, Optional, Annotated
 from sqlalchemy.orm import Session
 from database import get_db
 from . import controller, model, schema
-from backenduser.middleware import authenticate_token, check_permission
+# from backenduser.middleware import authenticate_token, check_permission
 from .middleware import authenticate_token
 
 frontendUserRoutes = APIRouter()
@@ -13,34 +13,6 @@ def register(
     request: schema.RegisterUser, 
     db: Session = Depends(get_db),
 ): return controller.register_user(request, db)
-
-
-@frontendUserRoutes.get("/get", response_model=List[schema.BaseUser], status_code=status.HTTP_200_OK) #Read users
-async def get_users_list(
-    limit : Optional[int]=10, 
-    offset : Optional[int]=0, 
-    db : Session = Depends(get_db), 
-    current_user = Depends(authenticate_token),
-    permissions = Depends(check_permission(["read_user"])),
-): return db.query(model.FrontendUser).limit(limit).offset(offset).all()
-
-
-@frontendUserRoutes.get("/get/{user_id}", response_model=schema.BaseUser, status_code=status.HTTP_200_OK) #Read user
-async def get_user_details(
-    user_id: Annotated[str, Path(title="The UUID of the user to get")],
-    db : Session = Depends(get_db), 
-    current_user = Depends(authenticate_token),
-    permissions = Depends(check_permission(["read_user"])),
-): return controller.userDetails(user_id, db)
-
-
-@frontendUserRoutes.post("/update-user", response_model=schema.BaseUser, status_code=status.HTTP_200_OK) #Update / delete user
-async def update_user_details(
-    data: schema.UpdateUser,
-    db : Session = Depends(get_db), 
-    current_user = Depends(authenticate_token),
-    permissions = Depends(check_permission(["update_user"])),
-): return controller.updateUser(data, db)
 
 
 @frontendUserRoutes.get("/verify-token", status_code=status.HTTP_202_ACCEPTED, description="Verify the token sent to email to verify your email address.") #Update email verification
@@ -64,15 +36,38 @@ def logout(
 ): return controller.delete_token(current_user, db)
 
 
-""" @backendUserRoutes.get("/send-token", status_code=status.HTTP_200_OK) #send forget password mail
+@frontendUserRoutes.get("/send-token", status_code=status.HTTP_200_OK) #send forget password mail
 def send_token(
     email: str = Query(..., description="Email verification token"), 
     db: Session = Depends(get_db)
-): return controller.send_verification_mail(email, db) """
+): return controller.send_verification_mail(email, db)
 
 
-""" @backendUserRoutes.post('/create-password', response_model=schema.ShowUser, status_code=status.HTTP_201_CREATED) #Update password
+@frontendUserRoutes.post('/create-password', response_model=schema.BaseUser, status_code=status.HTTP_201_CREATED) #Update password
 def create_new_password(
     request: schema.ForgotPassword, 
     db: Session = Depends(get_db)
-): return controller.create_new_password(request, db) """
+): return controller.create_new_password(request, db)
+
+
+@frontendUserRoutes.post('/update-profile', response_model=schema.BaseUser, status_code=status.HTTP_201_CREATED) #Update profile
+def update_profile(    
+    data: schema.UpdateProfile,
+    db : Session = Depends(get_db), 
+    current_user: model.FrontendUser = Depends(authenticate_token),
+): return controller.updateProfile(data, current_user, db)
+
+
+@frontendUserRoutes.get('/subscriptions', response_model=List[schema.BaseSubscription], status_code=status.HTTP_200_OK) #Read all subscriptions
+def all_subscriptions(
+    limit : Optional[int]=10, 
+    offset : Optional[int]=0, 
+    db : Session = Depends(get_db), 
+    current_user: model.FrontendUser = Depends(authenticate_token),
+): return controller.all_subscription_plans(limit, offset, db)
+
+
+@frontendUserRoutes.get('/timezones', response_model=List[schema.TimeZones], status_code=status.HTTP_200_OK) #Read all subscriptions
+def all_timezones( 
+    db : Session = Depends(get_db), 
+): return controller.timezonesList(db)

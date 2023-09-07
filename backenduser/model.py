@@ -154,15 +154,28 @@ def create_permissions():
         {"permission": "Can delete subscription", "type": 4, "codename": "delete_subscription"}
     ]
 
-    db = SessionLocal()
+    try:
+        db = SessionLocal()
+        for permission in predefined_permissions:
+            new_permission = BackendPermission(**permission)
+            db.add(new_permission)
 
-    for permission in predefined_permissions:
-        new_permission = BackendPermission(**permission)
-        db.add(new_permission)
+        db.commit()
+        db.close()
+        print("permissions created successfully")
+        return {"message": "permissions created successfully"}
+    
+    except Exception as e:
+        db.rollback()
+        print(e)
+        return {"error": str(e)}
+    finally:
+        db.close()
 
-    db.commit()
-    db.close()
-    return "permissions created successfully"
+    
+
+    
+    
 
 
 class BackendRolePermission(Base):

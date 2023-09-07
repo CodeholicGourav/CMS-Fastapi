@@ -21,10 +21,8 @@ def main():
             print("Migrating all tables...")
             backendModel.Base.metadata.create_all(bind=engine)
             frontendModel.Base.metadata.create_all(bind=engine)
-            try:
-                print(backendModel.create_permissions())
-            except:
-                pass
+            backendModel.create_permissions()
+            frontendModel.create_timezones()
         
         case 'drop':
             ans = input("Are you sure to delete all tables? (y/n) :")

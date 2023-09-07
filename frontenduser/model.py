@@ -1,9 +1,11 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Float, JSON
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from database import Base, SessionLocal
 from datetime import datetime
 import uuid as uuid_lib
+from pathlib import Path
+import csv
 
 
 class FrontendUser(Base):
@@ -149,3 +151,31 @@ class Timezone(Base):
     time_difference = Column(
         String(50)
     )
+
+def create_timezones():
+    print("creating timezone data...")
+    csv_file_path = Path(__file__).parent.parent / "timezones.csv"
+
+    try:
+        db = SessionLocal()
+        with open(csv_file_path, "r", newline="") as csvfile:
+            csvreader = csv.DictReader(csvfile)
+            for row in csvreader:
+                name = row["Name"]
+                code = row["Code"]
+                time_difference = row["Difference"]
+
+                timezone_entry = Timezone(
+                    timezone_name=name, 
+                    code=code, 
+                    time_difference=time_difference
+                )
+                db.add(timezone_entry)
+
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise e
+    finally:
+        db.close()
+

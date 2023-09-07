@@ -27,6 +27,19 @@ class BaseUser(BaseModel):
     updated_at : datetime
 
 
+class UpdateProfile(BaseModel):
+    username: Optional[str] = None
+    first_name : Optional[str] = None
+    last_name : Optional[str] = None
+    language : Optional[str] = None
+    timezone : Optional[str] = None
+    profile_photo : Optional[str] = None
+    storage_token : Optional[str] = None
+    storage_platform : Optional[str] = None
+    social_token : Optional[str] = None
+    social_platform : Optional[str] = None
+
+
 class RegisterUser(BaseModel):
     email : EmailStr
     username: constr(min_length=6, max_length=30)
@@ -60,3 +73,35 @@ class ShowToken(BaseModel):
 class LoginUser(BaseModel):
     username_or_email: str
     password: str
+
+
+class ForgotPassword(BaseModel):
+    token : str
+    password: constr(min_length=8)
+
+    @validator("password")
+    def _password(cls, value):
+        return CustomValidations.validate_password( value)
+
+
+class ShowUser(BaseModel):
+    uuid : str
+    username : str
+    email : str
+
+
+class BaseSubscription(BaseModel):
+    suid : str
+    name : str
+    description : str
+    price : float
+    validity : int
+    creator : ShowUser
+    is_deleted : bool
+    created_at : datetime
+
+
+class TimeZones(BaseModel):
+    timezone_name : str
+    code : str
+    time_difference : str

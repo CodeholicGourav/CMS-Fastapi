@@ -2,10 +2,8 @@ from sqlalchemy.orm import Session
 from dependencies import Hash, FrontendEmail, generate_token, TOKEN_LIMIT, TOKEN_VALIDITY, CustomValidations
 from . import schema, model
 from datetime import datetime, timedelta
-from fastapi import HTTPException,status
-from dateutil.relativedelta import relativedelta
-import getpass
-import secrets
+from fastapi import status
+from backenduser import controller as backendusercontroller
 
 
 def register_user(data: schema.RegisterUser, db: Session):
@@ -79,6 +77,10 @@ def register_user(data: schema.RegisterUser, db: Session):
         )
 
 
+def userList(limit, offset, db: Session):
+    return db.query(model.FrontendUser).limit(limit).offset(offset).all()
+
+
 def userDetails(user_id: str, db: Session):
     """ Returns all details of the user """
     user =  db.query(model.FrontendUser).filter_by(uuid=user_id).first()
@@ -141,6 +143,7 @@ def verify_email(token: str, db: Session):
 
     user.email_verified_at = datetime.utcnow()
     user.verification_token = None 
+    user.updated_at = datetime.utcnow()
     db.commit()
     return {"details": "Email verified successfully"}
 
@@ -214,3 +217,142 @@ def delete_token(user: model.FrontendUser, db: Session):
     db.query(model.FrontendToken).filter_by(user_id=user.id).delete()
     db.commit()
     return True
+
+
+def send_verification_mail(email: str, db: Session):
+    """ sends a token in mail for forget password """
+    user = db.query(model.FrontendUser).filter(
+        model.FrontendToken.email == email,
+        model.FrontendUser.is_deleted == False
+    ).first()
+    if not user:
+        CustomValidations.customError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            type="not_exist", 
+            loc= "email", 
+            msg= "No account found.", 
+            inp= email,
+            ctx={"email": "exist"}
+        )
+    
+    if not user.is_active:
+        CustomValidations.customError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            type="suspended", 
+            msg= "Your account is suspended!", 
+        )
+    
+    user.verification_token = generate_token(32)
+    db.commit() 
+    db.refresh(user)
+    frontendemail = FrontendEmail()
+    if frontendemail.sendForgetPasswordToken(user):
+        return {"message": "Email sent successfully"}
+    else :
+        CustomValidations.customError(
+            status_code=status.HTTP_417_EXPECTATION_FAILED,
+            type="mail_sent_error", 
+            msg= "Cannot send email.", 
+        )
+
+
+def create_new_password(request: schema.ForgotPassword, db: Session):
+    """ Verify the token and change the password of the user """
+    user = db.query(model.FrontendUser).filter(
+        model.FrontendUser.verification_token == request.token,
+        model.FrontendUser.is_deleted == False
+    ).first()
+
+    if not user:
+        CustomValidations.customError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            type="expired", 
+            loc= "token", 
+            msg= "Token is expired!", 
+            inp= request.token,
+            ctx={"token": "valid"}
+        )
+    
+    if not user.email_verified_at:
+        CustomValidations.customError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            type="verification_required", 
+            msg= "Verify your email first!", 
+        )
+    
+    if not user.is_active:
+        CustomValidations.customError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            type="suspended", 
+            msg= "Your account is suspended!", 
+        )
+    
+    user.password = Hash.bcrypt(request.password)
+    user.verification_token = None 
+    user.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def updateProfile(request: schema.UpdateProfile , user: model.FrontendUser, db: Session):
+    if request.username:
+        existing_user = db.query(model.FrontendUser).filter_by(username = request.username).first()
+        if existing_user:
+            CustomValidations.customError(
+                type="exist", 
+                loc= "username", 
+                msg= "Username already in use", 
+                inp= request.username,
+                ctx={"username": "unique"}
+            )
+        user.username = request.username
+
+    if request.first_name :
+        user.first_name = request.first_name
+
+    if request.last_name :
+        user.last_name = request.last_name
+
+    if request.language :
+        user.language = request.language
+
+    if request.timezone :
+        exist_timezone = db.query(model.Timezone).filter_by(code=request.timezone).first()
+        if not exist_timezone:
+            CustomValidations.customError(
+                type="not_exist", 
+                loc= "timezone", 
+                msg= "Timezone does not exist.", 
+                inp= request.timezone,
+                ctx={"timezone": "exist"}
+            )
+        user.timezone = request.timezone
+
+    if request.profile_photo :
+        user.profile_photo = request.profile_photo
+
+    if request.storage_token :
+        user.storage_token = request.storage_token
+
+    if request.storage_platform :
+        user.storage_platform = request.storage_platform
+
+    if request.social_token :
+        user.social_token = request.social_token
+
+    if request.social_platform :
+        user.social_platform = request.social_platform
+
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def all_subscription_plans(limit: int, offset: int, db: Session):
+    return backendusercontroller.all_subscription_plans(limit, offset, db)
+
+
+def timezonesList(db: Session):
+    return db.query(model.Timezone).all()

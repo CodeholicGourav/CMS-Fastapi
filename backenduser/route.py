@@ -3,6 +3,7 @@ from typing import List, Optional, Annotated
 from sqlalchemy.orm import Session
 from database import get_db
 from . import controller, model, schema
+from frontenduser.model import FrontendUser
 from backenduser.middleware import authenticate_token, check_permission
 
 backendUserRoutes = APIRouter()
@@ -153,7 +154,29 @@ def delete_subscription(
 ): return controller.delete_subscription_plan(data, db)
 
 
+@backendUserRoutes.get("/get-frontend-users", response_model=List[schema.BaseUser], status_code=status.HTTP_200_OK) #Read users
+async def get_users_list(
+    limit : Optional[int]=10, 
+    offset : Optional[int]=0, 
+    db : Session = Depends(get_db), 
+    current_user = Depends(authenticate_token),
+    permissions = Depends(check_permission(["read_user"])),
+): return controller.frontenduserlist(limit, offset, db)
 
-@backendUserRoutes.get("/test", status_code=status.HTTP_200_OK) #Testing purpose
-async def test(db : Session = Depends(get_db)): 
-    return controller.test(db)
+
+@backendUserRoutes.get("/get-frontend-users/{user_id}", response_model=schema.BaseUser, status_code=status.HTTP_200_OK) #Read user
+async def get_user_details(
+    user_id: Annotated[str, Path(title="The UUID of the user to get")],
+    db : Session = Depends(get_db), 
+    current_user = Depends(authenticate_token),
+    permissions = Depends(check_permission(["read_user"])),
+): return controller.frontenduserdetails(user_id, db)
+
+
+@backendUserRoutes.post("/update-frontend-user", response_model=schema.BaseUser, status_code=status.HTTP_200_OK) #Update / delete user
+async def update_user_details(
+    data: schema.UpdateUser,
+    db : Session = Depends(get_db), 
+    current_user = Depends(authenticate_token),
+    permissions = Depends(check_permission(["update_user"])),
+): return controller.updateBackendUser(data, db)

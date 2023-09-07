@@ -484,8 +484,16 @@ def delete_subscription_plan(data: schema.UpdateSubscription, db: Session):
     return subscription
 
 
-def test(db: Session):
-    """ Just for testing """
-    user = db.query(model.BackendUser).first()
-    print(user.created_at + relativedelta(days=10))
-    return user.created_at
+from frontenduser import controller as frontendUserController
+
+def frontenduserdetails(user_id: str, db: Session):
+    """ Returns all details of the user """
+    return frontendUserController.userDetails(user_id, db)
+
+
+def frontenduserlist(limit: int, offset: int, db: Session):
+    return frontendUserController.userList(limit, offset, db)
+
+
+def updateBackendUser(data, db: Session):
+    return frontendUserController.updateUser(data, db)
