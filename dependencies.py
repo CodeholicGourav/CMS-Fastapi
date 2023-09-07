@@ -1,9 +1,11 @@
 from dotenv import load_dotenv
 from pathlib import Path
 import os
+import re
 import secrets
 from passlib.context import CryptContext
 from backenduser.model import BackendUser
+from fastapi import HTTPException,status
 
 
 env_path = Path(__file__).parent / ".env"
@@ -72,3 +74,62 @@ class BackendEmail(BaseEmail):
         verification_link = f"{os.getenv('SERVER_URL')}/{os.getenv('CREATE_PASSWORD_URL')}?token={user.verification_token}"  # Include the verification token in the link
         message = MIMEText(f"Click the following link to reset your password: {verification_link}")
         return self.sendMail(user.email, subject, message)
+    
+
+class CustomValidations():
+    def customError(status_code:int=status.HTTP_422_UNPROCESSABLE_ENTITY, type:str="", loc:str="", msg:str="", inp:str="", ctx: dict={}):
+        detail = {
+            "detail": [{
+                "type": type,
+                "loc": ["body", loc],
+                "msg": msg,
+                "input": inp,
+                "ctx": ctx,
+            }]
+        }
+        raise HTTPException(status_code, detail)
+    
+
+    def validate_username(value):
+        pattern=r'^[a-zA-Z0-9_]+$'
+        if not re.match(pattern, value):
+            detail = [{
+                "type": "Invalid",
+                "loc": ["body", "username"],
+                "msg": "Invalid username",
+                "input": value,
+                "ctx": {"username": "It should contain only letters, numbers, and underscores."},
+            }]
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail)
+        
+        return value
+    
+
+    def validate_password(value):
+        pattern=r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@#$%^&+=!]).{8,}$'
+        if not re.match(pattern, value):
+            detail = [{
+                "type": "Invalid",
+                "loc": ["body", "password"],
+                "msg": "Invalid passwpord",
+                "input": value,
+                "ctx": {"password": "It should be : At least 8 characters in length, Contains at least one uppercase letter (A-Z), Contains at least one lowercase letter (a-z), Contains at least one digit (0-9), Contains at least one special character (e.g., !, @, #, $, %, etc.)."},
+            }]
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail)
+        
+        return value
+
+
+    def validate_profile_photo(value):
+        allowed_extensions = ("jpg", "jpeg", "png")
+        file_extension = value.filename.split(".")[-1]
+        if file_extension.lower() not in allowed_extensions:
+            raise ValueError("Only JPG, JPEG, and PNG files are allowed for profile_photo")
+        return value
+    
+
+# Maximum hours for token validation
+TOKEN_VALIDITY = 72 
+
+# Maximum number of tokens for single user
+TOKEN_LIMIT = 5

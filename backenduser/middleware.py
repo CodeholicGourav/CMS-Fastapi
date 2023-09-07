@@ -13,14 +13,13 @@ async def authenticate_token(authtoken: Annotated[str, Header()], db : Session =
     if not user_token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid auth token")
     
-    user = db.query(BackendUser).filter(BackendUser.uuid==user_token.user_id).first()
-    if not user or not user.is_active or user.is_deleted:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid auth token")
+    if not user_token.user or not user_token.user.is_active or user_token.user.is_deleted:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid auth token.")
 
     if(datetime.now() > user_token.expire_at):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token is expired, try login again.")
     
-    return user
+    return user_token.user
 
 
 def check_permission(codenames: list[str]):
@@ -28,14 +27,17 @@ def check_permission(codenames: list[str]):
     def has_permissions(authtoken: Annotated[str, Header()], db : Session = Depends(get_db)):
         """ Check user permissions """
         user_token = db.query(BackendToken).filter(BackendToken.token==authtoken).first()
-        if not user_token:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid auth token")
                 
-        user = db.query(BackendUser).filter(BackendUser.uuid==user_token.user_id).first()
-        if not user:
+        if not user_token.user:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid auth token")
         
-        user_permissions = db.query(BackendRolePermission).filter(BackendRolePermission.role_id==user.role_id).all()
+        if user_token.user.role.id == 0:
+            return True
+
+        user_permissions = user_token.user.role.permissions
+        if not user_permissions:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Permisson not granted.")
+        
         return all(element in codenames for element in user_permissions)
     
     return has_permissions

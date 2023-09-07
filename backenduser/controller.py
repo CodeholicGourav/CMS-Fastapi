@@ -1,9 +1,11 @@
 from sqlalchemy.orm import Session
-from dependencies import Hash, BackendEmail, generate_token
+from dependencies import Hash, BackendEmail, generate_token, CustomValidations, TOKEN_LIMIT, TOKEN_VALIDITY
 from . import schema, model
 from datetime import datetime, timedelta
 from fastapi import HTTPException,status
 from dateutil.relativedelta import relativedelta
+import getpass
+import secrets
 
 
 def all_backend_users(limit : int, offset : int, db: Session):
@@ -13,7 +15,16 @@ def all_backend_users(limit : int, offset : int, db: Session):
 
 def userDetails(user_id: str, db: Session):
     """ Returns all details of the user """
-    return db.query(model.BackendUser).filter(model.BackendUser.uuid==user_id).first()
+    user =  db.query(model.BackendUser).filter_by(uuid=user_id).first()
+    if not user: 
+        CustomValidations.customError(
+            type="not_exist", 
+            loc= "user_id", 
+            msg= "User does not exist", 
+            inp= user_id,
+            ctx={"user": "exist"}
+        )
+    return user
 
 
 def create_user(user: schema.RegisterUser, db: Session):
@@ -26,13 +37,40 @@ def create_user(user: schema.RegisterUser, db: Session):
 
     if existing_user:
         if user.username == existing_user.username :
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Username already in use")
+            CustomValidations.customError(
+                type="exist", 
+                loc= "username", 
+                msg= "Username already in use", 
+                inp= user.username,
+                ctx={"username": "unique"}
+            )
         
         if user.email == existing_user.email :
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Email already in use")
+            CustomValidations.customError(
+                type="exist", 
+                loc= "email", 
+                msg= "Email already in use", 
+                inp= user.email,
+                ctx={"email": "unique"}
+            )
+        
+    role = db.query(model.BackendRole).filter(
+        model.BackendRole.ruid == user.role_id,
+        model.BackendRole.is_deleted == False
+    ).first()
+    if not role:
+        CustomValidations.customError(
+            type="not_exist", 
+            loc= "role", 
+            msg= "role does not exist", 
+            inp= user.role_id,
+            ctx={"role": "exist"}
+        )
+
     new_user = model.BackendUser(
         username=user.username,
         email=user.email,
+        role_id=role.id,
         password=Hash.bcrypt(user.password),
         verification_token = generate_token(32),
     )
@@ -43,7 +81,94 @@ def create_user(user: schema.RegisterUser, db: Session):
     if backendEmail.sendEmailVerificationToken(new_user):
         return new_user
     else:
-        raise HTTPException(status_code=status.HTTP_417_EXPECTATION_FAILED, detail="Cannot send email.")
+        CustomValidations.customError(
+            status_code=status.HTTP_417_EXPECTATION_FAILED,
+            type="Internal", 
+            loc= "email", 
+            msg= "Cannot send email.", 
+            inp= user.email,
+        )
+
+
+def createsuperuser(db: Session):
+    superuser = db.query(model.BackendUser).filter(model.BackendUser.id==0).first()
+
+    if superuser:
+        print("Superuser already exist!")
+        return
+
+    username = input("Enter username: ")
+    email = input("Enter email: ")
+    password = ""
+    c_password = ""
+    while password!=c_password or password=="":
+        password = getpass.getpass("Enter password: ")
+        c_password = getpass.getpass("Enter password to confirm: ")
+
+        if password=="": print("Password can not be blank.")
+        if password!=c_password: print("Password did not match, please try again.")
+
+    superuserrole = db.query(model.BackendRole).filter(model.BackendRole.id==0).first()
+    if not superuserrole:
+        superuserrole = model.BackendRole(id=0, role="superuser") 
+
+        db.add(superuserrole)
+        db.commit()
+        db.refresh(superuserrole)
+
+    superuser = model.BackendUser(
+        id=0,
+        username=username,
+        email=email,
+        password=Hash.bcrypt(password),
+        role_id=superuserrole.id,
+        verification_token = secrets.token_urlsafe(32)  # Generates a URL-safe token of 32 characters
+    )
+
+    db.add(superuser)
+    db.commit()
+    db.refresh(superuser)
+    backendEmail = BackendEmail()
+    if not backendEmail.sendEmailVerificationToken(superuser):
+        print("Can't send email.")
+
+    print("Superuser account created successfully.")
+    return True
+
+
+
+def updateUserRole(data: schema.UpdateUser ,  db: Session):
+    user = db.query(model.BackendUser).filter(model.BackendUser.uuid==data.user_id).first()
+    if not user:
+        CustomValidations.customError(
+            type="not_exist", 
+            loc= "user_id", 
+            msg= "No user found.", 
+            inp= data.user_id,
+            ctx={"user_id": "exist"}
+        )
+    
+    
+    if data.role_id:
+        role = db.query(model.BackendRole).filter(model.BackendRole.ruid==data.role_id).first()
+        if not role:
+            CustomValidations.customError(
+                type="not_exist", 
+                loc= "role_id", 
+                msg= "Role not found", 
+                inp= data.role_id,
+                ctx={"role_id": "exist"}
+            )
+        user.role_id = role.id
+    
+    if data.is_active is not None: user.is_active = data.is_active
+
+    if data.is_deleted is not None: user.is_deleted = data.is_deleted
+
+    user.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(user)
+    return user
 
 
 def verify_email(token: str, db: Session):
@@ -54,48 +179,92 @@ def verify_email(token: str, db: Session):
     ).first()
 
     if not user:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid verification token")
+        CustomValidations.customError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            type="not_exist", 
+            loc= "token", 
+            msg= "Invalid verification token", 
+            inp= token,
+            ctx={"token": "exist"}
+        )
     
     if not user.is_active:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Your account is suspended!")
-    
-    
+        CustomValidations.customError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            type="deactive", 
+            loc= "account", 
+            msg= "Your account is deactivated!", 
+            inp= token,
+            ctx={"account": "active"}
+        )
+
     user.email_verified_at = datetime.utcnow()
     user.verification_token = None 
     db.commit()
-    return {"message": "Email verified successfully"}
+    return {"details": "Email verified successfully"}
 
 
 def create_auth_token(request: schema.LoginUser, db: Session):
     """ Create a login token for backend user """
     user = db.query(model.BackendUser).filter(
-        (model.BackendUser.email == request.username_or_email) 
-        |
+        (model.BackendUser.email == request.username_or_email) |
         (model.BackendUser.username == request.username_or_email),
         model.BackendUser.is_deleted == False
     ).first()
 
     if not user:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Email or password is wrong!")
+        CustomValidations.customError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            type="verification_failed", 
+            loc= "username_or_email", 
+            msg= "Email/Userame is wrong!", 
+            inp= request.username_or_email,
+            ctx={"username_or_email": "exist"}
+        )
     
     if not Hash.verify(user.password, request.password):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Email or password is wrong!")
+        CustomValidations.customError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            type="verification_failed", 
+            loc= "password", 
+            msg= "Password is wrong!", 
+            inp= request.password,
+            ctx={"password": "match"}
+        )
     
     if not user.email_verified_at:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Verify your email first!")
+        CustomValidations.customError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            type="verification_required", 
+            msg= "Verify your email first!", 
+        )
     
     if not user.is_active:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Your account is suspended!")
+        CustomValidations.customError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            type="suspended", 
+            msg= "Your account is suspended!", 
+        )
+    
+    tokens_count = db.query(model.BackendToken).filter(
+        model.BackendToken.user_id == user.id, 
+        model.BackendToken.expire_at > datetime.now()
+    ).count()
+    if tokens_count>=TOKEN_LIMIT:
+        CustomValidations.customError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            type="limit_exceed", 
+            msg= f"Login limit exceed (${TOKEN_LIMIT}).", 
+        )
     
     token = model.BackendToken(
         token = generate_token(16),
-        user_id = user.uuid,
-        expire_at = datetime.utcnow() + timedelta(hours=24)
+        user_id = user.id,
+        expire_at = datetime.utcnow() + timedelta(hours=int(TOKEN_VALIDITY))
     )
     db.add(token)
     db.commit()
     db.refresh(token)
-    token.user = user
     return token
 
 
@@ -106,10 +275,21 @@ def send_verification_mail(email: str, db: Session):
         model.BackendUser.is_deleted == False
     ).first()
     if not user:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No account found.")
+        CustomValidations.customError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            type="not_exist", 
+            loc= "email", 
+            msg= "No account found.", 
+            inp= email,
+            ctx={"email": "exist"}
+        )
     
     if not user.is_active:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Your account is suspended!")
+        CustomValidations.customError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            type="suspended", 
+            msg= "Your account is suspended!", 
+        )
     
     user.verification_token = generate_token(32)
     db.commit() 
@@ -118,7 +298,11 @@ def send_verification_mail(email: str, db: Session):
     if backendEmail.sendForgetPasswordToken(user):
         return {"message": "Email sent successfully"}
     else :
-        raise HTTPException(status_code=status.HTTP_417_EXPECTATION_FAILED, detail="Cannot send email.")
+        CustomValidations.customError(
+            status_code=status.HTTP_417_EXPECTATION_FAILED,
+            type="mail_sent_error", 
+            msg= "Cannot send email.", 
+        )
 
 
 def create_new_password(request: schema.ForgotPassword, db: Session):
@@ -129,16 +313,32 @@ def create_new_password(request: schema.ForgotPassword, db: Session):
     ).first()
 
     if not user:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Token is expired!")
+        CustomValidations.customError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            type="expired", 
+            loc= "token", 
+            msg= "Token is expired!", 
+            inp= request.token,
+            ctx={"token": "valid"}
+        )
     
     if not user.email_verified_at:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Verify your email first!")
+        CustomValidations.customError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            type="verification_required", 
+            msg= "Verify your email first!", 
+        )
     
     if not user.is_active:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Your account is suspended!")
+        CustomValidations.customError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            type="suspended", 
+            msg= "Your account is suspended!", 
+        )
     
     user.password = Hash.bcrypt(request.password)
     user.verification_token = None 
+    user.updated_at = datetime.utcnow 
     db.commit()
     db.refresh(user)
     return user
@@ -148,7 +348,13 @@ def create_permission(request: schema.BasePermission, db: Session) :
     """ Creates a new permission """
     existingPermission = db.query(model.BackendPermission).filter(model.BackendPermission.codename==request.codename).first()
     if existingPermission:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Permission already exist!")
+        CustomValidations.customError(
+            type="exist", 
+            loc= "codename", 
+            msg= "Permission already exist!", 
+            inp= request.codename,
+            ctx={"codename": "unique"}
+        )
     
     newPermission = model.BackendPermission(
         permission = request.permission,
@@ -164,28 +370,28 @@ def create_permission(request: schema.BasePermission, db: Session) :
 
 def get_roles_list(db: Session):
     """ Returns all roles except superuser """
-    roles_list = db.query(model.BackendRole).filter(model.BackendRole.id!=0).all()
-    for role in roles_list:
-        creator = db.query(model.BackendUser).filter(model.BackendUser.uuid==role.created_by).first()
-        permissions = db.query(model.BackendRolePermission).filter(model.BackendRolePermission.role_id==role.ruid).all()
-
-        role.creator = creator
-        role.permissions = permissions
-    
-    return roles_list
+    return db.query(model.BackendRole).filter(model.BackendRole.id!=0).all()
 
 
-def add_role(request: schema.CreateRole, user: schema.CreateRole, db : Session):
+def add_role(request: schema.CreateRole, user: model.BackendToken, db : Session):
     """ Create a new role """
+    role = db.query(model.BackendRole).filter(model.BackendRole.role==request.role).filter_by()
+    if role :
+        CustomValidations.customError(
+            type="already_exist", 
+            loc= "role", 
+            msg= "Role already exist", 
+            inp= request.role, 
+            ctx= {"role":"unique"}
+        )
+    
     new_role = model.BackendRole(
         role = request.role,
-        created_by = user.uuid
+        created_by = user.id
     )
     db.add(new_role)
     db.commit()
     db.refresh(new_role)
-    new_role.creator = user
-    new_role.permissions = []
     return new_role
 
 
@@ -197,27 +403,35 @@ def assign_permissions(request : schema.AssignPermissions, db : Session):
     ).first()
 
     if not role:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Role not found!")
+        CustomValidations.customError(
+            type="not_exist", 
+            loc= "ruid", 
+            msg= "Role not found!", 
+            inp= request.ruid,
+            ctx={"ruid": "exist"}
+        )
     
     codenames = request.permissions
     permissions = db.query(model.BackendPermission).filter(model.BackendPermission.codename.in_(codenames)).all()
-    role.permissions = permissions
     
     for permission in permissions:
-        role_permission = model.BackendRolePermission(role_id=role.ruid, permission_id=permission.codename)
-        db.add(role_permission)
+        if not (
+            db.query(model.BackendRolePermission).filter(
+                model.BackendRolePermission.role_id==role.id, 
+                model.BackendRolePermission.permission_id==permission.id
+            ).first()
+        ) :
+            role_permission = model.BackendRolePermission(role_id=role.id, permission_id=permission.id)
+            db.add(role_permission)
     
     db.commit()
     db.refresh(role)
-
-    creator = db.query(model.BackendUser).filter(model.BackendUser.uuid==role.created_by).first()
-    role.creator = creator
     return role
 
 
 def delete_token(user: model.BackendUser, db: Session):
     """ Deletes the login token """
-    db.query(model.BackendToken).filter(model.BackendToken.user_id==user.uuid).delete()
+    db.query(model.BackendToken).filter(model.BackendToken.user_id==user.id).delete()
     db.commit()
     return True
 
@@ -228,24 +442,58 @@ def all_subscription_plans(limit : int, offset : int, db: Session):
     return subscriptions
 
 
-def add_subscription(data: schema.CreateSubscription, current_user: schema.ShowUser, db: Session):
+def add_subscription(data: schema.CreateSubscription, current_user: model.BackendUser, db: Session):
     """ Creates a new subscription plan """
+    if db.query(model.Subscription).filter(model.Subscription.name==data.name).first():
+        CustomValidations.customError(
+            type="exist", 
+            loc= "name", 
+            msg= "Name already exist!", 
+            inp= data.name,
+            ctx={"name": "unique"}
+        )
+    
     subscription = model.Subscription(
         name = data.name,
         description = data.description,
         price = data.price,
         validity = data.validity,
-        created_by = current_user.uuid,
+        created_by = current_user.id,
     )
     db.add(subscription)
     db.commit()
     db.refresh(subscription)
-    subscription.creator = current_user
     return subscription
 
 
-def test(db: Session):
-    """ Just for testing """
-    user = db.query(model.BackendUser).first()
-    print(user.created_at + relativedelta(days=10))
-    return user.created_at
+def delete_subscription_plan(data: schema.UpdateSubscription, db: Session):
+    subscription = db.query(model.Subscription).filter(model.Subscription.suid==data.suid).first()
+    if not subscription:
+        CustomValidations.customError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            type="not_exist", 
+            loc= "suid", 
+            msg= "Subscription does not exist!", 
+            inp= data.suid,
+            ctx={"suid": "exist"}
+        )
+    
+    subscription.is_deleted = data.is_deleted
+    db.commit()
+    db.refresh(subscription)
+    return subscription
+
+
+from frontenduser import controller as frontendUserController
+
+def frontenduserdetails(user_id: str, db: Session):
+    """ Returns all details of the user """
+    return frontendUserController.userDetails(user_id, db)
+
+
+def frontenduserlist(limit: int, offset: int, db: Session):
+    return frontendUserController.userList(limit, offset, db)
+
+
+def updateBackendUser(data, db: Session):
+    return frontendUserController.updateUser(data, db)
