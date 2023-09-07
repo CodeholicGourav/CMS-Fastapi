@@ -6,6 +6,10 @@ import secrets
 from passlib.context import CryptContext
 from backenduser.model import BackendUser
 from fastapi import HTTPException,status
+import base64
+import random
+import time
+import math
 
 
 env_path = Path(__file__).parent / ".env"
@@ -14,6 +18,9 @@ load_dotenv(dotenv_path=env_path)
 def generate_token(len:int):
     return secrets.token_urlsafe(len)  # Generates a URL-safe token of 32 characters
 
+
+def generate_uuid(unique_str : str):
+    return f"{base64.b64encode(unique_str.encode('utf-8')).decode('utf-8')}{random.randint(1111, 9999)}{math.floor(time.time())}"
 
 pwd_cxt = CryptContext(schemes=["bcrypt"], deprecated="auto")
 class Hash():
@@ -26,6 +33,7 @@ class Hash():
 
 import smtplib
 from email.mime.text import MIMEText
+
 class BaseEmail():
     def sendMail(self, recipient_email, subject, message):
         sender_email = os.getenv('MAIL_USERNAME')

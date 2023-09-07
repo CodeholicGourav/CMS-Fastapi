@@ -50,12 +50,20 @@ def create_new_password(
 ): return controller.create_new_password(request, db)
 
 
-@frontendUserRoutes.post('/update-profile', response_model=schema.BaseUser, status_code=status.HTTP_201_CREATED) #Update profile
+@frontendUserRoutes.post('/update-profile', response_model=schema.BaseUser, status_code=status.HTTP_200_OK) #Update profile
 def update_profile(    
     data: schema.UpdateProfile,
     db : Session = Depends(get_db), 
     current_user: model.FrontendUser = Depends(authenticate_token),
 ): return controller.updateProfile(data, current_user, db)
+
+
+@frontendUserRoutes.post('/update-profile-photo', status_code=status.HTTP_200_OK) #Update profile
+def update_profile(    
+    image: Annotated[UploadFile, File(description="A image file to use it as profile photo.")],
+    db : Session = Depends(get_db), 
+    current_user: model.FrontendUser = Depends(authenticate_token),
+): return controller.updateProfilePhoto(image, current_user, db)
 
 
 @frontendUserRoutes.get('/subscriptions', response_model=List[schema.BaseSubscription], status_code=status.HTTP_200_OK) #Read all subscriptions

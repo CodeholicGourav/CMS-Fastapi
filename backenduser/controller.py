@@ -1,9 +1,8 @@
 from sqlalchemy.orm import Session
-from dependencies import Hash, BackendEmail, generate_token, CustomValidations, TOKEN_LIMIT, TOKEN_VALIDITY
+from dependencies import Hash, BackendEmail, generate_token, generate_uuid, CustomValidations, TOKEN_LIMIT, TOKEN_VALIDITY
 from . import schema, model
 from datetime import datetime, timedelta
-from fastapi import HTTPException,status
-from dateutil.relativedelta import relativedelta
+from fastapi import status
 import getpass
 import secrets
 
@@ -68,6 +67,7 @@ def create_user(user: schema.RegisterUser, db: Session):
         )
 
     new_user = model.BackendUser(
+        uuid=generate_uuid(user.username),
         username=user.username,
         email=user.email,
         role_id=role.id,
@@ -91,6 +91,7 @@ def create_user(user: schema.RegisterUser, db: Session):
 
 
 def createsuperuser(db: Session):
+    """ Create a superuser account from command line. """
     superuser = db.query(model.BackendUser).filter(model.BackendUser.id==0).first()
 
     if superuser:
@@ -118,6 +119,7 @@ def createsuperuser(db: Session):
 
     superuser = model.BackendUser(
         id=0,
+        uuid=generate_uuid(username),
         username=username,
         email=email,
         password=Hash.bcrypt(password),
@@ -134,7 +136,6 @@ def createsuperuser(db: Session):
 
     print("Superuser account created successfully.")
     return True
-
 
 
 def updateUserRole(data: schema.UpdateUser ,  db: Session):
@@ -375,7 +376,8 @@ def get_roles_list(db: Session):
 
 def add_role(request: schema.CreateRole, user: model.BackendToken, db : Session):
     """ Create a new role """
-    role = db.query(model.BackendRole).filter(model.BackendRole.role==request.role).filter_by()
+    role = db.query(model.BackendRole).filter_by(role=request.role).first()
+    print(role)
     if role :
         CustomValidations.customError(
             type="already_exist", 
@@ -386,6 +388,7 @@ def add_role(request: schema.CreateRole, user: model.BackendToken, db : Session)
         )
     
     new_role = model.BackendRole(
+        ruid=generate_uuid(request.role),
         role = request.role,
         created_by = user.id
     )
@@ -454,6 +457,7 @@ def add_subscription(data: schema.CreateSubscription, current_user: model.Backen
         )
     
     subscription = model.Subscription(
+        suid=generate_uuid(data.name),
         name = data.name,
         description = data.description,
         price = data.price,

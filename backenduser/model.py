@@ -1,9 +1,7 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Float, JSON
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Float
 from sqlalchemy.orm import relationship
 from database import Base, SessionLocal
 from datetime import datetime
-import uuid as uuid_lib
 
 
 class BackendUser(Base):
@@ -16,7 +14,6 @@ class BackendUser(Base):
     )
     uuid = Column(
         String(50), 
-        default=str(uuid_lib.uuid4()), 
         unique=True, 
         nullable=False,
         index=True
@@ -81,7 +78,7 @@ class BackendRole(Base):
     ruid = Column(
         String(50), 
         index=True,
-        default=str(uuid_lib.uuid4()),
+        unique=True, 
     )
     role = Column(
         String(50),
@@ -172,11 +169,6 @@ def create_permissions():
     finally:
         db.close()
 
-    
-
-    
-    
-
 
 class BackendRolePermission(Base):
     __tablename__ = 'backendrolepermissions'
@@ -242,7 +234,7 @@ class Subscription(Base):
     suid = Column(
         String(50), 
         index=True,
-        default=str(uuid_lib.uuid4()),
+        unique=True, 
     )
     name = Column(
         String(50), 

@@ -1,9 +1,7 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime
 from sqlalchemy.orm import relationship
 from database import Base, SessionLocal
 from datetime import datetime
-import uuid as uuid_lib
 from pathlib import Path
 import csv
 
@@ -18,7 +16,6 @@ class FrontendUser(Base):
     )
     uuid = Column(
         String(50), 
-        default=str(uuid_lib.uuid4()), 
         unique=True, 
         nullable=False,
         index=True

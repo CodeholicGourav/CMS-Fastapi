@@ -1,8 +1,8 @@
 from sqlalchemy.orm import Session
-from dependencies import Hash, FrontendEmail, generate_token, TOKEN_LIMIT, TOKEN_VALIDITY, CustomValidations
+from dependencies import Hash, FrontendEmail, generate_token, generate_uuid, TOKEN_LIMIT, TOKEN_VALIDITY, CustomValidations
 from . import schema, model
 from datetime import datetime, timedelta
-from fastapi import status
+from fastapi import status, UploadFile
 from backenduser import controller as backendusercontroller
 
 
@@ -34,6 +34,7 @@ def register_user(data: schema.RegisterUser, db: Session):
             )
         
     new_user = model.FrontendUser(
+        uuid=generate_uuid(data.username),
         username=data.username,
         email=data.email,
         password=Hash.bcrypt(data.password),
@@ -93,6 +94,10 @@ def userDetails(user_id: str, db: Session):
             ctx={"user": "exist"}
         )
     return user
+
+
+def updateProfilePhoto(image: UploadFile, user: model.FrontendUser, db: Session):
+    return {"filename": image.filename}
 
 
 def updateUser(data: schema.UpdateUser, db: Session):
