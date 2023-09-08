@@ -180,3 +180,4 @@ async def update_user_details(
     current_user = Depends(authenticate_token),
     permissions = Depends(check_permission(["update_user"])),
 ): return controller.updateBackendUser(data, db)
+

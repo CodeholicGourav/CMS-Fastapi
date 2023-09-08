@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Float, Text
 from sqlalchemy.orm import relationship
 from database import Base, SessionLocal
 from datetime import datetime
@@ -63,15 +63,17 @@ class FrontendUser(Base):
         default="en"
     )
     timezone = Column(
-        String(10),
-        default="Asia/Kolkata"
+        Integer,
+        ForeignKey("timezones.id"),
+        default=1
     )
     active_plan = Column(
-        String,
+        Integer,
+        ForeignKey("subscriptions.id"),
         nullable=True
     )
     profile_photo = Column(
-        String,
+        String(50),
         nullable=True
     )
     social_token = Column(
@@ -79,7 +81,7 @@ class FrontendUser(Base):
         nullable=True
     )
     social_platform = Column(
-        String,
+        String(10),
         nullable=True
     )
     is_active = Column(
@@ -175,4 +177,41 @@ def create_timezones():
         raise e
     finally:
         db.close()
+
+
+class Order(Base):
+    __tablename__ = 'subscription_orders'
+
+    id = Column(
+        Integer,
+        primary_key=True, 
+        index=True
+    )
+    ouid = Column(
+        String(50), 
+        unique=True, 
+        nullable=False,
+        index=True
+    )
+    user_id = Column(
+        Integer, 
+        ForeignKey("frontendusers.id")
+    )
+    subscription_id = Column(
+        Integer,
+        ForeignKey("subsriptions.id")
+    )
+    order_date = Column(
+        DateTime, 
+        default=datetime.utcnow
+    )
+    total_amount = Column(
+        Float
+    )
+    status = Column(
+        String(50)
+    )
+    shipping_address = Column(
+        Text
+    )
 

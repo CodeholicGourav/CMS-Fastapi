@@ -30,10 +30,8 @@ class BasePermission(BaseModel):
     type :int
     codename : str
 
-
 class permission(BaseModel):
     permission : str
-
 
 class RolePermissions(BaseModel):
     permission : BasePermission
@@ -51,7 +49,6 @@ class ShowRole(BaseModel):
 
 class ShowRoleName(BaseModel):
     role : str
-
 
 class BaseUser(BaseModel):
     uuid : str
@@ -105,6 +102,7 @@ class ForgotPassword(BaseModel):
     @validator("password")
     def _password(cls, value):
         return CustomValidations.validate_password( value)
+
 
 
 class CreateSubscription(BaseModel):

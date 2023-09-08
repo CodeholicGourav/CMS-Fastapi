@@ -377,7 +377,6 @@ def get_roles_list(db: Session):
 def add_role(request: schema.CreateRole, user: model.BackendToken, db : Session):
     """ Create a new role """
     role = db.query(model.BackendRole).filter_by(role=request.role).first()
-    print(role)
     if role :
         CustomValidations.customError(
             type="already_exist", 
@@ -501,3 +500,7 @@ def frontenduserlist(limit: int, offset: int, db: Session):
 
 def updateBackendUser(data, db: Session):
     return frontendUserController.updateUser(data, db)
+
+
+def create_order(data, db: Session):
+    pass

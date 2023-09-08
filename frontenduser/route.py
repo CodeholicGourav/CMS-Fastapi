@@ -79,3 +79,11 @@ def all_subscriptions(
 def all_timezones( 
     db : Session = Depends(get_db), 
 ): return controller.timezonesList(db)
+
+
+@frontendUserRoutes.get('/create-order', response_model=schema.AddOrder, status_code=status.HTTP_200_OK) #Read all subscriptions
+def create_order(
+    data : Optional[int]=0, 
+    db : Session = Depends(get_db), 
+    current_user: model.FrontendUser = Depends(authenticate_token),
+): return controller.create_order(data, db)

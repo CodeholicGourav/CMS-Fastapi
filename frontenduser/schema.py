@@ -105,3 +105,7 @@ class TimeZones(BaseModel):
     timezone_name : str
     code : str
     time_difference : str
+
+
+class AddOrder(BaseModel):
+    ouid : str

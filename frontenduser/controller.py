@@ -361,3 +361,7 @@ def all_subscription_plans(limit: int, offset: int, db: Session):
 
 def timezonesList(db: Session):
     return db.query(model.Timezone).all()
+
+
+def create_order(data, db:Session):
+    pass
