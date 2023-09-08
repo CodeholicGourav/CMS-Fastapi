@@ -63,9 +63,9 @@ class FrontendUser(Base):
         default="en"
     )
     timezone = Column(
-        Integer,
-        ForeignKey("timezones.id"),
-        default=1
+        String(10),
+        default="Asia/Kolkata",
+        comment = "Should be a valid codename from table `timezones`",
     )
     active_plan = Column(
         Integer,
