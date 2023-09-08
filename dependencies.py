@@ -141,3 +141,6 @@ TOKEN_VALIDITY = 72
 
 # Maximum number of tokens for single user
 TOKEN_LIMIT = 5
+
+# Conversion api endpoint
+CONVERSION_URL = "https://v6.exchangerate-api.com/v6/3a1bbc03599e950fa56cda33"

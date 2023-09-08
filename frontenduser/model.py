@@ -39,10 +39,10 @@ class FrontendUser(Base):
         index=True
     )
     password = Column(
-        String, 
+        String(255), 
     )
     verification_token = Column(
-        String, 
+        String(255), 
         nullable=True,
         unique=True
     )
@@ -51,7 +51,7 @@ class FrontendUser(Base):
         nullable=True
     )
     storage_token = Column(
-        String,
+        Text,
         nullable=True
     )
     storage_platform = Column(
@@ -77,7 +77,7 @@ class FrontendUser(Base):
         nullable=True
     )
     social_token = Column(
-        String,
+        Text,
         nullable=True
     )
     social_platform = Column(
@@ -111,7 +111,7 @@ class FrontendToken(Base):
         index=True
     )
     token = Column(
-        String, 
+        String(255), 
         unique=True, 
         index=True,
         nullable=False
@@ -197,21 +197,37 @@ class Order(Base):
         Integer, 
         ForeignKey("frontendusers.id")
     )
-    subscription_id = Column(
-        Integer,
-        ForeignKey("subsriptions.id")
-    )
-    order_date = Column(
-        DateTime, 
-        default=datetime.utcnow
-    )
     total_amount = Column(
+        Float
+    )
+    final_price = Column(
+        Float
+    )
+    currency = Column(
+        String(50)
+    )
+    conversion_rate = Column(
+        Float
+    )
+    coupon_id = Column(
+        Integer
+    )
+    coupon_amount = Column(
         Float
     )
     status = Column(
         String(50)
     )
-    shipping_address = Column(
+    billing_address = Column(
         Text
     )
+    created_at = Column(
+        DateTime, 
+        default=datetime.utcnow
+    )
+    updated_at = Column(
+        DateTime, 
+        default=datetime.utcnow
+    )
+    
 

@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Float
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Float, Text
 from sqlalchemy.orm import relationship
 from database import Base, SessionLocal
 from datetime import datetime
@@ -29,7 +29,7 @@ class BackendUser(Base):
         index=True
     )
     password = Column(
-        String, 
+        String(255), 
         nullable=False,
     )
     role_id = Column(
@@ -38,7 +38,7 @@ class BackendUser(Base):
         nullable=True
     )
     verification_token = Column(
-        String, 
+        String(255), 
         nullable=True,
         unique=True
     )
@@ -202,7 +202,7 @@ class BackendToken(Base):
         index=True
     )
     token = Column(
-        String, 
+        String(255), 
         unique=True, 
         index=True,
         nullable=False
@@ -243,7 +243,7 @@ class Subscription(Base):
         nullable=False
     )
     description = Column(
-        String,
+        Text,
         nullable=True
     )
     price = Column(
