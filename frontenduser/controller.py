@@ -227,7 +227,7 @@ def delete_token(user: model.FrontendUser, db: Session):
 def send_verification_mail(email: str, db: Session):
     """ sends a token in mail for forget password """
     user = db.query(model.FrontendUser).filter(
-        model.FrontendToken.email == email,
+        model.FrontendUser.email == email,
         model.FrontendUser.is_deleted == False
     ).first()
     if not user:
