@@ -300,8 +300,8 @@ def create_new_password(request: schema.ForgotPassword, db: Session):
     return user
 
 
-def updateProfile(request: schema.UpdateProfile , profile_photo: UploadFile | None, user: model.FrontendUser, db: Session):
-    """ if request.username:
+def updateProfile(request: schema.UpdateProfile, user: model.FrontendUser, db: Session):
+    if request.username:
         existing_user = db.query(model.FrontendUser).filter_by(username = request.username).first()
         if existing_user:
             CustomValidations.customError(
@@ -351,8 +351,8 @@ def updateProfile(request: schema.UpdateProfile , profile_photo: UploadFile | No
 
     db.add(user)
     db.commit()
-    db.refresh(user) """
-    return [profile_photo.filename, request]
+    db.refresh(user)
+    return user
 
 
 def all_subscription_plans(limit: int, offset: int, db: Session):

@@ -53,10 +53,9 @@ def create_new_password(
 @frontendUserRoutes.post('/update-profile', response_model=schema.BaseUser, status_code=status.HTTP_200_OK) #Update profile
 def update_profile(    
     data: schema.UpdateProfile,
-    profile_photo: Annotated[UploadFile, File(description="A image file to use it as profile photo.")] = None,
     db : Session = Depends(get_db), 
     current_user: model.FrontendUser = Depends(authenticate_token),
-): return controller.updateProfile(data, profile_photo, current_user, db)
+): return controller.updateProfile(data, current_user, db)
 
 
 @frontendUserRoutes.post('/update-profile-photo', status_code=status.HTTP_200_OK) #Update profile
