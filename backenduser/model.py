@@ -238,15 +238,15 @@ class Subscription(Base):
     )
     name = Column(
         String(50), 
-        unique=True, 
-        index=True,
-        nullable=False
     )
     description = Column(
         Text,
         nullable=True
     )
     price = Column(
+        Float
+    )
+    sale_price = Column(
         Float
     )
     validity = Column(
@@ -267,5 +267,44 @@ class Subscription(Base):
     )
 
     creator = relationship("BackendUser", back_populates="subscriptions")
-    
+
+
+class Feature(Base):
+    __tablename__ = 'features'
+
+    id = Column(
+        Integer,
+        primary_key=True
+    )
+    feature_type = Column(
+        String(255)
+    )
+    feature_code = Column(
+        String(50)
+    )
+
+
+class FeaturePlan(Base):
+    __tablename__ = 'featureplans'
+
+    id = Column(
+        Integer,
+        primary_key=True
+    )
+    plan_id = Column(
+        Integer,
+        ForeignKey("plans.id")
+    )
+    feature_id = Column(
+        Integer,
+        ForeignKey("features.id")
+    )
+    quantity = Column(
+        Integer
+    )
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow
+    )
+
 

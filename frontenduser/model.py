@@ -47,7 +47,7 @@ class FrontendUser(Base):
         unique=True
     )
     email_verified_at = Column(
-        DateTime, 
+        DateTime(255), 
         nullable=True
     )
     storage_token = Column(
@@ -180,18 +180,17 @@ def create_timezones():
 
 
 class Order(Base):
-    __tablename__ = 'subscription_orders'
-
+    __tablename__ = 'orders'
+     
     id = Column(
-        Integer,
-        primary_key=True, 
+        Integer, 
+        primary_key=True,
         index=True
     )
     ouid = Column(
         String(50), 
+        index=True,
         unique=True, 
-        nullable=False,
-        index=True
     )
     user_id = Column(
         Integer, 
@@ -200,7 +199,7 @@ class Order(Base):
     total_amount = Column(
         Float
     )
-    final_price = Column(
+    final_amount = Column(
         Float
     )
     currency = Column(
@@ -209,14 +208,18 @@ class Order(Base):
     conversion_rate = Column(
         Float
     )
-    coupon_id = Column(
-        Integer
-    )
     coupon_amount = Column(
         Float
     )
-    status = Column(
+    cuoupon_code = Column(
         String(50)
+    )
+    coupon_id = Column(
+        Integer,
+        ForeignKey("coupons.id")
+    )
+    status = Column(
+        Boolean
     )
     billing_address = Column(
         Text

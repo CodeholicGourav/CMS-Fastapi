@@ -1,9 +1,11 @@
 from sqlalchemy.orm import Session
-from dependencies import Hash, FrontendEmail, generate_token, generate_uuid, TOKEN_LIMIT, TOKEN_VALIDITY, CustomValidations
+from dependencies import Hash, FrontendEmail, generate_token, generate_uuid, TOKEN_LIMIT, TOKEN_VALIDITY, CustomValidations, allowed_file, MAX_FILE_SIZE_BYTES, ALLOWED_EXTENSIONS
 from . import schema, model
 from datetime import datetime, timedelta
 from fastapi import status, UploadFile
 from backenduser import controller as backendusercontroller
+import time
+import math
 
 
 def register_user(data: schema.RegisterUser, db: Session):
@@ -96,8 +98,39 @@ def userDetails(user_id: str, db: Session):
     return user
 
 
-def updateProfilePhoto(image: UploadFile, user: model.FrontendUser, db: Session):
-    return {"filename": image.filename}
+def updateProfilePhoto(file: UploadFile, user: model.FrontendUser, db: Session):
+
+    # Check if the file is an allowed image type
+    if not allowed_file(file.filename):
+        CustomValidations.customError(
+            type="invalid", 
+            loc= "image", 
+            msg= f"Allowed extensions are {ALLOWED_EXTENSIONS}", 
+            inp= file.filename,
+            ctx={"image": "invalid type"}
+        )
+
+    # Check file size
+    print(file.size)
+    print(MAX_FILE_SIZE_BYTES)
+    if file.size > MAX_FILE_SIZE_BYTES:
+        CustomValidations.customError(
+            type="invalid", 
+            loc= "image", 
+            msg= f"Maximum image size should be {MAX_FILE_SIZE_BYTES} bytes" , 
+            inp= f"{file.size} bytes",
+            ctx={"image": "Big size"}
+        )
+
+    # Get the file extension
+    file_extension = file.filename.split(".")[-1]
+    unique_filename = f"{math.floor(time.time())}_image.{file_extension}"
+    # Save the uploaded file to the uploads folder
+    with open(f"uploads/{unique_filename}", "wb") as image_file:
+        image_file.write(file.file.read())
+
+    user.profile_photo = unique_filename
+    db.commit()
 
 
 def updateUser(data: schema.UpdateUser, db: Session):

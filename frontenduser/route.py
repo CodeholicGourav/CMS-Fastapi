@@ -3,7 +3,7 @@ from typing import List, Optional, Annotated
 from sqlalchemy.orm import Session
 from database import get_db
 from . import controller, model, schema
-# from backenduser.middleware import authenticate_token, check_permission
+from pydantic import BaseModel
 from .middleware import authenticate_token
 
 frontendUserRoutes = APIRouter()
@@ -59,7 +59,7 @@ def update_profile(
 
 
 @frontendUserRoutes.post('/update-profile-photo', status_code=status.HTTP_200_OK) #Update profile
-def update_profile(    
+def update_profile_photo(    
     image: Annotated[UploadFile, File(description="A image file to use it as profile photo.")],
     db : Session = Depends(get_db), 
     current_user: model.FrontendUser = Depends(authenticate_token),
@@ -80,10 +80,3 @@ def all_timezones(
     db : Session = Depends(get_db), 
 ): return controller.timezonesList(db)
 
-
-@frontendUserRoutes.get('/create-order', response_model=schema.AddOrder, status_code=status.HTTP_200_OK) #Read all subscriptions
-def create_order(
-    data : Optional[int]=0, 
-    db : Session = Depends(get_db), 
-    current_user: model.FrontendUser = Depends(authenticate_token),
-): return controller.create_order(data, db)

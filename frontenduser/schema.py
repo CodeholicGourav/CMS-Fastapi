@@ -39,6 +39,10 @@ class UpdateProfile(BaseModel):
     social_token : Optional[str] = None
     social_platform : Optional[str] = None
 
+    @validator("username")
+    def username_valid(cls, value):
+        return CustomValidations.validate_username(value)
+
 
 class RegisterUser(BaseModel):
     email : EmailStr
