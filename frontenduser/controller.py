@@ -111,8 +111,6 @@ def updateProfilePhoto(file: UploadFile, user: model.FrontendUser, db: Session):
         )
 
     # Check file size
-    print(file.size)
-    print(MAX_FILE_SIZE_BYTES)
     if file.size > MAX_FILE_SIZE_BYTES:
         CustomValidations.customError(
             type="invalid", 
@@ -122,15 +120,20 @@ def updateProfilePhoto(file: UploadFile, user: model.FrontendUser, db: Session):
             ctx={"image": "Big size"}
         )
 
-    # Get the file extension
     file_extension = file.filename.split(".")[-1]
-    unique_filename = f"{math.floor(time.time())}_image.{file_extension}"
-    # Save the uploaded file to the uploads folder
+    
+    if user.profile_photo:
+        unique_filename = user.profile_photo
+    else:
+        unique_filename = f"{math.floor(time.time())}_{user.username}.{file_extension}"
+
     with open(f"uploads/{unique_filename}", "wb") as image_file:
         image_file.write(file.file.read())
 
     user.profile_photo = unique_filename
     db.commit()
+    db.refresh(user)
+    return user
 
 
 def updateUser(data: schema.UpdateUser, db: Session):
@@ -260,7 +263,7 @@ def delete_token(user: model.FrontendUser, db: Session):
 def send_verification_mail(email: str, db: Session):
     """ sends a token in mail for forget password """
     user = db.query(model.FrontendUser).filter(
-        model.FrontendUser.email == email,
+        model.FrontendToken.email == email,
         model.FrontendUser.is_deleted == False
     ).first()
     if not user:
@@ -346,15 +349,6 @@ def updateProfile(request: schema.UpdateProfile, user: model.FrontendUser, db: S
             )
         user.username = request.username
 
-    if request.first_name :
-        user.first_name = request.first_name
-
-    if request.last_name :
-        user.last_name = request.last_name
-
-    if request.language :
-        user.language = request.language
-
     if request.timezone :
         exist_timezone = db.query(model.Timezone).filter_by(code=request.timezone).first()
         if not exist_timezone:
@@ -367,8 +361,14 @@ def updateProfile(request: schema.UpdateProfile, user: model.FrontendUser, db: S
             )
         user.timezone = request.timezone
 
-    if request.profile_photo :
-        user.profile_photo = request.profile_photo
+    if request.first_name :
+        user.first_name = request.first_name
+
+    if request.last_name :
+        user.last_name = request.last_name
+
+    if request.language :
+        user.language = request.language
 
     if request.storage_token :
         user.storage_token = request.storage_token
@@ -394,7 +394,3 @@ def all_subscription_plans(limit: int, offset: int, db: Session):
 
 def timezonesList(db: Session):
     return db.query(model.Timezone).all()
-
-
-def create_order(data, db:Session):
-    pass

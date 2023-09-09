@@ -1,10 +1,10 @@
-from fastapi import APIRouter, status, Query, Depends, Path, UploadFile, File
+from fastapi import APIRouter, status, Query, Depends, UploadFile, File
 from typing import List, Optional, Annotated
 from sqlalchemy.orm import Session
 from database import get_db
 from . import controller, model, schema
-from pydantic import BaseModel
 from .middleware import authenticate_token
+from dependencies import ALLOWED_EXTENSIONS
 
 frontendUserRoutes = APIRouter()
 
@@ -58,9 +58,9 @@ def update_profile(
 ): return controller.updateProfile(data, current_user, db)
 
 
-@frontendUserRoutes.post('/update-profile-photo', status_code=status.HTTP_200_OK) #Update profile
+@frontendUserRoutes.post('/update-profile-photo', response_model=schema.BaseUser, status_code=status.HTTP_200_OK) #Update profile
 def update_profile_photo(    
-    image: Annotated[UploadFile, File(description="A image file to use it as profile photo.")],
+    image: Annotated[UploadFile, File(description=f"A image file to use it as profile photo. Allowed extensions are {ALLOWED_EXTENSIONS}")],
     db : Session = Depends(get_db), 
     current_user: model.FrontendUser = Depends(authenticate_token),
 ): return controller.updateProfilePhoto(image, current_user, db)

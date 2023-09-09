@@ -33,7 +33,6 @@ class UpdateProfile(BaseModel):
     last_name : Optional[str] = None
     language : Optional[str] = None
     timezone : Optional[str] = None
-    profile_photo : Optional[str] = None
     storage_token : Optional[str] = None
     storage_platform : Optional[str] = None
     social_token : Optional[str] = None

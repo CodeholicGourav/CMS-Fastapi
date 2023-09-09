@@ -145,7 +145,7 @@ TOKEN_LIMIT = 5
 # Conversion api endpoint
 CONVERSION_URL = "https://v6.exchangerate-api.com/v6/3a1bbc03599e950fa56cda33"
 # Define allowed image file extensions and size limit
-ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif"}
+ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "gif"}
 MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024  # 5 MB
 
 def allowed_file(filename):
