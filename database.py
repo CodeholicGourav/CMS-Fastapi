@@ -9,13 +9,15 @@ from sqlalchemy.orm import sessionmaker
 env_path = Path(__file__).parent / ".env"
 load_dotenv(dotenv_path=env_path)
 
-engine = create_engine(os.getenv("DB_URL"))
+DATABASE_URL = os.getenv("DB_URL")
+
+engine = create_engine(DATABASE_URL)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
 
-@contextmanager
+# @contextmanager
 def get_db():
     """
     Returns a database session object.

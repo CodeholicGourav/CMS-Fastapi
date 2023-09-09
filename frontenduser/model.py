@@ -111,6 +111,9 @@ class FrontendUser(Base):
         default=datetime.utcnow
     )
 
+    # Relationships
+    # orders = relationship("FrontendUser", back_populates="user")
+
 
 class FrontendToken(Base):
     """
@@ -264,7 +267,7 @@ class Order(Base):
     )
 
     # Relationships
-    user = relationship("FrontendUser", back_populates="orders")
-    coupon = relationship("Coupon", back_populates="orders")
+    # user = relationship("FrontendUser", back_populates="orders", foreign_keys=user_id)
+    # coupon = relationship("Coupon", back_populates="orders", foreign_keys=coupon_id)
     
 

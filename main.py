@@ -22,7 +22,7 @@ def run():
     uvicorn.run(app, host=host, port=port, log_level="info")
 
 
-def migrate_tables(engine: Optional[str] = None) -> None:
+def migrate_tables() -> None:
     """
     Migrates all tables in the database and populates them with initial data.
 
