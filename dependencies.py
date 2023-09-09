@@ -141,3 +141,10 @@ TOKEN_VALIDITY = 72
 
 # Maximum number of tokens for single user
 TOKEN_LIMIT = 5
+
+# Define allowed image file extensions and size limit
+ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif"}
+MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024  # 5 MB
+
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS

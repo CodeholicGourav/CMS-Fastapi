@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Float, Text
 from sqlalchemy.orm import relationship
 from database import Base, SessionLocal
 from datetime import datetime
@@ -39,19 +39,19 @@ class FrontendUser(Base):
         index=True
     )
     password = Column(
-        String, 
+        String(255), 
     )
     verification_token = Column(
-        String, 
+        String(255), 
         nullable=True,
         unique=True
     )
     email_verified_at = Column(
-        DateTime, 
+        DateTime(255), 
         nullable=True
     )
     storage_token = Column(
-        String,
+        Text,
         nullable=True
     )
     storage_platform = Column(
@@ -67,19 +67,20 @@ class FrontendUser(Base):
         default="Asia/Kolkata"
     )
     active_plan = Column(
-        String,
+        Integer,
+        ForeignKey("subscriptions.id"),
         nullable=True
     )
     profile_photo = Column(
-        String,
+        String(50),
         nullable=True
     )
     social_token = Column(
-        String,
+        Text,
         nullable=True
     )
     social_platform = Column(
-        String,
+        String(10),
         nullable=True
     )
     is_active = Column(
@@ -109,7 +110,7 @@ class FrontendToken(Base):
         index=True
     )
     token = Column(
-        String, 
+        String(255), 
         unique=True, 
         index=True,
         nullable=False
@@ -175,4 +176,57 @@ def create_timezones():
         raise e
     finally:
         db.close()
+
+
+class Order(Base):
+    __tablename__ = 'subscriptions'
+     
+    id = Column(
+        Integer, 
+        primary_key=True,
+        index=True
+    )
+    ouid = Column(
+        String(50), 
+        index=True,
+        unique=True, 
+    )
+    user_id = Column(
+        Integer, 
+        ForeignKey("frontendusers.id")
+    )
+    total_amount = Column(
+        Float
+    )
+    final_amount = Column(
+        Float
+    )
+    currency = Column(
+        String(50)
+    )
+    conversion_rate = Column(
+        Float
+    )
+    coupon_amount = Column(
+        Float
+    )
+    cuoupon_code = Column(
+        String(50)
+    )
+    coupon_id = Column(
+        Integer,
+        ForeignKey("coupons.id")
+    )
+    status = Column(
+        Boolean
+    )
+    billing_address = Column(
+        Text
+    )
+    created_at = Column(
+        Float
+    )
+    updated_at = Column(
+        Float
+    )
 

@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Float
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Float, Text
 from sqlalchemy.orm import relationship
 from database import Base, SessionLocal
 from datetime import datetime
@@ -29,7 +29,7 @@ class BackendUser(Base):
         index=True
     )
     password = Column(
-        String, 
+        String(255), 
         nullable=False,
     )
     role_id = Column(
@@ -38,7 +38,7 @@ class BackendUser(Base):
         nullable=True
     )
     verification_token = Column(
-        String, 
+        String(255), 
         nullable=True,
         unique=True
     )
@@ -202,7 +202,7 @@ class BackendToken(Base):
         index=True
     )
     token = Column(
-        String, 
+        String(255), 
         unique=True, 
         index=True,
         nullable=False
@@ -238,15 +238,15 @@ class Subscription(Base):
     )
     name = Column(
         String(50), 
-        unique=True, 
-        index=True,
-        nullable=False
     )
     description = Column(
-        String,
+        Text,
         nullable=True
     )
     price = Column(
+        Float
+    )
+    sale_price = Column(
         Float
     )
     validity = Column(
@@ -267,5 +267,38 @@ class Subscription(Base):
     )
 
     creator = relationship("BackendUser", back_populates="subscriptions")
-    
+
+
+class Feature(Base):
+    __tablename__ = 'features'
+
+    id = Column(
+        Integer,
+        primary_key=True
+    )
+    feature_type = Column(
+        String(255)
+    )
+    feature_code = Column(
+        String(50)
+    )
+
+
+class FeaturePlan(Base):
+    __tablename__ = 'featureplans'
+
+    plan_id = Column(
+        Integer
+    )
+    feature_id = Column(
+        Integer
+    )
+    quantity = Column(
+        Integer
+    )
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow
+    )
+
 
