@@ -1,10 +1,12 @@
-from fastapi import APIRouter, status, Query, Depends, Path
-from typing import List, Optional, Annotated
+from typing import Annotated, List, Optional
+
+from fastapi import APIRouter, Depends, Path, Query, status
 from sqlalchemy.orm import Session
-from database import get_db
-from . import controller, model, schema
-from frontenduser.model import FrontendUser
+
 from backenduser.middleware import authenticate_token, check_permission
+from database import get_db
+
+from . import controller, model, schema
 
 backendUserRoutes = APIRouter()
 

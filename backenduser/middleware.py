@@ -1,34 +1,79 @@
-from typing import Annotated
-from fastapi import Header, HTTPException, status
-from backenduser.model import BackendToken, BackendUser, BackendRolePermission
-from sqlalchemy.orm import Session
-from fastapi import Depends
-from database import get_db, SessionLocal
 from datetime import datetime
+from typing import Annotated
+
+from fastapi import Depends, Header, HTTPException, status
+from sqlalchemy.orm import Session
+
+from backenduser.model import BackendToken, BackendUser
+from database import get_db
+from dependencies import CustomValidations
 
 
-async def authenticate_token(authtoken: Annotated[str, Header()], db : Session = Depends(get_db)):
-    """ Check token from header and return details of current user """
-    user_token = db.query(BackendToken).filter(BackendToken.token==authtoken).first()
+async def authenticate_token(authtoken: Annotated[str, Header()], db: Session = Depends(get_db)) -> BackendUser:
+    """
+    Check the validity of the provided token and return the associated user.
+
+    Args:
+        authtoken (str): The token provided in the header of the request.
+        db (Session): The database session used to query the token and associated user.
+
+    Returns:
+        User: The user object associated with the provided token.
+
+    Raises:
+        HTTPException: If the token is invalid, expired, or associated with an inactive or deleted user.
+    """
+    user_token = db.query(BackendToken).filter_by(token = authtoken).first()
+
     if not user_token:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid auth token")
-    
+        CustomValidations.customError(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            type="Invalid",
+            loc="authtoken",
+            msg="Invalid auth token",
+            inp=authtoken,
+            ctx={"authtoken": "valid"}
+        )
+
     if not user_token.user or not user_token.user.is_active or user_token.user.is_deleted:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid auth token.")
 
-    if(datetime.now() > user_token.expire_at):
+    if datetime.datetime.now() > user_token.expire_at:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token is expired, try login again.")
-    
+
     return user_token.user
 
 
 def check_permission(codenames: list[str]):
-    """ Return function to check if user has permissions """
-    def has_permissions(authtoken: Annotated[str, Header()], db : Session = Depends(get_db)):
-        """ Check user permissions """
-        user_token = db.query(BackendToken).filter(BackendToken.token==authtoken).first()
-                
-        if not user_token.user:
+    """
+    Returns a function to check if a user has the required permissions.
+    
+    Args:
+        codenames (list[str]): A list of permission codenames that the user must have to pass the permission check.
+    
+    Returns:
+        function: A function that can be used as a dependency in FastAPI routes to check if a user has the required permissions.
+        
+    Raises:
+        HTTPException: If the user is not found or does not have the required permissions.
+    """
+    def has_permissions(authtoken: str = Header(), db: Session = Depends(get_db)) -> bool:
+        """
+        Checks if a user has the required permissions.
+        
+        Args:
+            authtoken (str): The authentication token of the user.
+            db (Session): The database session.
+        
+        Returns:
+            bool: True if the user has the required permissions, False otherwise.
+        
+        Raises:
+            HTTPException: If the user is not found or does not have the required permissions.
+        """
+        user_token = db.query(BackendToken).filter_by(token=authtoken).first()
+        
+        if not user_token or not user_token.user:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid auth token")
         
         if user_token.user.role.id == 0:
@@ -36,9 +81,9 @@ def check_permission(codenames: list[str]):
 
         user_permissions = user_token.user.role.permissions
         if not user_permissions:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Permisson not granted.")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Permission not granted.")
         
-        return all(element in codenames for element in user_permissions)
+        return all(permission in user_permissions for permission in codenames)
     
     return has_permissions
     

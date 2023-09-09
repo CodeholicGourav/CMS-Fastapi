@@ -1,12 +1,22 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Float, Text
-from sqlalchemy.orm import relationship
-from database import Base, SessionLocal
+import csv
 from datetime import datetime
 from pathlib import Path
-import csv
+
+from sqlalchemy import (
+    Boolean, Column, DateTime, Float, ForeignKey, Integer,String, Text
+)
+from sqlalchemy.orm import relationship
+
+from database import Base, SessionLocal
 
 
 class FrontendUser(Base):
+    """
+    The `FrontendUser` class represents a table in a database that stores information about frontend users.
+    It contains various fields to store user details such as name, email, password, and other optional information.
+    The class also defines relationships with other tables in the database.
+    """
+
     __tablename__ = 'frontendusers'
 
     id = Column(
@@ -103,6 +113,10 @@ class FrontendUser(Base):
 
 
 class FrontendToken(Base):
+    """
+    Represents a token for frontend users.
+    """
+     
     __tablename__ = 'frontendtokens'
 
     id = Column(
@@ -129,10 +143,16 @@ class FrontendToken(Base):
         default=datetime.utcnow
     )
 
+    # Relationships
     user = relationship('FrontendUser', foreign_keys=user_id)
 
 
 class Timezone(Base):
+    """
+    The `Timezone` class represents a table in a database that stores information about different timezones.
+    It inherits from the `Base` class, which is the base class for all SQLAlchemy models.
+    """
+     
     __tablename__ = 'timezones'
 
     id = Column(
@@ -152,7 +172,12 @@ class Timezone(Base):
     )
 
 def create_timezones():
-    print("creating timezone data...")
+    """
+    Reads data from a CSV file and inserts it into the Timezone table in the database.
+
+    :return: None
+    """
+    print("Creating timezone data...")
     csv_file_path = Path(__file__).parent.parent / "timezones.csv"
 
     try:
@@ -165,8 +190,8 @@ def create_timezones():
                 time_difference = row["Difference"]
 
                 timezone_entry = Timezone(
-                    timezone_name=name, 
-                    code=code, 
+                    timezone_name=name,
+                    code=code,
                     time_difference=time_difference
                 )
                 db.add(timezone_entry)
@@ -180,6 +205,11 @@ def create_timezones():
 
 
 class Order(Base):
+    """
+    Represents a table in a database that stores information about orders.
+    Inherits from the Base class, which is the base class for all SQLAlchemy models.
+    """
+
     __tablename__ = 'orders'
      
     id = Column(
@@ -232,5 +262,9 @@ class Order(Base):
         DateTime, 
         default=datetime.utcnow
     )
+
+    # Relationships
+    user = relationship("FrontendUser", back_populates="orders")
+    coupon = relationship("Coupon", back_populates="orders")
     
 

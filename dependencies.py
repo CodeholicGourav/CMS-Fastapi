@@ -4,12 +4,12 @@ import os
 import re
 import secrets
 from passlib.context import CryptContext
-from backenduser.model import BackendUser
 from fastapi import HTTPException,status
 import base64
 import random
 import time
 import math
+from pydantic import BaseModel
 
 
 env_path = Path(__file__).parent / ".env"
@@ -55,15 +55,19 @@ class BaseEmail():
             print(f"Failed to send email: {str(e)}")
             return False
 
+class ShowUser(BaseModel):
+    uuid : str
+    username : str
+    email : str
 
 class FrontendEmail(BaseEmail):
-    def sendEmailVerificationToken(self, user: BackendUser):
+    def sendEmailVerificationToken(self, user: ShowUser):
         subject = "Email Verification"
         verification_link = f"{os.getenv('SERVER_URL')}/{os.getenv('EMAIL_VERIFY_ENDPOINT')}?token={user.verification_token}"  # Include the verification token in the link
         message = MIMEText(f"Click the following link to verify your email: {verification_link}")
         return self.sendMail(user.email, subject, message)
     
-    def sendForgetPasswordToken(self, user: BackendUser):
+    def sendForgetPasswordToken(self, user: ShowUser):
         subject = "Reset password"
         verification_link = f"{os.getenv('SERVER_URL')}/{os.getenv('CREATE_PASSWORD_URL')}?token={user.verification_token}"  # Include the verification token in the link
         message = MIMEText(f"Click the following link to reset your password: {verification_link}")
@@ -71,13 +75,13 @@ class FrontendEmail(BaseEmail):
 
 
 class BackendEmail(BaseEmail):
-    def sendEmailVerificationToken(self, user: BackendUser):
+    def sendEmailVerificationToken(self, user: ShowUser):
         subject = "Email Verification"
         verification_link = f"{os.getenv('SERVER_URL')}/{os.getenv('EMAIL_VERIFY_ENDPOINT')}?token={user.verification_token}"  # Include the verification token in the link
         message = MIMEText(f"Click the following link to verify your email: {verification_link}")
         return self.sendMail(user.email, subject, message)
     
-    def sendForgetPasswordToken(self, user: BackendUser):
+    def sendForgetPasswordToken(self, user: ShowUser):
         subject = "Reset password"
         verification_link = f"{os.getenv('SERVER_URL')}/{os.getenv('CREATE_PASSWORD_URL')}?token={user.verification_token}"  # Include the verification token in the link
         message = MIMEText(f"Click the following link to reset your password: {verification_link}")
@@ -150,3 +154,22 @@ MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024  # 5 MB
 
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+predefined_permissions = [
+        {"permission": "Can create user", "type": 1, "codename": "create_user"},
+        {"permission": "Can read user", "type": 1, "codename": "read_user"},
+        {"permission": "Can update user", "type": 1, "codename": "update_user"},
+        {"permission": "Can delete user", "type": 1, "codename": "delete_user"},
+        {"permission": "Can create role", "type": 2, "codename": "create_role"},
+        {"permission": "Can read role", "type": 2, "codename": "read_role"},
+        {"permission": "Can update role", "type": 2, "codename": "update_role"},
+        {"permission": "Can delete role", "type": 2, "codename": "delete_role"},
+        {"permission": "Can create permission", "type": 3, "codename": "create_permission"},
+        {"permission": "Can read permission", "type": 3, "codename": "read_permission"},
+        {"permission": "Can update permission", "type": 3, "codename": "update_permission"},
+        {"permission": "Can delete permission", "type": 3, "codename": "delete_permission"},
+        {"permission": "Can create subscription", "type": 4, "codename": "create_subscription"},
+        {"permission": "Can read subscription", "type": 4, "codename": "read_subscription"},
+        {"permission": "Can delete subscription", "type": 4, "codename": "delete_subscription"}
+    ]

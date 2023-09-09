@@ -1,10 +1,15 @@
-from pydantic import BaseModel, constr, EmailStr, validator
-from typing import Optional, List
 from datetime import datetime
+from typing import List, Optional
+
+from pydantic import BaseModel, EmailStr, constr, validator
+
 from dependencies import CustomValidations
 
 
 class User(BaseModel):
+    """ 
+    The User class represents a user in the system.
+    """
     id : int
     uuid : str
     username : str

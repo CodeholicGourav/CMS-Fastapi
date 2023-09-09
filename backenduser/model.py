@@ -1,12 +1,20 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Float, Text
-from sqlalchemy.orm import relationship
-from database import Base, SessionLocal
+from typing import Dict, Union
 from datetime import datetime
+
+from sqlalchemy import (
+    Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Text
+)
+from sqlalchemy.orm import relationship
+
+from database import Base, SessionLocal
+from dependencies import predefined_permissions
 
 
 class BackendUser(Base):
+    """
+    The BackendUser class represents a table in the database that stores information about backend users.
+    """
     __tablename__ = 'backendusers'
-
     id = Column(
         Integer,
         primary_key=True, 
@@ -63,11 +71,16 @@ class BackendUser(Base):
         default=datetime.utcnow
     )
 
+    # Relationships
     role = relationship('BackendRole', foreign_keys=role_id)
-    subscriptions = relationship('Subscription', back_populates='creator') # subscriptions created by the user
+    subscriptions = relationship('Subscription', back_populates='creator')
 
 
 class BackendRole(Base):
+    """
+    Represents a table in the database that stores information about backend roles.
+    """
+
     __tablename__ = 'backendroles'
 
     id = Column(
@@ -101,6 +114,7 @@ class BackendRole(Base):
         default=datetime.utcnow
     )
 
+    # Relationships
     creator = relationship('BackendUser', foreign_keys=created_by)
     permissions = relationship('BackendRolePermission', back_populates='role')
 
@@ -129,42 +143,21 @@ class BackendPermission(Base):
     )
 
 
-def create_permissions():
-    predefined_permissions = [
-        {"permission": "Can create user", "type": 1, "codename": "create_user"},
-        {"permission": "Can read user", "type": 1, "codename": "read_user"},
-        {"permission": "Can update user", "type": 1, "codename": "update_user"},
-        {"permission": "Can delete user", "type": 1, "codename": "delete_user"},
+def create_permissions() -> Union[Dict[str, str], Dict[str, str]]:
+    """
+    Create predefined permissions in the database.
 
-        {"permission": "Can create role", "type": 2, "codename": "create_role"},
-        {"permission": "Can read role", "type": 2, "codename": "read_role"},
-        {"permission": "Can update role", "type": 2, "codename": "update_role"},
-        {"permission": "Can delete role", "type": 2, "codename": "delete_role"},
-
-        {"permission": "Can create permission", "type": 3, "codename": "create_permission"},
-        {"permission": "Can read permission", "type": 3, "codename": "read_permission"},
-        {"permission": "Can update permission", "type": 3, "codename": "update_permission"},
-        {"permission": "Can delete permission", "type": 3, "codename": "delete_permission"},
-
-        {"permission": "Can create subscription", "type": 4, "codename": "create_subscription"},
-        {"permission": "Can read subscription", "type": 4, "codename": "read_subscription"},
-        {"permission": "Can delete subscription", "type": 4, "codename": "delete_subscription"}
-    ]
-
+    Returns:
+        dict: A message indicating the success or failure of the operation.
+    """
     try:
         db = SessionLocal()
-        for permission in predefined_permissions:
-            new_permission = BackendPermission(**permission)
-            db.add(new_permission)
-
+        permissions = [BackendPermission(**permission) for permission in predefined_permissions]
+        db.add_all(permissions)
         db.commit()
-        db.close()
-        print("permissions created successfully")
-        return {"message": "permissions created successfully"}
-    
+        return {"message": "Permissions created successfully"}
     except Exception as e:
         db.rollback()
-        print(e)
         return {"error": str(e)}
     finally:
         db.close()
@@ -189,6 +182,7 @@ class BackendRolePermission(Base):
         nullable=False
     )
 
+    # Relationships
     role = relationship("BackendRole", foreign_keys=role_id)
     permission = relationship("BackendPermission", foreign_keys=permission_id)
 
@@ -220,6 +214,7 @@ class BackendToken(Base):
         default=datetime.utcnow
     )
 
+    # Relationships
     user = relationship('BackendUser', foreign_keys=user_id)
 
 
@@ -266,6 +261,7 @@ class Subscription(Base):
         default=datetime.utcnow
     )
 
+    # Relationships
     creator = relationship("BackendUser", back_populates="subscriptions")
 
 
@@ -284,16 +280,16 @@ class Feature(Base):
     )
 
 
-class FeaturePlan(Base):
-    __tablename__ = 'featureplans'
+class SubscriptionFeature(Base):
+    __tablename__ = 'subscription_features'
 
     id = Column(
         Integer,
         primary_key=True
     )
-    plan_id = Column(
+    subscription_id = Column(
         Integer,
-        ForeignKey("plans.id")
+        ForeignKey("subscriptions.id")
     )
     feature_id = Column(
         Integer,
@@ -308,3 +304,23 @@ class FeaturePlan(Base):
     )
 
 
+class Coupon(Base):
+    __tablename__ = 'coupons'
+
+    id = Column(
+        Integer,
+        primary_key=True
+    )
+    coupon_code = Column(
+        String(50),
+        unique=True
+    )
+    name = Column(
+        String(50)
+    )
+    percentage = Column(
+        Float
+    )
+    coupon_type = Column(
+        String(50)
+    )
