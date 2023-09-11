@@ -163,7 +163,7 @@ def delete_subscription(
 ): return controller.delete_subscription_plan(data, db)
 
 
-@backendUserRoutes.get("/get-all-frontend-users", response_model=schema.ListUsers, status_code=status.HTTP_200_OK) #Read users
+@backendUserRoutes.get("/get-all-frontend-users", response_model=schema.FrontenduserList, status_code=status.HTTP_200_OK) #Read users
 async def get_frontend_users_list(
     limit : Optional[int]=10, 
     offset : Optional[int]=0, 
@@ -173,7 +173,7 @@ async def get_frontend_users_list(
 ): return controller.frontenduserlist(limit, offset, db)
 
 
-@backendUserRoutes.get("/get-frontend-user/{user_id}", response_model=schema.BaseUser, status_code=status.HTTP_200_OK) #Read user
+@backendUserRoutes.get("/get-frontend-user/{user_id}", response_model=schema.FrontendBaseUser, status_code=status.HTTP_200_OK) #Read user
 async def get_frontend_user_details(
     user_id: Annotated[str, Path(title="The UUID of the user to get")],
     db : Session = Depends(get_db), 

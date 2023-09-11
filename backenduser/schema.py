@@ -161,3 +161,32 @@ class UpdateSubscription(BaseModel):
     suid : str
     is_deleted : bool
 
+
+class FrontendBaseUser(BaseModel):
+    uuid: str
+    email: str
+    username: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    language: Optional[str] = None
+    timezone: Optional[str] = None
+    profile_photo: Optional[str] = None
+    email_verified_at: Optional[datetime] = None
+    storage_token: Optional[str] = None
+    storage_platform: Optional[str] = None
+    active_plan: Optional[str] = None
+    social_token: Optional[str] = None
+    social_platform: Optional[str] = None
+    is_active: bool
+    is_deleted: bool
+    created_at: datetime
+    updated_at: datetime
+
+    def __str__(self):
+        return f"BaseUser(uuid={self.uuid}, email={self.email}, username={self.username}, is_active={self.is_active}, " \
+               f"is_deleted={self.is_deleted}, created_at={self.created_at}, updated_at={self.updated_at})"
+
+
+class FrontenduserList(BaseModel):
+    users: List[FrontendBaseUser]
+    total: int
