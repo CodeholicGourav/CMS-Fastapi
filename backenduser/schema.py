@@ -66,6 +66,9 @@ class BaseUser(BaseModel):
     created_at : datetime
     updated_at : datetime
 
+class ListUsers(BaseModel):
+    users: List[BaseUser]
+    total: int
 
 class RegisterUser(BaseModel):
     username: constr(min_length=6, max_length=30,)
@@ -82,10 +85,19 @@ class RegisterUser(BaseModel):
         return CustomValidations.validate_password(value)
 
 
+class SystemDetails(BaseModel):
+    ip_address: constr(max_length=30)
+    browser: constr(max_length=30)
+    system: constr(max_length=30)
+
+    def to_string(self):
+        return f"IP Address: {self.ip_address}, Browser: {self.browser}, System: {self.system}"
+
 class LoginUser(BaseModel):
     username_or_email: str
     password: str
-    
+    details: SystemDetails
+
 
 class UpdateUser(BaseModel):
     user_id: str
@@ -97,6 +109,7 @@ class UpdateUser(BaseModel):
 class ShowToken(BaseModel):
     token: str
     expire_at: datetime
+    details: str
     user: ShowUser
 
 

@@ -205,6 +205,10 @@ class BackendToken(Base):
         Integer, 
         ForeignKey("backendusers.id")
     )
+    details = Column(
+        String(255),
+        nullable=True
+    )
     created_at = Column(
         DateTime, 
         default=datetime.utcnow

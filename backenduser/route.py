@@ -15,17 +15,17 @@ backendUserRoutes = APIRouter()
 def register(
     data: schema.RegisterUser, 
     db: Session = Depends(get_db),
-    current_user: model.BackendUser = Depends(authenticate_token),
+    authToken: model.BackendToken = Depends(authenticate_token),
     have_permission: model.BackendUser = Depends(check_permission(["create_user"])),
 ): return controller.create_user(data, db)
 
 
-@backendUserRoutes.get("/get", response_model=List[schema.BaseUser], status_code=status.HTTP_200_OK) #Read users
+@backendUserRoutes.get("/get-all", response_model=schema.ListUsers, status_code=status.HTTP_200_OK) #Read users
 async def get_users_list(
     limit : Optional[int]=10, 
     offset : Optional[int]=0, 
     db : Session = Depends(get_db), 
-    current_user: model.BackendUser = Depends(authenticate_token),
+    authToken: model.BackendToken = Depends(authenticate_token),
     permissions: model.BackendUser = Depends(check_permission(["read_user"])),
 ): return controller.all_backend_users(limit, offset, db)
 
@@ -34,7 +34,7 @@ async def get_users_list(
 async def get_user_details(
     user_id: Annotated[str, Path(title="The UUID of the user to get")],
     db : Session = Depends(get_db), 
-    current_user: model.BackendUser = Depends(authenticate_token),
+    authToken: model.BackendToken = Depends(authenticate_token),
     permissions: model.BackendUser = Depends(check_permission(["read_user"])),
 ): return controller.userDetails(user_id, db)
 
@@ -43,7 +43,7 @@ async def get_user_details(
 async def update_user_details(
     data: schema.UpdateUser,
     db : Session = Depends(get_db), 
-    current_user: model.BackendUser = Depends(authenticate_token),
+    authToken: model.BackendToken = Depends(authenticate_token),
     permissions: model.BackendUser = Depends(check_permission(["update_user"])),
 ): return controller.updateUserRole(data, db)
 
@@ -63,11 +63,18 @@ def login(
 ): return controller.create_auth_token(request, db)
 
 
-@backendUserRoutes.delete("/logout", status_code=status.HTTP_204_NO_CONTENT, description="Logout from all devices.") #Delete login token
+@backendUserRoutes.delete("/logout", status_code=status.HTTP_204_NO_CONTENT) #Delete login token
 def logout(
     db: Session = Depends(get_db),
-    current_user: model.BackendUser = Depends(authenticate_token)
-): return controller.delete_token(current_user, db)
+    authToken: model.BackendToken = Depends(authenticate_token)
+): return controller.delete_token(authToken, db)
+
+
+@backendUserRoutes.delete("/logout-all", status_code=status.HTTP_204_NO_CONTENT, description="Logout from all devices.") #Delete all login token
+def logout_all(
+    db: Session = Depends(get_db),
+    authToken: model.BackendToken = Depends(authenticate_token)
+): return controller.delete_all_tokens(authToken, db)
 
 
 @backendUserRoutes.get("/send-token", status_code=status.HTTP_200_OK) #send forget password mail
@@ -88,7 +95,7 @@ def create_new_password(
 def create_permission(
     request : schema.BasePermission,
     db: Session = Depends(get_db),
-    current_user: model.BackendUser = Depends(authenticate_token),
+    authToken: model.BackendToken = Depends(authenticate_token),
     permissions: model.BackendUser = Depends(check_permission(["create_permission"])),
 ): return controller.create_permission(request, db)
 
@@ -96,7 +103,7 @@ def create_permission(
 @backendUserRoutes.get('/permissions', response_model=List[schema.BasePermission], status_code=status.HTTP_200_OK) #Read permissions
 def get_all_permissions(
     db: Session = Depends(get_db),
-    current_user: model.BackendUser = Depends(authenticate_token),
+    authToken: model.BackendToken = Depends(authenticate_token),
     permissions: model.BackendUser = Depends(check_permission(["read_permission"])),
 ): return db.query(model.BackendPermission).all()
 
@@ -105,15 +112,15 @@ def get_all_permissions(
 def create_new_roles(
     request : schema.CreateRole,
     db: Session = Depends(get_db),
-    current_user: model.BackendUser = Depends(authenticate_token),
+    authToken: model.BackendToken = Depends(authenticate_token),
     permissions: model.BackendUser = Depends(check_permission(["create_role"])),
-): return controller.add_role(request, current_user, db)
+): return controller.add_role(request, authToken.user, db)
 
 
 @backendUserRoutes.get('/roles', response_model=List[schema.ShowRole], status_code=status.HTTP_200_OK) #Read all roles
 def get_all_roles(
     db: Session = Depends(get_db),
-    current_user: model.BackendUser = Depends(authenticate_token),
+    authToken: model.BackendToken = Depends(authenticate_token),
     permissions: model.BackendUser = Depends(check_permission(["read_role"])),
 ): return db.query(model.BackendRole).filter(model.BackendRole.id!=0).all()
 
@@ -122,7 +129,7 @@ def get_all_roles(
 def assign_permission(
     request : schema.AssignPermissions,
     db: Session = Depends(get_db),
-    current_user: model.BackendUser = Depends(authenticate_token),
+    authToken: model.BackendToken = Depends(authenticate_token),
     permissions: model.BackendUser = Depends(check_permission(["update_role"])),
 ): return controller.assign_permissions(request, db)
 
@@ -131,10 +138,10 @@ def assign_permission(
 async def add_subscription(
     data: schema.CreateSubscription,
     db : Session = Depends(get_db),
-    current_user: model.BackendUser = Depends(authenticate_token),
+    authToken: model.BackendToken = Depends(authenticate_token),
     permissions: model.BackendUser = Depends(check_permission(["create_subscription"])),
 ): 
-    return controller.add_subscription(data, current_user, db)
+    return controller.add_subscription(data, authToken.user, db)
 
 
 @backendUserRoutes.get('/subscriptions', response_model=List[schema.BaseSubscription], status_code=status.HTTP_200_OK) #Read all subscriptions
@@ -142,7 +149,7 @@ def all_subscriptions(
     limit : Optional[int]=10, 
     offset : Optional[int]=0, 
     db : Session = Depends(get_db), 
-    current_user: model.BackendUser = Depends(authenticate_token),
+    authToken: model.BackendToken = Depends(authenticate_token),
     permissions: model.BackendUser = Depends(check_permission(["read_subscription"])),
 ): return controller.all_subscription_plans(limit, offset, db)
 
@@ -151,35 +158,35 @@ def all_subscriptions(
 def delete_subscription(
     data: schema.UpdateSubscription,
     db : Session = Depends(get_db), 
-    current_user: model.BackendUser = Depends(authenticate_token),
+    authToken: model.BackendToken = Depends(authenticate_token),
     permissions: model.BackendUser = Depends(check_permission(["update_subscription"])),
 ): return controller.delete_subscription_plan(data, db)
 
 
-@backendUserRoutes.get("/get-frontend-users", response_model=List[schema.BaseUser], status_code=status.HTTP_200_OK) #Read users
-async def get_users_list(
+@backendUserRoutes.get("/get-all-frontend-users", response_model=schema.ListUsers, status_code=status.HTTP_200_OK) #Read users
+async def get_frontend_users_list(
     limit : Optional[int]=10, 
     offset : Optional[int]=0, 
     db : Session = Depends(get_db), 
-    current_user = Depends(authenticate_token),
+    authToken: model.BackendToken = Depends(authenticate_token),
     permissions = Depends(check_permission(["read_user"])),
 ): return controller.frontenduserlist(limit, offset, db)
 
 
-@backendUserRoutes.get("/get-frontend-users/{user_id}", response_model=schema.BaseUser, status_code=status.HTTP_200_OK) #Read user
-async def get_user_details(
+@backendUserRoutes.get("/get-frontend-user/{user_id}", response_model=schema.BaseUser, status_code=status.HTTP_200_OK) #Read user
+async def get_frontend_user_details(
     user_id: Annotated[str, Path(title="The UUID of the user to get")],
     db : Session = Depends(get_db), 
-    current_user = Depends(authenticate_token),
+    authToken: model.BackendToken = Depends(authenticate_token),
     permissions = Depends(check_permission(["read_user"])),
 ): return controller.frontenduserdetails(user_id, db)
 
 
 @backendUserRoutes.post("/update-frontend-user", response_model=schema.BaseUser, status_code=status.HTTP_200_OK) #Update / delete user
-async def update_user_details(
+async def update_frontend_user_details(
     data: schema.UpdateUser,
     db : Session = Depends(get_db), 
-    current_user = Depends(authenticate_token),
+    authToken: model.BackendToken = Depends(authenticate_token),
     permissions = Depends(check_permission(["update_user"])),
 ): return controller.updateBackendUser(data, db)
 

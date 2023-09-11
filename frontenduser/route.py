@@ -32,9 +32,15 @@ def login(
 @frontendUserRoutes.delete("/logout", status_code=status.HTTP_204_NO_CONTENT, description="Logout from all devices.") #Delete login token
 def logout(
     db: Session = Depends(get_db),
-    current_user: model.FrontendUser = Depends(authenticate_token)
-): return controller.delete_token(current_user, db)
+    authToken: model.FrontendToken = Depends(authenticate_token)
+): return controller.delete_token(authToken, db)
 
+
+@frontendUserRoutes.delete("/logout-all", status_code=status.HTTP_204_NO_CONTENT, description="Logout from all devices.") #Delete login token
+def logout_all(
+    db: Session = Depends(get_db),
+    authToken: model.FrontendToken = Depends(authenticate_token)
+): return controller.delete_all_tokens(authToken, db)
 
 @frontendUserRoutes.get("/send-token", status_code=status.HTTP_200_OK) #send forget password mail
 def send_token(
@@ -54,16 +60,16 @@ def create_new_password(
 def update_profile(    
     data: schema.UpdateProfile,
     db : Session = Depends(get_db), 
-    current_user: model.FrontendUser = Depends(authenticate_token),
-): return controller.updateProfile(data, current_user, db)
+    authToken: model.FrontendToken = Depends(authenticate_token),
+): return controller.updateProfile(data, authToken, db)
 
 
 @frontendUserRoutes.post('/update-profile-photo', response_model=schema.BaseUser, status_code=status.HTTP_200_OK) #Update profile
 def update_profile_photo(    
     image: Annotated[UploadFile, File(description=f"A image file to use it as profile photo. Allowed extensions are {ALLOWED_EXTENSIONS}")],
     db : Session = Depends(get_db), 
-    current_user: model.FrontendUser = Depends(authenticate_token),
-): return controller.updateProfilePhoto(image, current_user, db)
+    authToken: model.FrontendToken = Depends(authenticate_token),
+): return controller.updateProfilePhoto(image, authToken, db)
 
 
 @frontendUserRoutes.get('/subscriptions', response_model=List[schema.BaseSubscription], status_code=status.HTTP_200_OK) #Read all subscriptions

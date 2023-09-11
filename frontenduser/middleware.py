@@ -36,7 +36,7 @@ async def authenticate_token(authtoken: Annotated[str, Header()], db: Session = 
             ctx={"authtoken": "valid"}
         )
 
-    if datetime.datetime.now() > user_token.expire_at:
+    if datetime.now() > user_token.expire_at:
         CustomValidations.customError(
             status_code=status.HTTP_401_UNAUTHORIZED,
             type="expired",
@@ -46,6 +46,6 @@ async def authenticate_token(authtoken: Annotated[str, Header()], db: Session = 
             ctx={"authtoken": "active"}
         )
 
-    return user_token.user
+    return user_token
 
 

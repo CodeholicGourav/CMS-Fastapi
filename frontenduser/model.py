@@ -137,6 +137,10 @@ class FrontendToken(Base):
         Integer, 
         ForeignKey("frontendusers.id")
     )
+    details = Column(
+        String(255),
+        nullable=True
+    )
     created_at = Column(
         DateTime, 
         default=datetime.utcnow

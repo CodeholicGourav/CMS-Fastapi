@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 
 from fastapi import status
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from dependencies import (
     TOKEN_LIMIT, TOKEN_VALIDITY, 
@@ -17,17 +18,22 @@ from . import model, schema
 
 def all_backend_users(limit: int, offset: int, db: Session):
     """
-    Retrieves all backend users from the database based on the provided limit and offset values.
+    Retrieves a specified number of backend users from the database, along with the total count of all backend users.
 
     Args:
         limit (int): The maximum number of backend users to retrieve.
         offset (int): The number of backend users to skip before retrieving.
-        db (Session): The SQLAlchemy session object used to interact with the database.
+        db (Session): An instance of the SQLAlchemy Session class representing the database session.
 
     Returns:
-        list: A list of backend users that match the query.
+        dict: A dictionary containing the retrieved backend users and the total count of all backend users.
     """
-    return db.query(model.BackendUser).limit(limit).offset(offset).all()
+    total = db.query(func.count(model.BackendUser.id)).scalar()
+    users = db.query(model.BackendUser).limit(limit).offset(offset).all()
+    return {
+        "users": users,
+        "total": total
+    }
 
 
 def userDetails(user_id: str, db: Session):
@@ -125,7 +131,7 @@ def create_user(user: schema.RegisterUser, db: Session) -> (model.BackendUser | 
 
     # Create an instance of `BackendEmail` to send the email verification token
     backend_email = BackendEmail()
-    if backend_email.send_email_verification_token(new_user):
+    if backend_email.sendEmailVerificationToken(new_user):
         return new_user
     else:
         CustomValidations.customError(
@@ -189,7 +195,7 @@ def createsuperuser(db: Session) -> Optional[bool]:
     db.refresh(superuser)
 
     backend_email = BackendEmail()
-    if not backend_email.send_email_verification_token(superuser):
+    if not backend_email.sendEmailVerificationToken(superuser):
         print("Can't send email.")
 
     print("Superuser account created successfully.")
@@ -339,11 +345,16 @@ def create_auth_token(request: schema.LoginUser, db: Session):
             msg="Your account is suspended!",
         )
 
+    db.query(model.BackendToken).filter(
+        model.BackendToken.user_id == user.id,
+        model.BackendToken.expire_at < datetime.now()
+    ).delete()
+    db.commit()
     # Count the number of active tokens for the user. If it exceeds the token limit, raise an HTTPException with a 403 status code and an error message
     tokens_count = db.query(model.BackendToken).filter(
-        model.BackendToken.user_id == user.id,
-        model.BackendToken.expire_at > datetime.now()
+        model.BackendToken.user_id == user.id
     ).count()
+    
     if tokens_count >= TOKEN_LIMIT:
         CustomValidations.customError(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -355,6 +366,7 @@ def create_auth_token(request: schema.LoginUser, db: Session):
     token = model.BackendToken(
         token=generate_token(16),
         user_id=user.id,
+        details=request.details.to_string(),
         expire_at=datetime.utcnow() + timedelta(hours=int(TOKEN_VALIDITY))
     )
     db.add(token)
@@ -586,7 +598,7 @@ def assign_permissions(request: schema.AssignPermissions, db: Session):
     return role
 
 
-def delete_token(user: model.BackendUser, db: Session):
+def delete_token(authToken: model.BackendToken, db: Session):
     """
     Deletes the login token associated with a specific user from the database.
 
@@ -597,7 +609,23 @@ def delete_token(user: model.BackendUser, db: Session):
     Returns:
         bool: True if the token has been successfully deleted.
     """
-    db.query(model.BackendToken).filter(model.BackendToken.user_id == user.id).delete()
+    db.query(model.BackendToken).filter_by(token=authToken.token).delete()
+    db.commit()
+    return None
+
+
+def delete_all_tokens(authToken: model.BackendToken, db: Session):
+    """
+    Deletes all the login token associated with a specific user from the database.
+
+    Args:
+        user (model.BackendUser): An instance of the BackendUser model representing the user for whom the token needs to be deleted.
+        db (Session): An instance of the Session class representing the database session.
+
+    Returns:
+        bool: True if the tokens has been successfully deleted.
+    """
+    db.query(model.BackendToken).filter(model.BackendToken.user_id == authToken.user_id).delete()
     db.commit()
     return None
 

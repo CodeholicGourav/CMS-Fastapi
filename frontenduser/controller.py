@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 
 from fastapi import UploadFile, status
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from backenduser import controller as backendusercontroller
 from dependencies import (
@@ -107,25 +108,55 @@ def register_user(data: schema.RegisterUser, db: Session) -> Optional[model.Fron
         )
 
 
-def userList(limit, offset, db: Session):
-    return db.query(model.FrontendUser).limit(limit).offset(offset).all()
+def userList(limit: int, offset: int, db: Session) -> dict:
+    """
+    Retrieves a list of frontend users from the database with pagination.
+
+    Args:
+        limit (int): The maximum number of users to retrieve.
+        offset (int): The number of users to skip before starting to retrieve.
+        db (Session): The SQLAlchemy database session.
+
+    Returns:
+        dict: A dictionary with the following keys:
+            - "users": A list of frontend user objects.
+            - "total": The total number of frontend users in the database.
+    """
+    total = db.query(func.count(model.BackendUser.id)).scalar()
+    users = db.query(model.FrontendUser).limit(limit).offset(offset).all()
+    return {
+        "users": users,
+        "total": total
+    }
 
 
 def userDetails(user_id: str, db: Session):
-    """ Returns all details of the user """
-    user =  db.query(model.FrontendUser).filter_by(uuid=user_id).first()
-    if not user: 
-        CustomValidations.customError(
-            type="not_exist", 
-            loc= "user_id", 
-            msg= "User does not exist", 
-            inp= user_id,
+    """
+    Retrieves the details of a frontend user based on the provided user ID.
+
+    Args:
+        user_id (str): The ID of the user for whom the details are being retrieved.
+        db (Session): The SQLAlchemy database session.
+
+    Returns:
+        model.FrontendUser: The frontend user object containing the details of the user.
+        
+    Raises:
+        CustomError: If the user does not exist.
+    """
+    user = db.query(model.FrontendUser).filter_by(uuid=user_id).first()
+    if not user:
+        raise CustomValidations.customError(
+            type="not_exist",
+            loc="user_id",
+            msg="User does not exist",
+            inp=user_id,
             ctx={"user": "exist"}
         )
     return user
 
 
-def updateProfilePhoto(file: UploadFile, user: model.FrontendUser, db: Session):
+def updateProfilePhoto(file: UploadFile, authToken: model.FrontendToken, db: Session):
     """
     Updates the profile photo of a user.
 
@@ -140,6 +171,7 @@ def updateProfilePhoto(file: UploadFile, user: model.FrontendUser, db: Session):
     Returns:
         None. The function updates the user's profile photo in the database if all validations pass.
     """
+    user = authToken.user
     # Check if the file is an allowed image type
     if not allowed_file(file.filename):
         CustomValidations.customError(
@@ -250,9 +282,6 @@ def verify_email(token: str, db: Session):
     return {"details": "Email verified successfully"}
 
 
-TOKEN_LIMIT = 5
-TOKEN_VALIDITY = 24
-
 def create_auth_token(request: schema.LoginUser, db: Session) -> model.FrontendToken:
     """
     Create a login token for backend user
@@ -304,9 +333,14 @@ def create_auth_token(request: schema.LoginUser, db: Session) -> model.FrontendT
             msg="Your account is suspended!",
         )
 
+    db.query(model.FrontendToken).filter(
+        model.FrontendToken.user_id == user.id,
+        model.FrontendToken.expire_at < datetime.now()
+    ).delete()
+    db.commit()
+    # Count the number of active tokens for the user. If it exceeds the token limit, raise an HTTPException with a 403 status code and an error message
     tokens_count = db.query(model.FrontendToken).filter(
         model.FrontendToken.user_id == user.id,
-        model.FrontendToken.expire_at > datetime.now()
     ).count()
     if tokens_count >= TOKEN_LIMIT:
         CustomValidations.customError(
@@ -318,6 +352,7 @@ def create_auth_token(request: schema.LoginUser, db: Session) -> model.FrontendT
     token = model.FrontendToken(
         token=generate_token(16),
         user_id=user.id,
+        details=request.details.to_string(),
         expire_at=datetime.utcnow() + timedelta(hours=int(TOKEN_VALIDITY))
     )
     db.add(token)
@@ -326,7 +361,7 @@ def create_auth_token(request: schema.LoginUser, db: Session) -> model.FrontendT
     return token
 
 
-def delete_token(user: model.FrontendUser, db: Session):
+def delete_token(authToken: model.FrontendToken, db: Session):
     """
     Deletes the login token for a user.
 
@@ -337,7 +372,23 @@ def delete_token(user: model.FrontendUser, db: Session):
     Returns:
         bool: True if the token has been successfully deleted.
     """
-    db.query(model.FrontendToken).filter_by(user_id=user.id).delete()
+    db.query(model.FrontendToken).filter_by(token=authToken.token).delete()
+    db.commit()
+    return True
+
+
+def delete_all_tokens(authToken: model.FrontendToken, db: Session):
+    """
+    Deletes the login token for a user.
+
+    Args:
+        user (model.FrontendUser): The user object for whom the login token is being deleted.
+        db (Session): The SQLAlchemy database session.
+
+    Returns:
+        bool: True if the token has been successfully deleted.
+    """
+    db.query(model.FrontendToken).filter_by(user_id=authToken.user.id).delete()
     db.commit()
     return True
 
@@ -457,7 +508,7 @@ def create_new_password(request: schema.ForgotPassword, db: Session):
     return user
 
 
-def updateProfile(request: schema.UpdateProfile, user: model.FrontendUser, db: Session):
+def updateProfile(request: schema.UpdateProfile, authToken: model.FrontendToken, db: Session):
     """
     Updates the profile of a user based on the provided data.
 
@@ -469,6 +520,7 @@ def updateProfile(request: schema.UpdateProfile, user: model.FrontendUser, db: S
     Returns:
         model.FrontendUser: The updated user object.
     """
+    user = authToken.user
     if request.username:
         existing_user = db.query(model.FrontendUser).filter_by(username=request.username).first()
         if existing_user:

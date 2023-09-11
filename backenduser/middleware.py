@@ -36,12 +36,26 @@ async def authenticate_token(authtoken: Annotated[str, Header()], db: Session = 
         )
 
     if not user_token.user or not user_token.user.is_active or user_token.user.is_deleted:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid auth token.")
+        CustomValidations.customError(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            type="Invalid",
+            loc="authtoken",
+            msg="Invalid auth token",
+            inp=authtoken,
+            ctx={"authtoken": "valid"}
+        )
 
     if datetime.utcnow() > user_token.expire_at:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token is expired, try login again.")
+        CustomValidations.customError(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            type="expired",
+            loc="authtoken",
+            msg="Token is expired, try login again.",
+            inp=authtoken,
+            ctx={"authtoken": "valid"}
+        )
 
-    return user_token.user
+    return user_token
 
 
 def check_permission(codenames: list[str]):

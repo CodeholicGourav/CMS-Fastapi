@@ -74,12 +74,22 @@ class UpdateUser(BaseModel):
 class ShowToken(BaseModel):
     token: str
     expire_at: datetime
+    details: str
     user: BaseUser
 
+
+class SystemDetails(BaseModel):
+    ip_address: constr(max_length=30)
+    browser: constr(max_length=30)
+    system: constr(max_length=30)
+
+    def to_string(self):
+        return f"IP Address: {self.ip_address}, Browser: {self.browser}, System: {self.system}"
 
 class LoginUser(BaseModel):
     username_or_email: str
     password: str
+    details: SystemDetails
 
 
 class ForgotPassword(BaseModel):
