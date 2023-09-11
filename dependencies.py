@@ -105,13 +105,15 @@ class CustomValidations():
     def validate_username(value):
         pattern=r'^[a-zA-Z0-9_]+$'
         if not re.match(pattern, value):
-            detail = [{
-                "type": "Invalid",
-                "loc": ["body", "username"],
-                "msg": "Invalid username",
-                "input": value,
-                "ctx": {"username": "It should contain only letters, numbers, and underscores."},
-            }]
+            detail = {
+                "detail" : [{
+                    "type": "Invalid",
+                    "loc": ["body", "username"],
+                    "msg": "Invalid username",
+                    "input": value,
+                    "ctx": {"username": "It should contain only letters, numbers, and underscores."},
+                }]
+            }
             raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail)
         
         return value
@@ -120,13 +122,15 @@ class CustomValidations():
     def validate_password(value):
         pattern=r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@#$%^&+=!]).{8,}$'
         if not re.match(pattern, value):
-            detail = [{
-                "type": "Invalid",
-                "loc": ["body", "password"],
-                "msg": "Invalid passwpord",
-                "input": value,
-                "ctx": {"password": "It should be : At least 8 characters in length, Contains at least one uppercase letter (A-Z), Contains at least one lowercase letter (a-z), Contains at least one digit (0-9), Contains at least one special character (e.g., !, @, #, $, %, etc.)."},
-            }]
+            detail = {
+                "detail": [{
+                    "type": "Invalid",
+                    "loc": ["body", "password"],
+                    "msg": "Invalid passwpord",
+                    "input": value,
+                    "ctx": {"password": "It should be : At least 8 characters in length, Contains at least one uppercase letter (A-Z), Contains at least one lowercase letter (a-z), Contains at least one digit (0-9), Contains at least one special character (e.g., !, @, #, $, %, etc.)."},
+                }]
+            }
             raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail)
         
         return value
@@ -136,7 +140,16 @@ class CustomValidations():
         allowed_extensions = ("jpg", "jpeg", "png")
         file_extension = value.filename.split(".")[-1]
         if file_extension.lower() not in allowed_extensions:
-            raise ValueError("Only JPG, JPEG, and PNG files are allowed for profile_photo")
+            detail = {
+                "detail": [{
+                    "type": "Invalid",
+                    "loc": ["body", "image"],
+                    "msg": "Invalid image type",
+                    "input": value.filename,
+                    "ctx": {"image": f"Only {allowed_extensions} files are allowed for profile_photo"},
+                }]
+            }
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail)
         return value
     
 
