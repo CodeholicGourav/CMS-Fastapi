@@ -409,7 +409,7 @@ def send_verification_mail(email: str, db: Session):
         CustomError: If the email fails to send.
     """
     user = db.query(model.FrontendUser).filter(
-        model.FrontendToken.email == email,
+        model.FrontendUser.email == email,
         model.FrontendUser.is_deleted == False
     ).first()
 
