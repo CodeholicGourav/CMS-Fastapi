@@ -122,7 +122,7 @@ def userList(limit: int, offset: int, db: Session) -> dict:
             - "users": A list of frontend user objects.
             - "total": The total number of frontend users in the database.
     """
-    total = db.query(func.count(model.BackendUser.id)).scalar()
+    total = db.query(func.count(model.FrontendUser.id)).scalar()
     users = db.query(model.FrontendUser).limit(limit).offset(offset).all()
     return {
         "users": users,
