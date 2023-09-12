@@ -1,19 +1,42 @@
-from dotenv import load_dotenv
-from pathlib import Path
-import os
+import base64
+import math
+import random
 import re
 import secrets
-from passlib.context import CryptContext
-from fastapi import HTTPException,status
-import base64
-import random
 import time
-import math
-from pydantic import BaseModel
+
+from fastapi import HTTPException, status
+from passlib.context import CryptContext
+from pydantic import BaseModel, EmailStr, Field, HttpUrl
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-env_path = Path(__file__).parent / ".env"
-load_dotenv(dotenv_path=env_path)
+class Settings(BaseSettings):
+    """
+    Configuration class that defines various settings for the application.
+    """
+    SECRET_KEY: str
+    APP_NAME: str = "Code-CMS"
+    APP_URL: HttpUrl = "http://127.0.0.1:8000"
+    ALLOWED_ORIGINS: list[str]
+    DB_URL: str = "sqlite:///./sql_app.db"
+    DEBUG: bool = True
+    LANGUAGE_CODE: str = "en-us"
+    USE_TZ: bool = True
+    TIME_ZONE: str = "UTC"
+    DEVELOPMENT: bool = True
+    MAIL_USERNAME: EmailStr
+    MAIL_PASSWORD: str
+    MAIL_FROM_ADDRESS: EmailStr
+    MAIL_FROM_NAME: str = APP_NAME
+    FRONTEND_URL: str = "127.0.0.1:3000"
+    EMAIL_VERIFY_ENDPOINT: str = "/verify-token"
+    CREATE_PASSWORD_ENDPOINT: str = "/reset-password"
+
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+
+SETTINGS = Settings()
 
 def generate_token(len:int):
     return secrets.token_urlsafe(len)  # Generates a URL-safe token of 32 characters
@@ -34,10 +57,11 @@ class Hash():
 import smtplib
 from email.mime.text import MIMEText
 
+
 class BaseEmail():
     def sendMail(self, recipient_email, subject, message):
-        sender_email = os.getenv('MAIL_USERNAME')
-        sender_password = os.getenv('MAIL_PASSWORD')
+        sender_email = SETTINGS.MAIL_USERNAME
+        sender_password = SETTINGS.MAIL_PASSWORD
         
         message["From"] = sender_email
         message["To"] = recipient_email
@@ -63,13 +87,13 @@ class ShowUser(BaseModel):
 class FrontendEmail(BaseEmail):
     def sendEmailVerificationToken(self, user: ShowUser):
         subject = "Email Verification"
-        verification_link = f"{os.getenv('SERVER_URL')}/{os.getenv('EMAIL_VERIFY_ENDPOINT')}?token={user.verification_token}"  # Include the verification token in the link
+        verification_link = f"{SETTINGS.FRONTEND_URL}/{SETTINGS.EMAIL_VERIFY_ENDPOINT}?token={user.verification_token}"  # Include the verification token in the link
         message = MIMEText(f"Click the following link to verify your email: {verification_link}")
         return self.sendMail(user.email, subject, message)
     
     def sendForgetPasswordToken(self, user: ShowUser):
         subject = "Reset password"
-        verification_link = f"{os.getenv('SERVER_URL')}/{os.getenv('CREATE_PASSWORD_URL')}?token={user.verification_token}"  # Include the verification token in the link
+        verification_link = f"{SETTINGS.FRONTEND_URL}/{Settings.CREATE_PASSWORD_ENDPOINT}?token={user.verification_token}"  # Include the verification token in the link
         message = MIMEText(f"Click the following link to reset your password: {verification_link}")
         return self.sendMail(user.email, subject, message)
 
@@ -77,13 +101,13 @@ class FrontendEmail(BaseEmail):
 class BackendEmail(BaseEmail):
     def sendEmailVerificationToken(self, user: ShowUser):
         subject = "Email Verification"
-        verification_link = f"{os.getenv('SERVER_URL')}/{os.getenv('EMAIL_VERIFY_ENDPOINT')}?token={user.verification_token}"  # Include the verification token in the link
+        verification_link = f"{SETTINGS.FRONTEND_URL}/{SETTINGS.EMAIL_VERIFY_ENDPOINT}?token={user.verification_token}"  # Include the verification token in the link
         message = MIMEText(f"Click the following link to verify your email: {verification_link}")
         return self.sendMail(user.email, subject, message)
     
     def sendForgetPasswordToken(self, user: ShowUser):
         subject = "Reset password"
-        verification_link = f"{os.getenv('SERVER_URL')}/{os.getenv('CREATE_PASSWORD_URL')}?token={user.verification_token}"  # Include the verification token in the link
+        verification_link = f"{SETTINGS.FRONTEND_URL}/{SETTINGS.CREATE_PASSWORD_ENDPOINT}?token={user.verification_token}"  # Include the verification token in the link
         message = MIMEText(f"Click the following link to reset your password: {verification_link}")
         return self.sendMail(user.email, subject, message)
     

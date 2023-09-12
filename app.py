@@ -4,9 +4,10 @@ from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from backenduser.route import backendUserRoutes
 from frontenduser.route import frontendUserRoutes
+from dependencies import SETTINGS
 
 app = FastAPI()
-allowed_origins = os.getenv('ALLOWED_ORIGINS')
+allowed_origins = SETTINGS.ALLOWED_ORIGINS
 
 app.add_middleware(
     CORSMiddleware,
