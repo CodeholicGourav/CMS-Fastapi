@@ -256,7 +256,8 @@ class Order(Base):
         ForeignKey("coupons.id")
     )
     status = Column(
-        Boolean
+        Text,
+        default="pending"
     )
     billing_address = Column(
         Text
@@ -273,5 +274,33 @@ class Order(Base):
     # Relationships
     # user = relationship("FrontendUser", back_populates="orders", foreign_keys=user_id)
     # coupon = relationship("Coupon", back_populates="orders", foreign_keys=coupon_id)
+
+class Transactions(Base):
+    __tablename__ = 'transactions'
+    id = Column(
+        Integer,
+        primary_key=True 
+    )
+    order_id = Column(
+        Integer,
+        ForeignKey('orders.id'),
+    )
+    status = Column(
+        Boolean
+    )
+    payment_gateway = Column(
+        String(50)
+    )
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow
+    )
+    updated_at = Column(
+        DateTime,
+        default = datetime.utcnow
+    )
+
+
+
     
 

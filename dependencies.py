@@ -152,6 +152,9 @@ class CustomValidations():
             raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail)
         return value
     
+    
+
+    
 
 # Maximum hours for token validation
 TOKEN_VALIDITY = 72 

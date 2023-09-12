@@ -585,3 +585,32 @@ def timezonesList(db: Session):
         List: A list of all timezones from the database.
     """
     return db.query(model.Timezone).all()
+
+def add_orders(authtoken:model.FrontendToken,request:schema.AddOrder,db:Session) -> model.Order:
+    """
+    Adds a new order to the database.
+
+    Args:
+        authtoken (model.FrontendToken): The authentication token of the user making the order.
+        request (schema.AddOrder): The data of the order to be added.
+        db (Session): The SQLAlchemy database session.
+
+    Returns:
+        model.Order: The newly added order object.
+    """
+    order = model.Order(
+        ouid = generate_uuid(authtoken.user.username),
+        user_id = authtoken.user_id,
+        total_amount = request.total_amount,
+        final_amount = request.final_amount,
+        currency = request.currency,
+        conversion_rate = request.conversion_rate,
+        coupon_id = request.coupon_id,
+        billing_address = request.billing_address
+    )
+    db.add(order)
+    db.commit()
+    db.refresh(order)
+    return order
+    
+
