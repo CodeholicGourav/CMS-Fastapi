@@ -304,8 +304,9 @@ def create_auth_token(request: schema.LoginUser, db: Session):
     user = db.query(model.BackendUser).filter(
         (model.BackendUser.email == request.username_or_email) |
         (model.BackendUser.username == request.username_or_email),
-        model.BackendUser.is_deleted == False
+        model.BackendUser.is_deleted == False,    
     ).first()
+
 
     # If the user does not exist, raise an HTTPException with a 403 status code and an error message
     if not user:
@@ -362,12 +363,15 @@ def create_auth_token(request: schema.LoginUser, db: Session):
             msg=f"Login limit exceed (${TOKEN_LIMIT}).",
         )
 
+    
+
     # Generate a new token, set its expiration time, and save it to the database
     token = model.BackendToken(
         token=generate_token(16),
         user_id=user.id,
         details=request.details.to_string(),
         expire_at=datetime.utcnow() + timedelta(hours=int(TOKEN_VALIDITY))
+
     )
     db.add(token)
     db.commit()
@@ -555,6 +559,8 @@ def add_role(request: schema.CreateRole, user: model.BackendToken, db: Session) 
     return new_role
 
 
+
+
 def assign_permissions(request: schema.AssignPermissions, db: Session):
     """
     Assigns permissions to a role in the database.
@@ -580,18 +586,16 @@ def assign_permissions(request: schema.AssignPermissions, db: Session):
             ctx={"ruid": "exist"}
         )
 
+
     codenames = request.permissions
     permissions = db.query(model.BackendPermission).filter(model.BackendPermission.codename.in_(codenames)).all()
 
-    for permission in permissions:
-        role_permission = db.query(model.BackendRolePermission).filter(
-            model.BackendRolePermission.role_id == role.id,
-            model.BackendRolePermission.permission_id == permission.id
-        ).first()
+    db.query(model.BackendRolePermission).filter(model.BackendRolePermission.role_id ==role.id).delete()
 
-        if not role_permission:
-            role_permission = model.BackendRolePermission(role_id=role.id, permission_id=permission.id)
-            db.add(role_permission)
+    db.commit()
+    for permission in permissions:
+        role_permission = model.BackendRolePermission(role_id=role.id, permission_id=permission.id)
+        db.add(role_permission)
 
     db.commit()
     db.refresh(role)

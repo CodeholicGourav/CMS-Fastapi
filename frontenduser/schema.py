@@ -123,6 +123,43 @@ class TimeZones(BaseModel):
     code: str
     time_difference: str
 
+class Orders(BaseModel):
+    id:int 
+    ouid:str
+    user_id:int 
+    total_amount:float 
+    final_amount:float 
+    currency:str 
+    conversion_rate:float 
+    coupon_id:Optional[int ]
+    status:str
+    billing_address:str 
+    created_at:datetime
+    updated_at:datetime 
+
+
 
 class AddOrder(BaseModel):
-    ouid: str
+    total_amount:float
+    final_amount:float 
+    currency:str 
+    conversion_rate:float 
+    cuoupon_code:str
+    coupon_id:int
+    status:str 
+    billing_address:str 
+
+
+class Createtransaction(BaseModel):
+   transaction_id:str 
+   order_id:str 
+
+
+
+   
+        
+
+
+
+
+
