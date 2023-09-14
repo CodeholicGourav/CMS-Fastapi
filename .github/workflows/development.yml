@@ -20,5 +20,9 @@ jobs:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: deploy changes
-        run: ssh root@134.209.146.138 -o StrictHostKeyChecking=no "cd /var/www/html/codeholic_product/fastapi_cms && git checkout develop && git pull origin develop  && sudo systemctl restart fastapi_cms"
-
+        run: |
+          ssh root@134.209.146.138 -o StrictHostKeyChecking=no \
+            "cd /var/www/html/codeholic_product/fastapi_cms && \
+            git checkout develop && \
+            git pull origin develop && \
+            sudo systemctl restart fastapi_cms"
