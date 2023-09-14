@@ -174,7 +174,7 @@ def createsuperuser(db: Session) -> Optional[bool]:
 
     superuserrole = db.query(model.BackendRole).filter(model.BackendRole.id == 0).first()
     if not superuserrole:
-        superuserrole = model.BackendRole(id=0, role="superuser")
+        superuserrole = model.BackendRole(id=0, ruid=generate_uuid("superuser"), role="superuser")
 
         db.add(superuserrole)
         db.commit()

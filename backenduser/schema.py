@@ -38,7 +38,7 @@ class BasicUser(BaseModel):
     email : str
 
 class ShowRole(BaseModel):
-    ruid : str
+    ruid : Optional[str]
     role : str
     is_deleted : bool
     creator : Optional[BasicUser]
