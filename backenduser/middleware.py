@@ -94,10 +94,8 @@ def check_permission(codenames: list[str]):
             return True
 
         user_permissions = user_token.user.role.permissions
-        if not user_permissions:
+        if not user_permissions or not all(permission in user_permissions for permission in codenames):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Permission not granted.")
-        
-        return all(permission in user_permissions for permission in codenames)
-    
+            
     return has_permissions
     
