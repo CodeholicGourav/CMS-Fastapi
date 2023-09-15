@@ -142,6 +142,9 @@ class BackendPermission(Base):
         nullable=False
     )
 
+    def __repr__(self):
+        return f"{self.permission} | {self.type} | {self.codename}"
+
 
 def create_permissions() -> Union[Dict[str, str], Dict[str, str]]:
     """
@@ -185,6 +188,9 @@ class BackendRolePermission(Base):
     # Relationships
     role = relationship("BackendRole", foreign_keys=role_id)
     permission = relationship("BackendPermission", foreign_keys=permission_id)
+
+    def __repr__(self):
+        return f"{self.permission_id} | {self.role_id}"
 
 
 class BackendToken(Base):
