@@ -105,7 +105,7 @@ def check_permission(codenames: list[str]):
    
         if not all(codename in user_permission_codenames for codename in codenames):
             CustomValidations.customError(
-                status_code=status.HTTP_401_UNAUTHORIZED,
+                status_code=status.HTTP_403_FORBIDDEN,
                 type="unauthenticated",
                 loc="permission",
                 msg="Permission not granted.",
