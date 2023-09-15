@@ -88,14 +88,28 @@ def check_permission(codenames: list[str]):
         user_token = db.query(BackendToken).filter_by(token=authtoken).first()
         
         if not user_token or not user_token.user:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid auth token")
+            CustomValidations.customError(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                type="expired",
+                loc="authtoken",
+                msg="Token is expired, try login again.",
+                inp=authtoken,
+                ctx={"authtoken": "valid"}
+            )
         
         if user_token.user.role.id == 0:
             return True
 
         user_permissions = user_token.user.role.permissions
         if not user_permissions or not all(permission in user_permissions for permission in codenames):
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Permission not granted.")
+            CustomValidations.customError(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                type="unauthenticated",
+                loc="permission",
+                msg="Permission not granted.",
+                inp=", ".join(codenames),
+                ctx={"permission": ", ".join(codenames)}
+            )
             
     return has_permissions
     
