@@ -174,7 +174,7 @@ def createsuperuser(db: Session) -> Optional[bool]:
 
     superuserrole = db.query(model.BackendRole).filter(model.BackendRole.id == 0).first()
     if not superuserrole:
-        superuserrole = model.BackendRole(id=0, role="superuser")
+        superuserrole = model.BackendRole(id=0, ruid=generate_uuid("superuser"), role="superuser")
 
         db.add(superuserrole)
         db.commit()
@@ -202,7 +202,7 @@ def createsuperuser(db: Session) -> Optional[bool]:
     return True
 
 
-def updateUserRole(data: schema.UpdateUser, db: Session):
+def updateUserRole(data: schema.UpdateUser, authToken: model.BackendToken, db: Session):
     """
     Updates the role and status of a user in the database based on the provided data.
 
@@ -213,6 +213,16 @@ def updateUserRole(data: schema.UpdateUser, db: Session):
     Returns:
         model.BackendUser: The updated user object with the role and status updated.
     """
+    if authToken.user.uuid==data.user_id:
+        CustomValidations.customError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            type="self_update",
+            loc="user_id",
+            msg="Can not update self.",
+            inp=data.user_id,
+            ctx={"user_id": "self"}
+        )
+
     user = db.query(model.BackendUser).filter(model.BackendUser.uuid == data.user_id).first()
     if not user:
         CustomValidations.customError(
@@ -304,8 +314,9 @@ def create_auth_token(request: schema.LoginUser, db: Session):
     user = db.query(model.BackendUser).filter(
         (model.BackendUser.email == request.username_or_email) |
         (model.BackendUser.username == request.username_or_email),
-        model.BackendUser.is_deleted == False
+        model.BackendUser.is_deleted == False,    
     ).first()
+
 
     # If the user does not exist, raise an HTTPException with a 403 status code and an error message
     if not user:
@@ -362,12 +373,15 @@ def create_auth_token(request: schema.LoginUser, db: Session):
             msg=f"Login limit exceed (${TOKEN_LIMIT}).",
         )
 
+    
+
     # Generate a new token, set its expiration time, and save it to the database
     token = model.BackendToken(
         token=generate_token(16),
         user_id=user.id,
         details=request.details.to_string(),
         expire_at=datetime.utcnow() + timedelta(hours=int(TOKEN_VALIDITY))
+
     )
     db.add(token)
     db.commit()
@@ -555,7 +569,7 @@ def add_role(request: schema.CreateRole, user: model.BackendToken, db: Session) 
     return new_role
 
 
-def assign_permissions(request: schema.AssignPermissions, db: Session):
+def assign_permissions(request: schema.AssignPermissions, authToken: model.BackendToken, db: Session):
     """
     Assigns permissions to a role in the database.
 
@@ -566,6 +580,16 @@ def assign_permissions(request: schema.AssignPermissions, db: Session):
     Returns:
         model.BackendRole: The updated role object with the assigned permissions.
     """
+    if authToken.user.role.ruid==request.ruid:
+        CustomValidations.customError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            type="self_update",
+            loc="role_id",
+            msg="Can not update self.",
+            inp=request.ruid,
+            ctx={"role_id": "self"}
+        )
+
     role = db.query(model.BackendRole).filter(
         model.BackendRole.ruid == request.ruid,
         model.BackendRole.is_deleted == False
@@ -580,18 +604,16 @@ def assign_permissions(request: schema.AssignPermissions, db: Session):
             ctx={"ruid": "exist"}
         )
 
+
     codenames = request.permissions
     permissions = db.query(model.BackendPermission).filter(model.BackendPermission.codename.in_(codenames)).all()
 
-    for permission in permissions:
-        role_permission = db.query(model.BackendRolePermission).filter(
-            model.BackendRolePermission.role_id == role.id,
-            model.BackendRolePermission.permission_id == permission.id
-        ).first()
+    db.query(model.BackendRolePermission).filter(model.BackendRolePermission.role_id ==role.id).delete()
 
-        if not role_permission:
-            role_permission = model.BackendRolePermission(role_id=role.id, permission_id=permission.id)
-            db.add(role_permission)
+    db.commit()
+    for permission in permissions:
+        role_permission = model.BackendRolePermission(role_id=role.id, permission_id=permission.id)
+        db.add(role_permission)
 
     db.commit()
     db.refresh(role)
@@ -748,7 +770,7 @@ def frontenduserlist(limit: int, offset: int, db: Session):
     return frontendUserController.userList(limit, offset, db)
 
 
-def updateBackendUser(data, db: Session):
+def updateFrontendUser(data, db: Session):
     """
     Calls the `updateUser` function from the `frontendUserController` module to update the attributes of a user in the database based on the provided data.
 

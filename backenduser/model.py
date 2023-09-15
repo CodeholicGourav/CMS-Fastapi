@@ -75,12 +75,14 @@ class BackendUser(Base):
     role = relationship('BackendRole', foreign_keys=role_id)
     subscriptions = relationship('Subscription', back_populates='creator')
 
+    def __repr__(self):
+        return f"{self.username} | {self.email}"
+
 
 class BackendRole(Base):
     """
     Represents a table in the database that stores information about backend roles.
     """
-
     __tablename__ = 'backendroles'
 
     id = Column(
@@ -118,6 +120,9 @@ class BackendRole(Base):
     creator = relationship('BackendUser', foreign_keys=created_by)
     permissions = relationship('BackendRolePermission', back_populates='role')
 
+    def __repr__(self):
+        return f"{self.role} | {self.ruid}"
+
 
 class BackendPermission(Base):
     __tablename__ = 'backendpermissions'
@@ -141,6 +146,9 @@ class BackendPermission(Base):
         unique=True,
         nullable=False
     )
+
+    def __repr__(self):
+        return f"{self.type} | {self.codename} | {self.permission}"
 
 
 def create_permissions() -> Union[Dict[str, str], Dict[str, str]]:
@@ -186,6 +194,9 @@ class BackendRolePermission(Base):
     role = relationship("BackendRole", foreign_keys=role_id)
     permission = relationship("BackendPermission", foreign_keys=permission_id)
 
+    def __repr__(self):
+        return f"{self.permission_id} | {self.role_id}"
+
 
 class BackendToken(Base):
     __tablename__ = 'backendtokens'
@@ -220,6 +231,9 @@ class BackendToken(Base):
 
     # Relationships
     user = relationship('BackendUser', foreign_keys=user_id)
+
+    def __repr__(self):
+        return f"{self.token}"
 
 
 class Subscription(Base):
@@ -268,6 +282,9 @@ class Subscription(Base):
     # Relationships
     creator = relationship("BackendUser", back_populates="subscriptions")
 
+    def __repr__(self):
+        return f"{self.name} | {self.suid}"
+
 
 class Feature(Base):
     __tablename__ = 'features'
@@ -282,6 +299,9 @@ class Feature(Base):
     feature_code = Column(
         String(50)
     )
+
+    def __repr__(self):
+        return f"{self.feature_type} | {self.feature_code}"
 
 
 class SubscriptionFeature(Base):
@@ -307,6 +327,10 @@ class SubscriptionFeature(Base):
         default=datetime.utcnow
     )
 
+    #Relation
+    subscription = relationship('Subscription', foreign_keys=subscription_id)
+    feature = relationship('Feature', foreign_keys=feature_id)
+
 
 class Coupon(Base):
     __tablename__ = 'coupons'
@@ -328,3 +352,6 @@ class Coupon(Base):
     coupon_type = Column(
         String(50)
     )
+
+    def __repr__(self):
+        return f"{self.coupon_code} | {self.name}"

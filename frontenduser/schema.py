@@ -148,12 +148,9 @@ class AddOrder(BaseModel):
     coupon_id:int
     status:str 
     billing_address:str 
-     
-class Transaction(BaseModel):
-    id:int 
-    order_id:int
-    status:str 
-    
 
 
+class Createtransaction(BaseModel):
+   transaction_id:str 
+   order_id:str 
 

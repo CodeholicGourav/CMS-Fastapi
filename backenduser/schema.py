@@ -24,32 +24,40 @@ class User(BaseModel):
     updated_at : datetime
 
 
-class ShowUser(BaseModel):
-    uuid : str
-    username : str
-    email : str
-
-
 class BasePermission(BaseModel):
     permission :str
     type :int
     codename : str
 
-class permission(BaseModel):
-    permission : str
 
 class RolePermissions(BaseModel):
     permission : BasePermission
 
+class BasicUser(BaseModel):
+    username : str
+    email : str
 
 class ShowRole(BaseModel):
-    ruid : str
+    ruid : Optional[str]
     role : str
     is_deleted : bool
-    creator : Optional[ShowUser]
+    creator : Optional[BasicUser]
     created_at : datetime
     updated_at : datetime
     permissions : Optional[List[RolePermissions]] = []
+
+
+class ShowUser(BaseModel):
+    uuid : str
+    username : str
+    email : str
+    role:ShowRole
+
+class permission(BaseModel):
+    permission : str
+
+
+
 
 
 class ShowRoleName(BaseModel):
@@ -92,11 +100,13 @@ class SystemDetails(BaseModel):
 
     def to_string(self):
         return f"IP Address: {self.ip_address}, Browser: {self.browser}, System: {self.system}"
+    
 
 class LoginUser(BaseModel):
     username_or_email: str
     password: str
     details: SystemDetails
+    
 
 
 class UpdateUser(BaseModel):
@@ -106,11 +116,22 @@ class UpdateUser(BaseModel):
     is_active: Optional[bool] = None
 
 
+
+# class Permisions(BaseModel):
+#     permission:str 
+
+class RolePermission(BaseModel):
+    role_id:str 
+    role:Optional[str]
+    permission:str 
+
+
 class ShowToken(BaseModel):
     token: str
     expire_at: datetime
     details: str
     user: ShowUser
+   
 
 
 class ForgotPassword(BaseModel):
