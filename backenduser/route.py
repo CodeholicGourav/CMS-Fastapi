@@ -45,7 +45,7 @@ async def update_user_details(
     db : Session = Depends(get_db), 
     authToken: model.BackendToken = Depends(authenticate_token),
     permissions: model.BackendUser = Depends(check_permission(["update_user"])),
-): return controller.updateUserRole(data, db)
+): return controller.updateUserRole(data, authToken, db)
 
 
 
@@ -131,7 +131,7 @@ def assign_permission(
     db: Session = Depends(get_db),
     authToken: model.BackendToken = Depends(authenticate_token),
     permissions: model.BackendUser = Depends(check_permission(["update_role"])),
-): return controller.assign_permissions(request, db)
+): return controller.assign_permissions(request, authToken, db)
 
 
 @backendUserRoutes.post("/add-subscription", response_model=schema.BaseSubscription, status_code=status.HTTP_201_CREATED) #Create subscription
@@ -188,5 +188,5 @@ async def update_frontend_user_details(
     db : Session = Depends(get_db), 
     authToken: model.BackendToken = Depends(authenticate_token),
     permissions = Depends(check_permission(["update_user"])),
-): return controller.updateBackendUser(data, db)
+): return controller.updateFrontendUser(data, db)
 

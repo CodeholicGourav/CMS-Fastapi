@@ -202,7 +202,7 @@ def createsuperuser(db: Session) -> Optional[bool]:
     return True
 
 
-def updateUserRole(data: schema.UpdateUser, db: Session):
+def updateUserRole(data: schema.UpdateUser, authToken: model.BackendToken, db: Session):
     """
     Updates the role and status of a user in the database based on the provided data.
 
@@ -213,6 +213,16 @@ def updateUserRole(data: schema.UpdateUser, db: Session):
     Returns:
         model.BackendUser: The updated user object with the role and status updated.
     """
+    if authToken.user.uuid==data.user_id:
+        CustomValidations.customError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            type="self_update",
+            loc="user_id",
+            msg="Can not update self.",
+            inp=data.user_id,
+            ctx={"user_id": "self"}
+        )
+
     user = db.query(model.BackendUser).filter(model.BackendUser.uuid == data.user_id).first()
     if not user:
         CustomValidations.customError(
@@ -559,9 +569,7 @@ def add_role(request: schema.CreateRole, user: model.BackendToken, db: Session) 
     return new_role
 
 
-
-
-def assign_permissions(request: schema.AssignPermissions, db: Session):
+def assign_permissions(request: schema.AssignPermissions, authToken: model.BackendToken, db: Session):
     """
     Assigns permissions to a role in the database.
 
@@ -572,6 +580,16 @@ def assign_permissions(request: schema.AssignPermissions, db: Session):
     Returns:
         model.BackendRole: The updated role object with the assigned permissions.
     """
+    if authToken.user.role.ruid==request.ruid:
+        CustomValidations.customError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            type="self_update",
+            loc="role_id",
+            msg="Can not update self.",
+            inp=request.ruid,
+            ctx={"role_id": "self"}
+        )
+
     role = db.query(model.BackendRole).filter(
         model.BackendRole.ruid == request.ruid,
         model.BackendRole.is_deleted == False
@@ -752,7 +770,7 @@ def frontenduserlist(limit: int, offset: int, db: Session):
     return frontendUserController.userList(limit, offset, db)
 
 
-def updateBackendUser(data, db: Session):
+def updateFrontendUser(data, db: Session):
     """
     Calls the `updateUser` function from the `frontendUserController` module to update the attributes of a user in the database based on the provided data.
 
