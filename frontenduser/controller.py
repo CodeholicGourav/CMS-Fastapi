@@ -580,6 +580,10 @@ def all_subscription_plans(limit: int, offset: int, db: Session):
     return backendusercontroller.all_subscription_plans(limit, offset, db)
 
 
+def subscription_plan_detail(suid: str, db: Session):
+    return backendusercontroller.subscription_plan_details(suid, db)
+
+
 def timezonesList(db: Session):
     """
     Retrieves a list of all timezones from the database.
@@ -606,12 +610,9 @@ def add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, db: Ses
     """
 
     # Retrieve the subscription details based on the provided subscription ID
-    subscription = db.query(backendmodel.Subscription).filter(
-        backendmodel.Subscription.suid == request.suid,
-        backendmodel.Subscription.is_deleted == False
-    ).first()
+    subscription = backendusercontroller.subscription_plan_details(request.suid, db)
 
-    if not subscription:
+    if not subscription or subscription.is_deleted:
         CustomValidations.customError(
             type="not_exist",
             loc="suid",
@@ -646,17 +647,14 @@ def add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, db: Ses
     )
 
     # Apply coupon discount if coupon ID is provided
-    if request.coupon_id:
-        coupon = db.query(backendmodel.Coupon).filter(
-            backendmodel.Coupon.coupon_code == request.coupon_id,
-            backendmodel.Coupon.is_active == True
-        ).first()
-        if not coupon:
+    if request.coupon_code:
+        coupon = backendusercontroller.couponDetails(request.coupon_code)
+        if not coupon or not coupon.is_active:
             CustomValidations.customError(
                 type="not_exist",
                 loc="coupon",
                 msg="Coupon does not exist.",
-                inp=request.coupon_id,
+                inp=request.coupon_code,
                 ctx={"coupon": "exist"}
             )
 

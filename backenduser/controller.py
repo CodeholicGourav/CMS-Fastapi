@@ -658,6 +658,19 @@ def all_subscription_plans(limit : int, offset : int, db: Session):
     return subscriptions
 
 
+def subscription_plan_details(suid: str, db: Session):
+    subscription = db.query(model.Subscription).filter_by(suid=suid).first()
+    if not subscription:
+        CustomValidations.customError(
+            type="not_exist",
+            loc="suid",
+            msg="Subscription does not exist",
+            inp=suid,
+            ctx={"subscription": "exist"}
+        )
+    return subscription
+
+
 def add_subscription(data: schema.CreateSubscription, current_user: model.BackendUser, db: Session):
     """
     Creates a new subscription plan.
@@ -785,5 +798,19 @@ def updateFrontendUser(data, db: Session):
     return frontendUserController.updateUser(data, db)
 
 
-def create_order(data, db: Session):
-    pass
+def couponDetails(coupon_code: str, db: Session) -> model.Coupon:
+    coupon = db.query(model.Coupon).filter(
+        model.Coupon.coupon_code == coupon_code,
+        model.Coupon.is_active == True
+    ).first()
+
+    if not coupon:
+        CustomValidations.customError(
+            type="not_exist",
+            loc="coupon_code",
+            msg="Coupon does not exist",
+            inp=coupon_code,
+            ctx={"coupon": "exist"}
+        )
+
+    return coupon

@@ -81,6 +81,14 @@ def all_subscriptions(
 ): return controller.all_subscription_plans(limit, offset, db)
 
 
+@frontendUserRoutes.get('/subscriptions/{suid}', response_model=schema.BaseSubscription, status_code=status.HTTP_200_OK) #Read all subscriptions
+def subscription_details(
+    suid: str,
+    db : Session = Depends(get_db), 
+    # current_user: model.FrontendUser = Depends(authenticate_token),
+): return controller.subscription_plan_detail(suid, db)
+
+
 @frontendUserRoutes.get('/timezones', response_model=List[schema.TimeZones], status_code=status.HTTP_200_OK) #Read all subscriptions
 def all_timezones( 
     db : Session = Depends(get_db), 

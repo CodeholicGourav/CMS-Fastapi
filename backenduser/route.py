@@ -140,8 +140,16 @@ async def add_subscription(
     db : Session = Depends(get_db),
     authToken: model.BackendToken = Depends(authenticate_token),
     permissions: model.BackendUser = Depends(check_permission(["create_subscription"])),
-): 
-    return controller.add_subscription(data, authToken.user, db)
+): return controller.add_subscription(data, authToken.user, db)
+
+
+@backendUserRoutes.get('/subscriptions/{suid}', response_model=schema.BaseSubscription, status_code=status.HTTP_200_OK) #Read all subscriptions
+def subscription_details(
+    suid: str,
+    db : Session = Depends(get_db), 
+    authToken: model.BackendToken = Depends(authenticate_token),
+    permissions: model.BackendUser = Depends(check_permission(["read_subscription"])),
+): return controller.subscription_plan_details(suid, db)
 
 
 @backendUserRoutes.get('/subscriptions', response_model=List[schema.BaseSubscription], status_code=status.HTTP_200_OK) #Read all subscriptions

@@ -141,7 +141,7 @@ class Orders(BaseModel):
 class AddOrder(BaseModel):
     suid : str
     currency: str        
-    coupon_id:Optional[int] = None
+    coupon_code:Optional[str] = None
 
 
 class Createtransaction(BaseModel):
