@@ -2,18 +2,24 @@ import bcrypt
 from typing import Optional
 import math
 import time
+import requests
 from datetime import datetime, timedelta
 
 from fastapi import UploadFile, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from backenduser import controller as backendusercontroller
+from backenduser import (
+    controller as backendusercontroller,
+    model as backendmodel
+)
 from dependencies import (
     ALLOWED_EXTENSIONS, MAX_FILE_SIZE_BYTES, TOKEN_LIMIT,TOKEN_VALIDITY, 
     CustomValidations, FrontendEmail,Hash, 
     allowed_file, generate_token, generate_uuid
 )
+
+from dependencies import SETTINGS
 
 from . import model, schema
 
@@ -586,31 +592,98 @@ def timezonesList(db: Session):
     """
     return db.query(model.Timezone).all()
 
-def add_orders(authtoken:model.FrontendToken,request:schema.AddOrder,db:Session) -> model.Order:
+def add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, db: Session) -> model.Order:
     """
     Adds a new order to the database.
 
     Args:
+        request (schema.AddOrder): The request object containing the details of the order to be added.
         authtoken (model.FrontendToken): The authentication token of the user making the order.
-        request (schema.AddOrder): The data of the order to be added.
         db (Session): The SQLAlchemy database session.
 
     Returns:
-        model.Order: The newly added order object.
+        model.Order: The newly created order object.
     """
+
+    # Retrieve the subscription details based on the provided subscription ID
+    subscription = db.query(backendmodel.Subscription).filter(
+        backendmodel.Subscription.suid == request.suid,
+        backendmodel.Subscription.is_deleted == False
+    ).first()
+
+    if not subscription:
+        CustomValidations.customError(
+            type="not_exist",
+            loc="suid",
+            msg="Subscription does not exist.",
+            inp=request.suid,
+            ctx={"suid": "exist"}
+        )
+
+    # Calculate the total amount of the order
+    conversion = requests.get(f"https://v6.exchangerate-api.com/v6/3a1bbc03599e950fa56cda33/pair/{SETTINGS.DEFAULT_CURRENCY}/{request.currency}")
+    conversion_json = conversion.json()
+    if conversion.status_code == status.HTTP_404_NOT_FOUND or conversion_json["result"] == "error":
+        CustomValidations.customError(
+            type=conversion_json["error-type"],
+            loc="currency",
+            msg="Currency does not exist.",
+            inp=request.currency,
+            ctx={"currency": "exist"}
+        )
+
+    total_amount = subscription.sale_price * conversion_json["conversion_rate"]
+
+    # Create a new order object
     order = model.Order(
-        ouid = generate_uuid(authtoken.user.username),
-        user_id = authtoken.user_id,
-        total_amount = request.total_amount,
-        final_amount = request.final_amount,
-        currency = request.currency,
-        conversion_rate = request.conversion_rate,
-        coupon_id = request.coupon_id,
-        billing_address = request.billing_address
+        ouid=generate_uuid(authtoken.user.username),
+        user_id=authtoken.user_id,
+        total_amount=total_amount,
+        final_amount=total_amount,
+        currency=conversion_json["target_code"],
+        coupon_amount=0,
+        conversion_rate=conversion_json["conversion_rate"],
     )
+
+    # Apply coupon discount if coupon ID is provided
+    if request.coupon_id:
+        coupon = db.query(backendmodel.Coupon).filter(
+            backendmodel.Coupon.coupon_code == request.coupon_id,
+            backendmodel.Coupon.is_active == True
+        ).first()
+        if not coupon:
+            CustomValidations.customError(
+                type="not_exist",
+                loc="coupon",
+                msg="Coupon does not exist.",
+                inp=request.coupon_id,
+                ctx={"coupon": "exist"}
+            )
+
+        coupon_amount = (coupon.percentage / 100) * total_amount
+        final_amount = total_amount - coupon_amount
+
+        order.coupon_id = coupon.id
+        order.cuoupon_code = coupon.coupon_code
+        order.coupon_amount = coupon_amount
+        order.final_amount = final_amount
+
+    # Save the order to the database
     db.add(order)
     db.commit()
     db.refresh(order)
+
+    order_product = model.OrderProduct(
+        product_price = subscription.price,
+        product_sale_price = subscription.sale_price,
+        order_id = order.id,
+        product__id = subscription.id,
+        quantity = 1,
+    )
+
+    db.add(order_product)
+    db.commit()
+
     return order
-    
+
 

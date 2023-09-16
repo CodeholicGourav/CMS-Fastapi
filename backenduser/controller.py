@@ -686,6 +686,7 @@ def add_subscription(data: schema.CreateSubscription, current_user: model.Backen
         name=data.name,
         description=data.description,
         price=data.price,
+        sale_price = data.sale_price,
         validity=data.validity,
         created_by=current_user.id,
     )

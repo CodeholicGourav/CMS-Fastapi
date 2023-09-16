@@ -148,6 +148,7 @@ class CreateSubscription(BaseModel):
     name : str
     description : Optional[str]
     price : float
+    sale_price : float
     validity : int
 
 

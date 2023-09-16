@@ -86,15 +86,18 @@ def all_timezones(
     db : Session = Depends(get_db), 
 ): return controller.timezonesList(db)
 
-@frontendUserRoutes.post('/add-orders', response_model=schema.Orders,status_code=status.HTTP_201_CREATED)
+@frontendUserRoutes.post('/create-order', response_model=schema.Orders,status_code=status.HTTP_201_CREATED)
 def orders(
     request:schema.AddOrder,
     authToken:model.FrontendToken = Depends(authenticate_token),
-    db: Session = Depends(get_db)
-    
-   
-      
-):
-    return controller.add_orders(authToken,request,db)
+    db: Session = Depends(get_db)      
+): return controller.add_orders(request, authToken, db)
+
+
+""" @frontendUserRoutes.post('/create-transaction', status_code=status.HTTP_201_CREATED)
+def orders(
+    request:schema.AddTransaction,
+    authToken:model.FrontendToken = Depends(authenticate_token),
+    db: Session = Depends(get_db)      
+): return controller.add_orders(request, authToken, db) """
             
-    

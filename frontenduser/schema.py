@@ -124,33 +124,30 @@ class TimeZones(BaseModel):
     time_difference: str
 
 class Orders(BaseModel):
-    id:int 
-    ouid:str
-    user_id:int 
-    total_amount:float 
-    final_amount:float 
-    currency:str 
-    conversion_rate:float 
-    coupon_id:Optional[int ]
-    status:str
-    billing_address:str 
-    created_at:datetime
-    updated_at:datetime 
+    ouid : str
+    total_amount : float
+    final_amount : float
+    currency : str
+    conversion_rate : float
+    coupon_amount : float
+    cuoupon_code : Optional[str] = None
+    status : str
+    created_at : datetime
+    updated_at : datetime
+    user : ShowUser
 
 
 
 class AddOrder(BaseModel):
-    total_amount:float
-    final_amount:float 
-    currency:str 
-    conversion_rate:float 
-    cuoupon_code:str
-    coupon_id:int
-    status:str 
-    billing_address:str 
+    suid : str
+    currency: str        
+    coupon_id:Optional[int] = None
 
 
 class Createtransaction(BaseModel):
    transaction_id:str 
    order_id:str 
 
+
+class AddTransaction(BaseModel):
+    pass

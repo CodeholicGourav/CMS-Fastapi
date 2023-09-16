@@ -352,6 +352,18 @@ class Coupon(Base):
     coupon_type = Column(
         String(50)
     )
+    is_active = Column(
+        Boolean,
+        default=True
+    )
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow
+    )
+    updated_at = Column(
+        DateTime,
+        default=datetime.utcnow
+    )
 
     def __repr__(self):
         return f"{self.coupon_code} | {self.name}"

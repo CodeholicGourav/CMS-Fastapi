@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     LANGUAGE_CODE: str = "en-us"
     USE_TZ: bool = True
     TIME_ZONE: str = "UTC"
+    DEFAULT_CURRENCY: str = "USD"
     DEVELOPMENT: bool = True
     MAIL_HOST: str = "smtp.gmail.com"
     MAIL_PORT: int = 587

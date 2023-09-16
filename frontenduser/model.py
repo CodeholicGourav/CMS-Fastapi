@@ -216,7 +216,6 @@ class Order(Base):
     Represents a table in a database that stores information about orders.
     Inherits from the Base class, which is the base class for all SQLAlchemy models.
     """
-
     __tablename__ = 'orders'
      
     id = Column(
@@ -259,9 +258,6 @@ class Order(Base):
         Text,
         default="pending"
     )
-    billing_address = Column(
-        Text
-    )
     created_at = Column(
         DateTime, 
         default=datetime.utcnow
@@ -272,11 +268,13 @@ class Order(Base):
     )
 
     # Relationships
-    # user = relationship("FrontendUser", back_populates="orders", foreign_keys=user_id)
-    # coupon = relationship("Coupon", back_populates="orders", foreign_keys=coupon_id)
+    user = relationship("FrontendUser", foreign_keys=user_id)
+    coupon = relationship("Coupon", foreign_keys=coupon_id)
+
 
 class Transactions(Base):
     __tablename__ = 'transactions'
+
     id = Column(
         Integer,
         primary_key=True 
@@ -291,6 +289,9 @@ class Transactions(Base):
     payment_gateway = Column(
         String(50)
     )
+    billing_address = Column(
+        Text
+    )
     created_at = Column(
         DateTime,
         default=datetime.utcnow
@@ -301,6 +302,31 @@ class Transactions(Base):
     )
 
 
+class OrderProduct(Base):
+    __tablename__ = 'order_products'
 
-    
+    id = Column(
+        Integer,
+        primary_key=True 
+    )
+    product_price = Column(
+        Integer
+    )
+    product_sale_price = Column(
+        Integer
+    )
+    order_id = Column(
+        Integer,
+        ForeignKey('orders.id')
+    )
+    product__id = Column(
+        Integer,
+        ForeignKey('subscriptions.id')
+    )
+    quantity = Column(
+        Integer,
+        default=1
+    )
+
+
 
