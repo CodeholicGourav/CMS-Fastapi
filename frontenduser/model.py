@@ -73,7 +73,7 @@ class FrontendUser(Base):
         default="en"
     )
     timezone = Column(
-        String(10),
+        String(50),
         default="Asia/Kolkata",
         comment = "Should be a valid codename from table `timezones`",
     )
@@ -272,7 +272,7 @@ class Order(Base):
     coupon = relationship("Coupon", foreign_keys=coupon_id)
 
 
-class Transactions(Base):
+class Transaction(Base):
     __tablename__ = 'transactions'
 
     id = Column(
@@ -284,14 +284,17 @@ class Transactions(Base):
         ForeignKey('orders.id'),
     )
     status = Column(
-        Boolean
+        String(50)
     )
     payment_gateway = Column(
         String(50)
     )
-    billing_address = Column(
-        Text
+    payment_id = Column(
+        String(255)
     )
+    # billing_address = Column(
+    #     Text
+    # )
     created_at = Column(
         DateTime,
         default=datetime.utcnow

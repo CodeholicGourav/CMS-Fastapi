@@ -1,10 +1,14 @@
 from fastapi import APIRouter, status, Query, Depends, UploadFile, File
+from fastapi.responses import FileResponse
 from typing import List, Optional, Annotated
 from sqlalchemy.orm import Session
 from database import get_db
 from . import controller, model, schema
 from .middleware import authenticate_token
 from dependencies import ALLOWED_EXTENSIONS
+import os
+import stripe
+
 
 frontendUserRoutes = APIRouter()
 
@@ -102,10 +106,15 @@ def orders(
 ): return controller.add_orders(request, authToken, db)
 
 
-""" @frontendUserRoutes.post('/create-transaction', status_code=status.HTTP_201_CREATED)
+@frontendUserRoutes.post('/create-transaction', status_code=status.HTTP_201_CREATED)
 def orders(
-    request:schema.AddTransaction,
+    request: schema.StripeReturn,
     authToken:model.FrontendToken = Depends(authenticate_token),
     db: Session = Depends(get_db)      
-): return controller.add_orders(request, authToken, db) """
+): return controller.add_transaction(request, authToken, db)
             
+
+@frontendUserRoutes.get('/checkout')
+def checkout(): return FileResponse(os.path.join(os.path.dirname(__file__), "checkout.html"), media_type="text/html")
+
+

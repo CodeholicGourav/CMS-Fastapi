@@ -9,10 +9,7 @@ from fastapi import UploadFile, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from backenduser import (
-    controller as backendusercontroller,
-    model as backendmodel
-)
+from backenduser import controller as backendusercontroller
 from dependencies import (
     ALLOWED_EXTENSIONS, MAX_FILE_SIZE_BYTES, TOKEN_LIMIT,TOKEN_VALIDITY, 
     CustomValidations, FrontendEmail,Hash, 
@@ -22,6 +19,7 @@ from dependencies import (
 from dependencies import SETTINGS
 
 from . import model, schema
+import stripe
 
 
 def register_user(data: schema.RegisterUser, db: Session) -> Optional[model.FrontendUser]:
@@ -67,7 +65,7 @@ def register_user(data: schema.RegisterUser, db: Session) -> Optional[model.Fron
         uuid=generate_uuid(data.username),
         username=data.username,
         email=data.email,
-        password=bcrypt.hashpw(data.password.encode(), bcrypt.gensalt()),
+        password=Hash.bcrypt(data.password),
         verification_token=generate_token(32),
     )
 
@@ -596,7 +594,7 @@ def timezonesList(db: Session):
     """
     return db.query(model.Timezone).all()
 
-def add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, db: Session) -> model.Order:
+def add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, db: Session):
     """
     Adds a new order to the database.
 
@@ -634,6 +632,7 @@ def add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, db: Ses
         )
 
     total_amount = subscription.sale_price * conversion_json["conversion_rate"]
+    final_amount = round(total_amount, 2)
 
     # Create a new order object
     order = model.Order(
@@ -664,12 +663,33 @@ def add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, db: Ses
         order.coupon_id = coupon.id
         order.cuoupon_code = coupon.coupon_code
         order.coupon_amount = coupon_amount
-        order.final_amount = final_amount
-
+        order.final_amount = round(final_amount, 2)
+    
     # Save the order to the database
     db.add(order)
     db.commit()
     db.refresh(order)
+
+    try:
+        # Create a PaymentIntent with the order amount and currency
+        intent = stripe.PaymentIntent.create(
+            amount=int(order.final_amount * 100),
+            currency=order.currency,
+            api_key=SETTINGS.STRIPE_SECRET,
+            description=order.ouid,
+            metadata={
+                "order_id": order.ouid,
+            }
+        )
+        print(intent)
+    except Exception as e:
+        CustomValidations.customError(
+            type="stripe_error",
+            loc="currency",
+            msg=str(e),
+            inp=request.currency,
+            ctx={"currency": "exist"}
+        )
 
     order_product = model.OrderProduct(
         product_price = subscription.price,
@@ -681,7 +701,28 @@ def add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, db: Ses
 
     db.add(order_product)
     db.commit()
-
+    order.clientSecret = intent['client_secret']
     return order
 
 
+def add_transaction(request: schema.StripeReturn, authToken: model.FrontendToken, db: Session):
+    order = db.query(model.Order).filter_by(ouid=request.description).first()
+    order.status = request.status
+    db.add(order)
+    db.commit()
+
+    transaction = db.query(model.Transaction).filter_by(order_id=order.id).first()
+    if transaction:
+        return transaction
+
+    transaction = model.Transaction(
+        order_id = order.id,
+        status = request.status,
+        payment_gateway = "stripe",
+        payment_id = request.id,
+    )
+
+    db.add(transaction)
+    db.commit()
+    db.refresh(transaction)
+    return transaction

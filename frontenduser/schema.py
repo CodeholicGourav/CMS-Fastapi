@@ -124,17 +124,18 @@ class TimeZones(BaseModel):
     time_difference: str
 
 class Orders(BaseModel):
-    ouid : str
-    total_amount : float
-    final_amount : float
-    currency : str
-    conversion_rate : float
-    coupon_amount : float
-    cuoupon_code : Optional[str] = None
-    status : str
-    created_at : datetime
-    updated_at : datetime
-    user : ShowUser
+    ouid: str
+    total_amount: float
+    final_amount: float
+    currency: str
+    conversion_rate: float
+    coupon_amount: float
+    cuoupon_code: Optional[str] = None
+    status: str
+    created_at: datetime
+    updated_at: datetime
+    user: ShowUser
+    clientSecret: str
 
 
 
@@ -150,4 +151,23 @@ class Createtransaction(BaseModel):
 
 
 class AddTransaction(BaseModel):
-    pass
+    status: str
+    payment_gateway: str
+
+
+class StripeReturn(BaseModel):
+  id: str
+  amount: int
+  canceled_at: int | None
+  cancellation_reason: str | None
+  capture_method: str
+  client_secret: str
+  confirmation_method: str
+  created: int
+  currency: str
+  description: str
+  livemode: bool
+  payment_method: str
+  payment_method_types: list
+  receipt_email: EmailStr
+  status: str

@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     CREATE_PASSWORD_ENDPOINT_FRONTEND_USER: str = "frontend-user/create-password"
     EMAIL_VERIFY_ENDPOINT_BACKEND_USER: str = "backend-user/verify-token"
     CREATE_PASSWORD_ENDPOINT_BACKEND_USER: str = "backend-user/create-password"
+    STRIPE_SECRET: str
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
