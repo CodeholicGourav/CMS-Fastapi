@@ -99,7 +99,7 @@ def all_timezones(
 ): return controller.timezonesList(db)
 
 @frontendUserRoutes.post('/create-order', response_model=schema.Orders,status_code=status.HTTP_201_CREATED)
-def orders(
+def create_order(
     request:schema.AddOrder,
     authToken:model.FrontendToken = Depends(authenticate_token),
     db: Session = Depends(get_db)      
@@ -107,7 +107,7 @@ def orders(
 
 
 @frontendUserRoutes.post('/create-transaction', status_code=status.HTTP_201_CREATED)
-def orders(
+def create_transaction(
     request: schema.StripeReturn,
     authToken:model.FrontendToken = Depends(authenticate_token),
     db: Session = Depends(get_db)      
