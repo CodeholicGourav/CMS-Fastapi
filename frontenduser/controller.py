@@ -1,4 +1,3 @@
-import bcrypt
 from typing import Optional
 import math
 import time
@@ -20,6 +19,7 @@ from dependencies import SETTINGS
 
 from . import model, schema
 import stripe
+import razorpay
 
 
 def register_user(data: schema.RegisterUser, db: Session) -> Optional[model.FrontendUser]:
@@ -594,7 +594,7 @@ def timezonesList(db: Session):
     """
     return db.query(model.Timezone).all()
 
-def add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, db: Session):
+def stripe_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, db: Session):
     """
     Adds a new order to the database.
 
@@ -681,7 +681,7 @@ def add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, db: Ses
                 "order_id": order.ouid,
             }
         )
-        print(intent)
+        # print(intent)
     except Exception as e:
         CustomValidations.customError(
             type="stripe_error",
@@ -705,7 +705,7 @@ def add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, db: Ses
     return order
 
 
-def add_transaction(request: schema.StripeReturn, authToken: model.FrontendToken, db: Session):
+def stripe_add_transaction(request: schema.StripeReturn, authToken: model.FrontendToken, db: Session):
     order = db.query(model.Order).filter_by(ouid=request.description).first()
     order.status = request.status
     db.add(order)
@@ -726,3 +726,266 @@ def add_transaction(request: schema.StripeReturn, authToken: model.FrontendToken
     db.commit()
     db.refresh(transaction)
     return transaction
+
+
+def paypal_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, db: Session):
+    """
+    Adds a new order to the database.
+
+    Args:
+        request (schema.AddOrder): The request object containing the details of the order to be added.
+        authtoken (model.FrontendToken): The authentication token of the user making the order.
+        db (Session): The SQLAlchemy database session.
+
+    Returns:
+        model.Order: The newly created order object.
+    """
+
+    # Retrieve the subscription details based on the provided subscription ID
+    subscription = backendusercontroller.subscription_plan_details(request.suid, db)
+
+    if not subscription or subscription.is_deleted:
+        CustomValidations.customError(
+            type="not_exist",
+            loc="suid",
+            msg="Subscription does not exist.",
+            inp=request.suid,
+            ctx={"suid": "exist"}
+        )
+
+    # Calculate the total amount of the order
+    conversion = requests.get(f"https://v6.exchangerate-api.com/v6/3a1bbc03599e950fa56cda33/pair/{SETTINGS.DEFAULT_CURRENCY}/{request.currency}")
+    conversion_json = conversion.json()
+    if conversion.status_code == status.HTTP_404_NOT_FOUND or conversion_json["result"] == "error":
+        CustomValidations.customError(
+            type=conversion_json["error-type"],
+            loc="currency",
+            msg="Currency does not exist.",
+            inp=request.currency,
+            ctx={"currency": "exist"}
+        )
+
+    total_amount = subscription.sale_price * conversion_json["conversion_rate"]
+    final_amount = round(total_amount, 2)
+
+    # Create a new order object
+    order = model.Order(
+        ouid=generate_uuid(authtoken.user.username),
+        user_id=authtoken.user_id,
+        total_amount=total_amount,
+        final_amount=total_amount,
+        currency=conversion_json["target_code"],
+        coupon_amount=0,
+        conversion_rate=conversion_json["conversion_rate"],
+    )
+
+    # Apply coupon discount if coupon ID is provided
+    if request.coupon_code:
+        coupon = backendusercontroller.couponDetails(request.coupon_code)
+        if not coupon or not coupon.is_active:
+            CustomValidations.customError(
+                type="not_exist",
+                loc="coupon",
+                msg="Coupon does not exist.",
+                inp=request.coupon_code,
+                ctx={"coupon": "exist"}
+            )
+
+        coupon_amount = (coupon.percentage / 100) * total_amount
+        final_amount = total_amount - coupon_amount
+
+        order.coupon_id = coupon.id
+        order.cuoupon_code = coupon.coupon_code
+        order.coupon_amount = coupon_amount
+        order.final_amount = round(final_amount, 2)
+    
+    # Save the order to the database
+    db.add(order)
+    db.commit()
+    db.refresh(order)
+
+    try:
+        # Create a PaymentIntent with the order amount and currency
+        intent = stripe.PaymentIntent.create(
+            amount=int(order.final_amount * 100),
+            currency=order.currency,
+            api_key=SETTINGS.STRIPE_SECRET,
+            description=order.ouid,
+            metadata={
+                "order_id": order.ouid,
+            }
+        )
+        # print(intent)
+    except Exception as e:
+        CustomValidations.customError(
+            type="stripe_error",
+            loc="currency",
+            msg=str(e),
+            inp=request.currency,
+            ctx={"currency": "exist"}
+        )
+
+    order_product = model.OrderProduct(
+        product_price = subscription.price,
+        product_sale_price = subscription.sale_price,
+        order_id = order.id,
+        product__id = subscription.id,
+        quantity = 1,
+    )
+
+    db.add(order_product)
+    db.commit()
+    order.clientSecret = intent['client_secret']
+    return order
+
+
+def paypal_add_transaction(request: schema.StripeReturn, authToken: model.FrontendToken, db: Session):
+    order = db.query(model.Order).filter_by(ouid=request.description).first()
+    order.status = request.status
+    db.add(order)
+    db.commit()
+
+    transaction = db.query(model.Transaction).filter_by(order_id=order.id).first()
+    if transaction:
+        return transaction
+
+    transaction = model.Transaction(
+        order_id = order.id,
+        status = request.status,
+        payment_gateway = "stripe",
+        payment_id = request.id,
+    )
+
+    db.add(transaction)
+    db.commit()
+    db.refresh(transaction)
+    return transaction
+
+
+def razorpay_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, db: Session):
+    """
+    Adds a new order to the database.
+
+    Args:
+        request (schema.AddOrder): The request object containing the details of the order to be added.
+        authtoken (model.FrontendToken): The authentication token of the user making the order.
+        db (Session): The SQLAlchemy database session.
+
+    Returns:
+        model.Order: The newly created order object.
+    """
+
+    # Retrieve the subscription details based on the provided subscription ID
+    subscription = backendusercontroller.subscription_plan_details(request.suid, db)
+
+    if not subscription or subscription.is_deleted:
+        CustomValidations.customError(
+            type="not_exist",
+            loc="suid",
+            msg="Subscription does not exist.",
+            inp=request.suid,
+            ctx={"suid": "exist"}
+        )
+
+    # Calculate the total amount of the order
+    conversion = requests.get(f"https://v6.exchangerate-api.com/v6/3a1bbc03599e950fa56cda33/pair/{SETTINGS.DEFAULT_CURRENCY}/{request.currency}")
+    conversion_json = conversion.json()
+    if conversion.status_code == status.HTTP_404_NOT_FOUND or conversion_json["result"] == "error":
+        CustomValidations.customError(
+            type=conversion_json["error-type"],
+            loc="currency",
+            msg="Currency does not exist.",
+            inp=request.currency,
+            ctx={"currency": "exist"}
+        )
+
+    total_amount = subscription.sale_price * conversion_json["conversion_rate"]
+    final_amount = round(total_amount, 2)
+
+    # Create a new order object
+    order = model.Order(
+        ouid=generate_uuid(authtoken.user.username),
+        user_id=authtoken.user_id,
+        total_amount=total_amount,
+        final_amount=total_amount,
+        currency=conversion_json["target_code"],
+        coupon_amount=0,
+        conversion_rate=conversion_json["conversion_rate"],
+    )
+
+    # Apply coupon discount if coupon ID is provided
+    if request.coupon_code:
+        coupon = backendusercontroller.couponDetails(request.coupon_code)
+        if not coupon or not coupon.is_active:
+            CustomValidations.customError(
+                type="not_exist",
+                loc="coupon",
+                msg="Coupon does not exist.",
+                inp=request.coupon_code,
+                ctx={"coupon": "exist"}
+            )
+
+        coupon_amount = (coupon.percentage / 100) * total_amount
+        final_amount = total_amount - coupon_amount
+
+        order.coupon_id = coupon.id
+        order.cuoupon_code = coupon.coupon_code
+        order.coupon_amount = coupon_amount
+        order.final_amount = round(final_amount, 2)
+    
+    # Save the order to the database
+    db.add(order)
+    db.commit()
+    db.refresh(order)
+
+    try:
+        # Create a PaymentIntent with the order amount and currency
+        client = razorpay.Client(auth=(SETTINGS.RAZORPAY_CLIENT, SETTINGS.RAZORPAY_SECRET))
+        client.set_app_details({"title" : SETTINGS.APP_NAME})
+        payment = client.order.create(data={ "amount": int(order.final_amount * 100), "currency": order.currency, "receipt":  order.ouid })
+    except Exception as e:
+        CustomValidations.customError(
+            type="stripe_error",
+            loc="currency",
+            msg=str(e),
+            inp=request.currency,
+            ctx={"currency": "exist"}
+        )
+
+    order_product = model.OrderProduct(
+        product_price = subscription.price,
+        product_sale_price = subscription.sale_price,
+        order_id = order.id,
+        product__id = subscription.id,
+        quantity = 1,
+    )
+
+    db.add(order_product)
+    db.commit()
+    order.clientSecret = payment['id']
+    return order
+
+
+def razorpay_add_transaction(request: schema.RazorpayReturn, authToken: model.FrontendToken, db: Session):
+    order = db.query(model.Order).filter_by(ouid=request.ouid).first()
+    order.status = request.status
+    db.add(order)
+    db.commit()
+
+    transaction = db.query(model.Transaction).filter_by(order_id=order.id).first()
+    if transaction:
+        return transaction
+
+    transaction = model.Transaction(
+        order_id = order.id,
+        status = request.status,
+        payment_gateway = "razorpay",
+        payment_id = request.razorpay_payment_id,
+    )
+
+    db.add(transaction)
+    db.commit()
+    db.refresh(transaction)
+    return transaction
+
+

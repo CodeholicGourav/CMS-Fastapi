@@ -171,3 +171,12 @@ class StripeReturn(BaseModel):
   payment_method_types: list
   receipt_email: EmailStr
   status: str
+
+
+class RazorpayReturn(BaseModel):
+    razorpay_payment_id: str
+    razorpay_order_id: str
+    razorpay_signature: str
+    currency: str
+    ouid: str
+    status: str

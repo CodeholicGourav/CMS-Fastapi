@@ -4,7 +4,7 @@ from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from backenduser.route import backendUserRoutes
 from frontenduser.route import frontendUserRoutes
-from dependencies import SETTINGS
+from dependencies import SETTINGS, TEMPLATES
 
 app = FastAPI()
 allowed_origins = SETTINGS.ALLOWED_ORIGINS
@@ -19,9 +19,8 @@ app.add_middleware(
 
 @app.get("/")
 def index():
-    html_file_path = os.path.join(os.path.dirname(__file__), "index.html")
+    html_file_path = os.path.join(TEMPLATES, "index.html")
     
-    # Serve the HTML file as a response
     return FileResponse(html_file_path, media_type="text/html")
 
 

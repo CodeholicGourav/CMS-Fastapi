@@ -5,6 +5,7 @@ import random
 import re
 import secrets
 import time
+import os
 
 from fastapi import HTTPException, status
 from passlib.context import CryptContext
@@ -38,12 +39,19 @@ class Settings(BaseSettings):
     CREATE_PASSWORD_ENDPOINT_FRONTEND_USER: str = "frontend-user/create-password"
     EMAIL_VERIFY_ENDPOINT_BACKEND_USER: str = "backend-user/verify-token"
     CREATE_PASSWORD_ENDPOINT_BACKEND_USER: str = "backend-user/create-password"
+    STRIPE_CLIENT: str
     STRIPE_SECRET: str
+    PAYPAL_CLIENT: str
+    PAYPAL_SECRET: str
+    RAZORPAY_CLIENT: str
+    RAZORPAY_SECRET: str
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 
 SETTINGS = Settings()
+
+TEMPLATES = os.path.join(os.path.dirname(__file__), 'templates')
 
 def generate_token(length: int) -> str:
     """

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        #rzp-button1 {
+            background-color: #3399cc;
+            border: none;
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 20px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <button id="rzp-button1">Pay with Razorpay</button>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script>
+        async function createTransaction(paymentIntent){
+            const response = await fetch("http://127.0.0.1:8000/frontend-user/razorpay/create-transaction", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "authtoken": "MPwtb6dUv00PNKzQgyEgBQ" },
+            body: JSON.stringify(paymentIntent),
+            });
+            data = await response.json();
+        }
+
+        async function initialize(){
+            const response = await fetch("http://127.0.0.1:8000/frontend-user/razorpay/create-order", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "authtoken": "MPwtb6dUv00PNKzQgyEgBQ" },
+                body: JSON.stringify({
+                    "suid": "VW5saW1pdGVkIHBhY2s=86531695025752",
+                    "currency": "INR"
+                }),
+            });
+            const response_json = await response.json();
+            var options = {
+                "key": "rzp_test_V7I8A5GEHCU1Bm", // Enter the Key ID generated from the Dashboard
+                "amount": response_json.final_amount, // Amount is in currency subunits. Default currency is INR. Hence, 50000 refers to 50000 paise
+                "currency": response_json.currency,
+                "name": "Code CMS",
+                "description": response_json.ouid,
+                "image": "https://codeholic.in/wp-content/uploads/2022/04/cropped-face_logo_512x512-32x32.jpg",
+                "order_id": response_json.clientSecret, //This is a sample Order ID. Pass the `id` obtained in the response of Step 1
+                "handler": async function (paymentIntent){
+                    const response = await fetch("http://127.0.0.1:8000/frontend-user/razorpay/create-transaction", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", "authtoken": "MPwtb6dUv00PNKzQgyEgBQ" },
+                        body: JSON.stringify({
+                            "razorpay_payment_id": paymentIntent.razorpay_payment_id,
+                            "razorpay_order_id": paymentIntent.razorpay_order_id,
+                            "razorpay_signature": paymentIntent.razorpay_signature,
+                            "currency": response_json.currency,
+                            "ouid": response_json.ouid,
+                            "status": "succeeded",
+                        }),
+                    });
+                    data = await response.json();
+                },
+                "prefill": {
+                    "name": "Gaurav Kumar",
+                    "email": "gaurav.kumar@example.com",
+                    "contact": "9000090000"
+                },
+                "notes": {
+                    "address": "Loksuvidha finance, Ukhri road, JBP."
+                },
+                "theme": {
+                    "color": "#3399cc"
+                }
+            };
+            var rzp1 = new Razorpay(options);
+            rzp1.on('payment.failed', function (response) {
+                alert(response.error.code);
+                alert(response.error.description);
+                alert(response.error.source);
+                alert(response.error.step);
+                alert(response.error.reason);
+                alert(response.error.metadata.order_id);
+                alert(response.error.metadata.payment_id);
+            });
+            document.getElementById('rzp-button1').onclick = function (e) {
+                rzp1.open();
+                e.preventDefault();
+            }
+        }
+
+        initialize();
+    </script>
+</body>
+
+</html>

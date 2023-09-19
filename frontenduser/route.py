@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from . import controller, model, schema
 from .middleware import authenticate_token
-from dependencies import ALLOWED_EXTENSIONS
+from dependencies import ALLOWED_EXTENSIONS, TEMPLATES
 import os
 import stripe
 
@@ -98,23 +98,60 @@ def all_timezones(
     db : Session = Depends(get_db), 
 ): return controller.timezonesList(db)
 
-@frontendUserRoutes.post('/create-order', response_model=schema.Orders,status_code=status.HTTP_201_CREATED)
+
+@frontendUserRoutes.post('/stripe/create-order', response_model=schema.Orders,status_code=status.HTTP_201_CREATED)
 def create_order(
     request:schema.AddOrder,
     authToken:model.FrontendToken = Depends(authenticate_token),
     db: Session = Depends(get_db)      
-): return controller.add_orders(request, authToken, db)
+): return controller.stripe_add_orders(request, authToken, db)
 
 
-@frontendUserRoutes.post('/create-transaction', status_code=status.HTTP_201_CREATED)
+@frontendUserRoutes.post('/stripe/create-transaction', status_code=status.HTTP_201_CREATED)
 def create_transaction(
     request: schema.StripeReturn,
     authToken:model.FrontendToken = Depends(authenticate_token),
     db: Session = Depends(get_db)      
-): return controller.add_transaction(request, authToken, db)
+): return controller.stripe_add_transaction(request, authToken, db)
+
+
+@frontendUserRoutes.post('/paypal/create-order', response_model=schema.Orders,status_code=status.HTTP_201_CREATED)
+def create_order(
+    request:schema.AddOrder,
+    authToken:model.FrontendToken = Depends(authenticate_token),
+    db: Session = Depends(get_db)      
+): return controller.paypal_add_orders(request, authToken, db)
+
+
+@frontendUserRoutes.post('/paypal/create-transaction', status_code=status.HTTP_201_CREATED)
+def create_transaction(
+    request: schema.StripeReturn,
+    authToken:model.FrontendToken = Depends(authenticate_token),
+    db: Session = Depends(get_db)      
+): return controller.paypal_add_transaction(request, authToken, db)
+
+
+@frontendUserRoutes.post('/razorpay/create-order', response_model=schema.Orders,status_code=status.HTTP_201_CREATED)
+def create_order(
+    request:schema.AddOrder,
+    authToken:model.FrontendToken = Depends(authenticate_token),
+    db: Session = Depends(get_db)      
+): return controller.razorpay_add_orders(request, authToken, db)
+
+
+@frontendUserRoutes.post('/razorpay/create-transaction', status_code=status.HTTP_201_CREATED)
+def create_transaction(
+    request: schema.RazorpayReturn,
+    authToken:model.FrontendToken = Depends(authenticate_token),
+    db: Session = Depends(get_db)      
+): return controller.razorpay_add_transaction(request, authToken, db)
             
 
-@frontendUserRoutes.get('/checkout')
-def checkout(): return FileResponse(os.path.join(os.path.dirname(__file__), "checkout.html"), media_type="text/html")
+@frontendUserRoutes.get('/stripe/checkout')
+def checkout(): return FileResponse(os.path.join(TEMPLATES, "stripe_checkout.html"), media_type="text/html")
+
+
+@frontendUserRoutes.get('/razorpay/checkout')
+def checkout(): return FileResponse(os.path.join(TEMPLATES, "razorpay_checkout.html"), media_type="text/html")
 
 

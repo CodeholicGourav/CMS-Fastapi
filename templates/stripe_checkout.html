@@ -181,7 +181,7 @@
       let emailAddress = '';
       // Fetches a payment intent and captures the client secret
       async function initialize() {
-        const response = await fetch("http://127.0.0.1:8000/frontend-user/create-order", {
+        const response = await fetch("http://127.0.0.1:8000/frontend-user/stripe/create-order", {
           method: "POST",
           headers: { "Content-Type": "application/json", "authtoken": "MPwtb6dUv00PNKzQgyEgBQ" },
           body: JSON.stringify({
@@ -269,13 +269,12 @@
       }
 
       async function createTransaction(paymentIntent){
-        const response = await fetch("http://127.0.0.1:8000/frontend-user/create-transaction", {
+        const response = await fetch("http://127.0.0.1:8000/frontend-user/stripe/create-transaction", {
           method: "POST",
           headers: { "Content-Type": "application/json", "authtoken": "MPwtb6dUv00PNKzQgyEgBQ" },
           body: JSON.stringify(paymentIntent),
         });
         data = await response.json();
-        console.log(data)
       }
 
       // ------- UI helpers -------
