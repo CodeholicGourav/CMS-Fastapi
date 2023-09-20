@@ -150,6 +150,7 @@ class CreateSubscription(BaseModel):
     price : float
     sale_price : float
     validity : int
+    features: list[str]
 
 
 class BaseRolePermission(BaseModel):
@@ -212,3 +213,9 @@ class FrontendBaseUser(BaseModel):
 class FrontenduserList(BaseModel):
     users: List[FrontendBaseUser]
     total: int
+
+
+class ListFeatures(BaseModel):
+    id: int
+    feature_type: str
+    feature_code: str

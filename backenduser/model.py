@@ -7,7 +7,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 
 from database import Base, SessionLocal
-from dependencies import predefined_permissions
+from dependencies import predefined_permissions, predefined_feature
 
 
 class BackendUser(Base):
@@ -151,7 +151,7 @@ class BackendPermission(Base):
         return f"{self.type} | {self.codename} | {self.permission}"
 
 
-def create_permissions() -> Union[Dict[str, str], Dict[str, str]]:
+def create_permissions():
     """
     Create predefined permissions in the database.
 
@@ -302,7 +302,6 @@ class Feature(Base):
 
     def __repr__(self):
         return f"{self.feature_type} | {self.feature_code}"
-
 
 class SubscriptionFeature(Base):
     __tablename__ = 'subscription_features'

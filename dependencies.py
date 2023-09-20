@@ -6,6 +6,7 @@ import re
 import secrets
 import time
 import os
+import requests
 
 from fastapi import HTTPException, status
 from passlib.context import CryptContext
@@ -52,6 +53,8 @@ class Settings(BaseSettings):
 SETTINGS = Settings()
 
 TEMPLATES = os.path.join(os.path.dirname(__file__), 'templates')
+
+PAYPAL_BASE_URL = "https://api-m.sandbox.paypal.com"
 
 def generate_token(length: int) -> str:
     """
@@ -156,6 +159,7 @@ class BaseEmail:
         except Exception as e:
             print(f"Failed to send email: {str(e)}")
             return False
+
 
 class ShowUser(BaseModel):
     uuid : str
@@ -358,9 +362,6 @@ class CustomValidations():
     
         return value
     
-    
-
-    
 
 # Maximum hours for token validation
 TOKEN_VALIDITY = 72 
@@ -396,3 +397,40 @@ predefined_permissions = [
     {"permission": "Can read subscription", "type": 4, "codename": "read_subscription"},
     {"permission": "Can delete subscription", "type": 4, "codename": "delete_subscription"}
 ]
+
+
+def generatePaypalAccessToken():
+    try:
+        auth = base64.b64encode(f'{SETTINGS.PAYPAL_CLIENT}:{SETTINGS.PAYPAL_SECRET}'.encode("utf-8")).decode("utf-8")
+        response = requests.post(
+            url=f'{PAYPAL_BASE_URL}/v1/oauth2/token', 
+            data= "grant_type=client_credentials",
+            headers={"Authorization": f'Basic {auth}'},
+        )
+    
+        data = response.json()
+        return data['access_token']
+    except Exception as error:
+        CustomValidations.customError(
+            type="paypal_error",
+            loc="paypal",
+            msg=error,
+            inp="paypal",
+            ctx={"paypal": "error"}
+        )
+
+
+def convertCurrency(currency: str):
+    conversion = requests.get(f"https://v6.exchangerate-api.com/v6/3a1bbc03599e950fa56cda33/pair/{SETTINGS.DEFAULT_CURRENCY}/{currency}")
+    conversion_json = conversion.json()
+    if conversion.status_code == status.HTTP_404_NOT_FOUND or conversion_json["result"] == "error":
+        CustomValidations.customError(
+            type=conversion_json["error-type"],
+            loc="currency",
+            msg="Currency does not exist.",
+            inp=currency,
+            ctx={"currency": "exist"}
+        )
+
+    return conversion_json
+

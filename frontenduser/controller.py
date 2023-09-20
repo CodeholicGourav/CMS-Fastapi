@@ -15,12 +15,16 @@ from dependencies import (
     allowed_file, generate_token, generate_uuid
 )
 
-from dependencies import SETTINGS
+from dependencies import (
+    SETTINGS, 
+    PAYPAL_BASE_URL, 
+    generatePaypalAccessToken, 
+    convertCurrency
+)
 
 from . import model, schema
 import stripe
 import razorpay
-
 
 def register_user(data: schema.RegisterUser, db: Session) -> Optional[model.FrontendUser]:
     """
@@ -620,18 +624,9 @@ def stripe_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, 
         )
 
     # Calculate the total amount of the order
-    conversion = requests.get(f"https://v6.exchangerate-api.com/v6/3a1bbc03599e950fa56cda33/pair/{SETTINGS.DEFAULT_CURRENCY}/{request.currency}")
-    conversion_json = conversion.json()
-    if conversion.status_code == status.HTTP_404_NOT_FOUND or conversion_json["result"] == "error":
-        CustomValidations.customError(
-            type=conversion_json["error-type"],
-            loc="currency",
-            msg="Currency does not exist.",
-            inp=request.currency,
-            ctx={"currency": "exist"}
-        )
+    currency = convertCurrency(request.currency)
 
-    total_amount = subscription.sale_price * conversion_json["conversion_rate"]
+    total_amount = subscription.sale_price * currency["conversion_rate"]
     final_amount = round(total_amount, 2)
 
     # Create a new order object
@@ -640,9 +635,9 @@ def stripe_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, 
         user_id=authtoken.user_id,
         total_amount=total_amount,
         final_amount=total_amount,
-        currency=conversion_json["target_code"],
+        currency=currency["target_code"],
         coupon_amount=0,
-        conversion_rate=conversion_json["conversion_rate"],
+        conversion_rate=currency["conversion_rate"],
     )
 
     # Apply coupon discount if coupon ID is provided
@@ -754,18 +749,9 @@ def paypal_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, 
         )
 
     # Calculate the total amount of the order
-    conversion = requests.get(f"https://v6.exchangerate-api.com/v6/3a1bbc03599e950fa56cda33/pair/{SETTINGS.DEFAULT_CURRENCY}/{request.currency}")
-    conversion_json = conversion.json()
-    if conversion.status_code == status.HTTP_404_NOT_FOUND or conversion_json["result"] == "error":
-        CustomValidations.customError(
-            type=conversion_json["error-type"],
-            loc="currency",
-            msg="Currency does not exist.",
-            inp=request.currency,
-            ctx={"currency": "exist"}
-        )
+    currency = convertCurrency(request.currency)
 
-    total_amount = subscription.sale_price * conversion_json["conversion_rate"]
+    total_amount = subscription.sale_price * currency["conversion_rate"]
     final_amount = round(total_amount, 2)
 
     # Create a new order object
@@ -774,9 +760,9 @@ def paypal_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, 
         user_id=authtoken.user_id,
         total_amount=total_amount,
         final_amount=total_amount,
-        currency=conversion_json["target_code"],
+        currency=currency["target_code"],
         coupon_amount=0,
-        conversion_rate=conversion_json["conversion_rate"],
+        conversion_rate=currency["conversion_rate"],
     )
 
     # Apply coupon discount if coupon ID is provided
@@ -806,23 +792,42 @@ def paypal_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, 
 
     try:
         # Create a PaymentIntent with the order amount and currency
-        intent = stripe.PaymentIntent.create(
-            amount=int(order.final_amount * 100),
-            currency=order.currency,
-            api_key=SETTINGS.STRIPE_SECRET,
-            description=order.ouid,
-            metadata={
-                "order_id": order.ouid,
-            }
+        accessToken = generatePaypalAccessToken()
+        url = f'{PAYPAL_BASE_URL}/v2/checkout/orders'
+        payload = {
+            "intent": "CAPTURE",
+            "purchase_units": [{
+                "amount": {
+                    "currency_code": order.currency,
+                    "value": round(order.final_amount, 2),
+                },
+            }],
+        }
+
+        response = requests.post(
+            url=url,
+            headers={"Authorization": f'Bearer {accessToken}'},
+            json=payload
         )
-        # print(intent)
+        paypal = response.json()
+
     except Exception as e:
+        print(e)
         CustomValidations.customError(
-            type="stripe_error",
-            loc="currency",
+            type="paypal_error",
+            loc="payment gateway",
             msg=str(e),
-            inp=request.currency,
-            ctx={"currency": "exist"}
+            inp="paypal",
+            ctx={"paypal": "error"}
+        )
+
+    if 'id' not in paypal:
+        CustomValidations.customError(
+            type=paypal['name'],
+            loc="paypal",
+            msg=paypal['message'],
+            inp='paypal',
+            ctx={"paypal": paypal["links"]}
         )
 
     order_product = model.OrderProduct(
@@ -835,7 +840,7 @@ def paypal_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, 
 
     db.add(order_product)
     db.commit()
-    order.clientSecret = intent['client_secret']
+    order.clientSecret = paypal['id']
     return order
 
 
@@ -888,18 +893,9 @@ def razorpay_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken
         )
 
     # Calculate the total amount of the order
-    conversion = requests.get(f"https://v6.exchangerate-api.com/v6/3a1bbc03599e950fa56cda33/pair/{SETTINGS.DEFAULT_CURRENCY}/{request.currency}")
-    conversion_json = conversion.json()
-    if conversion.status_code == status.HTTP_404_NOT_FOUND or conversion_json["result"] == "error":
-        CustomValidations.customError(
-            type=conversion_json["error-type"],
-            loc="currency",
-            msg="Currency does not exist.",
-            inp=request.currency,
-            ctx={"currency": "exist"}
-        )
+    currency = convertCurrency(request.currency)
 
-    total_amount = subscription.sale_price * conversion_json["conversion_rate"]
+    total_amount = subscription.sale_price * currency["conversion_rate"]
     final_amount = round(total_amount, 2)
 
     # Create a new order object
@@ -908,9 +904,9 @@ def razorpay_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken
         user_id=authtoken.user_id,
         total_amount=total_amount,
         final_amount=total_amount,
-        currency=conversion_json["target_code"],
+        currency=currency["target_code"],
         coupon_amount=0,
-        conversion_rate=conversion_json["conversion_rate"],
+        conversion_rate=currency["conversion_rate"],
     )
 
     # Apply coupon discount if coupon ID is provided

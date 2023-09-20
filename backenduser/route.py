@@ -134,6 +134,12 @@ def assign_permission(
 ): return controller.assign_permissions(request, authToken, db)
 
 
+@backendUserRoutes.get('/features', response_model=List[schema.ListFeatures], status_code=status.HTTP_200_OK)
+def get_all_features(
+    db: Session = Depends(get_db)
+): return controller.get_all_features(db)
+
+
 @backendUserRoutes.post("/add-subscription", response_model=schema.BaseSubscription, status_code=status.HTTP_201_CREATED) #Create subscription
 async def add_subscription(
     data: schema.CreateSubscription,

@@ -814,3 +814,7 @@ def couponDetails(coupon_code: str, db: Session) -> model.Coupon:
         )
 
     return coupon
+
+
+def get_all_features(db: Session):
+    return db.query(model.Feature).all()

@@ -155,3 +155,7 @@ def checkout(): return FileResponse(os.path.join(TEMPLATES, "stripe_checkout.htm
 def checkout(): return FileResponse(os.path.join(TEMPLATES, "razorpay_checkout.html"), media_type="text/html")
 
 
+@frontendUserRoutes.get('/paypal/checkout')
+def checkout(): return FileResponse(os.path.join(TEMPLATES, "paypal_checkout.html"), media_type="text/html")
+
+
