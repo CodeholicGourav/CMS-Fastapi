@@ -399,6 +399,14 @@ predefined_permissions = [
 ]
 
 
+predefined_feature = [
+    {"feature_type": "Can create organization", "feature_code": "create_organization"},
+    {"feature_type": "Can add member", "feature_code": "add_member"},
+    {"feature_type": "Can add task", "feature_code": "add_task"},
+    {"feature_type": "Can create chat", "feature_code": "add_chat"},
+]
+
+
 def generatePaypalAccessToken():
     try:
         auth = base64.b64encode(f'{SETTINGS.PAYPAL_CLIENT}:{SETTINGS.PAYPAL_SECRET}'.encode("utf-8")).decode("utf-8")

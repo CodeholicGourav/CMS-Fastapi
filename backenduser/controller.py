@@ -708,6 +708,15 @@ def add_subscription(data: schema.CreateSubscription, current_user: model.Backen
     db.add(subscription)
     db.commit()
 
+    feature_codes = data.features
+    features = db.query(model.Feature).filter(model.Feature.feature_code.in_(feature_codes)).all()
+
+    for feature in features:
+        subscription_feature = model.SubscriptionFeature(subscription_id=subscription.id, feature_id=feature.feature_code, quantity=data.quantity)
+        db.add(subscription_feature)
+
+    db.commit()
+
     # Refresh the subscription instance to ensure it reflects the latest state from the database
     db.refresh(subscription)
 

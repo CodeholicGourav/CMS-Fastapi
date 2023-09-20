@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, EmailStr, constr, validator
+from pydantic import BaseModel, Field, EmailStr, constr, validator
 
 from dependencies import CustomValidations
 
@@ -57,11 +57,9 @@ class permission(BaseModel):
     permission : str
 
 
-
-
-
 class ShowRoleName(BaseModel):
     role : str
+
 
 class BaseUser(BaseModel):
     uuid : str
@@ -74,6 +72,7 @@ class BaseUser(BaseModel):
     created_at : datetime
     updated_at : datetime
 
+
 class ListUsers(BaseModel):
     users: List[BaseUser]
     total: int
@@ -82,7 +81,7 @@ class RegisterUser(BaseModel):
     username: constr(min_length=6, max_length=30,)
     email: EmailStr
     password: constr(min_length=8)
-    role_id: str
+    role_id: str = Field(..., description="ruid of a role.")
 
     @validator("username")
     def username_valid(cls, value):
@@ -94,9 +93,9 @@ class RegisterUser(BaseModel):
 
 
 class SystemDetails(BaseModel):
-    ip_address: constr(max_length=30)
-    browser: constr(max_length=30)
-    system: constr(max_length=30)
+    ip_address: constr(max_length=30) = Field(..., description="IP address of you machine to link it with the login token")
+    browser: constr(max_length=30) = Field(..., description="Name of the browser to link it with the login token")
+    system: constr(max_length=30) = Field(..., description="Name of your machine to link it with the login token")
 
     def to_string(self):
         return f"IP Address: {self.ip_address}, Browser: {self.browser}, System: {self.system}"
@@ -106,19 +105,14 @@ class LoginUser(BaseModel):
     username_or_email: str
     password: str
     details: SystemDetails
-    
 
 
 class UpdateUser(BaseModel):
-    user_id: str
-    role_id: Optional[str] = None
-    is_deleted: Optional[bool] = None
-    is_active: Optional[bool] = None
+    user_id: str = Field(..., description="uuid of the user.")
+    role_id: Optional[str] = Field(..., description="ruid of the role to assign.")
+    is_deleted: Optional[bool] = Field(..., description="delete the user or not.")
+    is_active: Optional[bool] = Field(..., description="activate the user or not.")
 
-
-
-# class Permisions(BaseModel):
-#     permission:str 
 
 class RolePermission(BaseModel):
     role_id:str 
@@ -135,7 +129,7 @@ class ShowToken(BaseModel):
 
 
 class ForgotPassword(BaseModel):
-    token : str
+    token : str = Field(..., description="Token sent to user's email")
     password: constr(min_length=8)
 
     @validator("password")
@@ -147,10 +141,10 @@ class ForgotPassword(BaseModel):
 class CreateSubscription(BaseModel):
     name : str
     description : Optional[str]
-    price : float
-    sale_price : float
-    validity : int
-    features: list[str]
+    price : float = Field(..., description="Price to show.")
+    sale_price : float = Field(..., description="The actual price.")
+    validity : int = Field(..., description="Validity for user in days.")
+    features: list[str] = Field(..., description="feature_code from features list.")
 
 
 class BaseRolePermission(BaseModel):
@@ -158,15 +152,12 @@ class BaseRolePermission(BaseModel):
 
 
 class CreateRole(BaseModel):
-    role : constr(
-        min_length=3, 
-        max_length=20,
-    )
+    role : constr(min_length=3, max_length=20) = Field(..., description="Name of the role.")
 
 
 class AssignPermissions(BaseModel):
-    ruid : str
-    permissions : List[str]
+    ruid : str = Field(..., description="ruid of the role.")
+    permissions : List[str] = Field(..., description="codename of permissions")
     
 
 class BaseSubscription(BaseModel):
@@ -181,8 +172,8 @@ class BaseSubscription(BaseModel):
 
 
 class UpdateSubscription(BaseModel):
-    suid : str
-    is_deleted : bool
+    suid : str = Field(..., description="suid of the subscription")
+    is_deleted : bool = Field(..., description="deletesubscription or not")
 
 
 class FrontendBaseUser(BaseModel):
@@ -219,3 +210,4 @@ class ListFeatures(BaseModel):
     id: int
     feature_type: str
     feature_code: str
+

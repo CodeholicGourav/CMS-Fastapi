@@ -9,7 +9,7 @@ from database import get_db
 from dependencies import CustomValidations
 
 
-async def authenticate_token(authtoken: Annotated[str, Header()], db: Session = Depends(get_db)) -> BackendUser:
+async def authenticate_token(authtoken: Annotated[str, Header(title="Authentication token", description="The token you get from login.")], db: Session = Depends(get_db)) -> BackendUser:
     """
     Check the validity of the provided token and return the associated user.
 

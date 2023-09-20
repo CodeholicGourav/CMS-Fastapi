@@ -303,6 +303,20 @@ class Feature(Base):
     def __repr__(self):
         return f"{self.feature_type} | {self.feature_code}"
 
+
+def create_features():
+    try:
+        db = SessionLocal()
+        features = [Feature(**feature) for feature in predefined_feature]
+        db.add_all(features)
+        db.commit()
+        return {"message": "features created successfully"}
+    except Exception as e:
+        db.rollback()
+        return {"error": str(e)}
+    finally:
+        db.close()
+
 class SubscriptionFeature(Base):
     __tablename__ = 'subscription_features'
 
