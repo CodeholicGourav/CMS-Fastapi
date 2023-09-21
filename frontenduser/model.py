@@ -322,7 +322,7 @@ class OrderProduct(Base):
         Integer,
         ForeignKey('orders.id')
     )
-    product__id = Column(
+    product_id = Column(
         Integer,
         ForeignKey('subscriptions.id')
     )
@@ -330,6 +330,9 @@ class OrderProduct(Base):
         Integer,
         default=1
     )
+
+    order = relationship("Order", foreign_keys=order_id)
+    product = relationship("Subscription", foreign_keys=product_id)
 
 
 

@@ -25,7 +25,7 @@
         async function createTransaction(paymentIntent){
             const response = await fetch("http://127.0.0.1:8000/frontend-user/razorpay/create-transaction", {
             method: "POST",
-            headers: { "Content-Type": "application/json", "authtoken": "MPwtb6dUv00PNKzQgyEgBQ" },
+            headers: { "Content-Type": "application/json", "authtoken": "Su9NPUERUNZOPIMqd1oRDg" },
             body: JSON.stringify(paymentIntent),
             });
             data = await response.json();
@@ -34,9 +34,9 @@
         async function initialize(){
             const response = await fetch("http://127.0.0.1:8000/frontend-user/razorpay/create-order", {
                 method: "POST",
-                headers: { "Content-Type": "application/json", "authtoken": "MPwtb6dUv00PNKzQgyEgBQ" },
+                headers: { "Content-Type": "application/json", "authtoken": "Su9NPUERUNZOPIMqd1oRDg" },
                 body: JSON.stringify({
-                    "suid": "VW5saW1pdGVkIHBhY2s=86531695025752",
+                    "suid": "VGVzdCBwcm9kdWN0IDE=48951695290572",
                     "currency": "INR"
                 }),
             });
@@ -52,7 +52,7 @@
                 "handler": async function (paymentIntent){
                     const response = await fetch("http://127.0.0.1:8000/frontend-user/razorpay/create-transaction", {
                         method: "POST",
-                        headers: { "Content-Type": "application/json", "authtoken": "MPwtb6dUv00PNKzQgyEgBQ" },
+                        headers: { "Content-Type": "application/json", "authtoken": "Su9NPUERUNZOPIMqd1oRDg" },
                         body: JSON.stringify({
                             "razorpay_payment_id": paymentIntent.razorpay_payment_id,
                             "razorpay_order_id": paymentIntent.razorpay_order_id,

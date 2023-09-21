@@ -690,7 +690,7 @@ def stripe_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, 
         product_price = subscription.price,
         product_sale_price = subscription.sale_price,
         order_id = order.id,
-        product__id = subscription.id,
+        product_id = subscription.id,
         quantity = 1,
     )
 
@@ -834,7 +834,7 @@ def paypal_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, 
         product_price = subscription.price,
         product_sale_price = subscription.sale_price,
         order_id = order.id,
-        product__id = subscription.id,
+        product_id = subscription.id,
         quantity = 1,
     )
 
@@ -952,7 +952,7 @@ def razorpay_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken
         product_price = subscription.price,
         product_sale_price = subscription.sale_price,
         order_id = order.id,
-        product__id = subscription.id,
+        product_id = subscription.id,
         quantity = 1,
     )
 
@@ -980,6 +980,13 @@ def razorpay_add_transaction(request: schema.RazorpayReturn, authToken: model.Fr
     )
 
     db.add(transaction)
+    db.commit()
+
+    user = authToken.user
+
+    order_product = db.query(model.OrderProduct).filter_by(order_id=order.id).first()
+    user.active_plan = order_product.product_id
+    db.add(user)
     db.commit()
     db.refresh(transaction)
     return transaction
