@@ -707,13 +707,20 @@ def add_subscription(data: schema.CreateSubscription, current_user: model.Backen
     # Add the new subscription to the database session
     db.add(subscription)
     db.commit()
+    db.refresh(subscription)
 
-    feature_codes = data.features
-    features = db.query(model.Feature).filter(model.Feature.feature_code.in_(feature_codes)).all()
+    features= data.features
+    # features = 
+
+    # for feature in features:
+    #     subscription_feature = model.SubscriptionFeature(subscription_id=subscription.id, feature_id=feature.feature_code, quantity=data.quantity)
+    #     db.add(subscription_feature)
 
     for feature in features:
-        subscription_feature = model.SubscriptionFeature(subscription_id=subscription.id, feature_id=feature.feature_code, quantity=data.quantity)
-        db.add(subscription_feature)
+        feature_exit = db.query(model.Feature).filter_by(feature_code=feature.feature_code).first()
+        if feature_exit:
+            subscription_feature = model.SubscriptionFeature(subscription_id=subscription.id, feature_id=feature_exit.id, quantity=feature.quantity)
+            db.add(subscription_feature)
 
     db.commit()
 

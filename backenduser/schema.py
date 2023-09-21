@@ -137,6 +137,11 @@ class ForgotPassword(BaseModel):
         return CustomValidations.validate_password( value)
 
 
+class FeatureQuantity(BaseModel):
+    feature_code: str = Field(..., description="feature_code from features list.")
+    quantity: int = Field(..., description="Number of items allowed.")
+
+
 
 class CreateSubscription(BaseModel):
     name : str
@@ -144,7 +149,7 @@ class CreateSubscription(BaseModel):
     price : float = Field(..., description="Price to show.")
     sale_price : float = Field(..., description="The actual price.")
     validity : int = Field(..., description="Validity for user in days.")
-    features: list[str] = Field(..., description="feature_code from features list.")
+    features: list[FeatureQuantity]
 
 
 class BaseRolePermission(BaseModel):
@@ -158,7 +163,18 @@ class CreateRole(BaseModel):
 class AssignPermissions(BaseModel):
     ruid : str = Field(..., description="ruid of the role.")
     permissions : List[str] = Field(..., description="codename of permissions")
-    
+
+
+class ListFeatures(BaseModel):
+    # id: int
+    feature_type: str
+    feature_code: str
+
+
+class SubscriptionFeaturesMapping(BaseModel):
+    quantity: int
+    feature: ListFeatures
+
 
 class BaseSubscription(BaseModel):
     suid : str
@@ -166,9 +182,10 @@ class BaseSubscription(BaseModel):
     description : str
     price : float
     validity : int
-    creator : ShowUser
+    creator : Optional[BasicUser]
     is_deleted : bool
     created_at : datetime
+    features: list[SubscriptionFeaturesMapping]
 
 
 class UpdateSubscription(BaseModel):
@@ -206,8 +223,4 @@ class FrontenduserList(BaseModel):
     total: int
 
 
-class ListFeatures(BaseModel):
-    id: int
-    feature_type: str
-    feature_code: str
 

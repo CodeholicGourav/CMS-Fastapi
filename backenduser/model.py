@@ -281,6 +281,7 @@ class Subscription(Base):
 
     # Relationships
     creator = relationship("BackendUser", back_populates="subscriptions")
+    features = relationship("SubscriptionFeature", back_populates="subscription")
 
     def __repr__(self):
         return f"{self.name} | {self.suid}"
@@ -300,6 +301,8 @@ class Feature(Base):
         String(50)
     )
 
+    subscriptions = relationship("SubscriptionFeature", back_populates="feature")
+
     def __repr__(self):
         return f"{self.feature_type} | {self.feature_code}"
 
@@ -316,6 +319,7 @@ def create_features():
         return {"error": str(e)}
     finally:
         db.close()
+
 
 class SubscriptionFeature(Base):
     __tablename__ = 'subscription_features'
