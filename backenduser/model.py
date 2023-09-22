@@ -254,8 +254,8 @@ class Coupon(Base):
     percentage = Column(Float)
     coupon_type = Column(String(50))
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow)
 
     def __repr__(self):
         return f"Coupon(id={self.id}, coupon_code='{self.coupon_code}', name='{self.name}', percentage={self.percentage}, coupon_type='{self.coupon_type}', is_active={self.is_active}, created_at={self.created_at}, updated_at={self.updated_at})"
