@@ -5,17 +5,18 @@ from sqlalchemy.orm import Session
 from database import get_db
 from dependencies import ALLOWED_EXTENSIONS, TEMPLATES
 import os
-from . import model, controller
+from . import model, controller, schema
+from frontenduser import model as frontendModel
 from frontenduser.middleware import authenticate_token
 
 organizationRoutes = APIRouter()
 
-@organizationRoutes.get('get-organizations')
+@organizationRoutes.get('get-organizations', response_model=List[schema.BasicOrganization])
 def get_all_organizations(
     limit : Optional[int]=10, 
     offset : Optional[int]=0, 
     db : Session = Depends(get_db), 
-    authToken: model.BackendToken = Depends(authenticate_token),
+    authToken: frontendModel.FrontendToken = Depends(authenticate_token),
     # permissions: model.BackendUser = Depends(check_permission(["read_user"])),
 ): return controller.all_organizations(limit, offset, db)
 
