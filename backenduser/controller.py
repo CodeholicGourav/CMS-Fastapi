@@ -699,7 +699,7 @@ def add_subscription(data: schema.CreateSubscription, current_user: model.Backen
         name=data.name,
         description=data.description,
         price=data.price,
-        sale_price = data.sale_price,
+        sale_price=data.sale_price,
         validity=data.validity,
         created_by=current_user.id,
     )
@@ -709,14 +709,8 @@ def add_subscription(data: schema.CreateSubscription, current_user: model.Backen
     db.commit()
     db.refresh(subscription)
 
-    features= data.features
-    # features = 
-
-    # for feature in features:
-    #     subscription_feature = model.SubscriptionFeature(subscription_id=subscription.id, feature_id=feature.feature_code, quantity=data.quantity)
-    #     db.add(subscription_feature)
-
-    for feature in features:
+    # Add any features associated with the subscription plan to the database
+    for feature in data.features:
         feature_exit = db.query(model.Feature).filter_by(feature_code=feature.feature_code).first()
         if feature_exit:
             subscription_feature = model.SubscriptionFeature(subscription_id=subscription.id, feature_id=feature_exit.id, quantity=feature.quantity)
@@ -766,7 +760,6 @@ def delete_subscription_plan(data: schema.UpdateSubscription, db: Session):
 
     # Return the updated subscription object
     return subscription
-
 
 
 from frontenduser import controller as frontendUserController
@@ -834,3 +827,4 @@ def couponDetails(coupon_code: str, db: Session) -> model.Coupon:
 
 def get_all_features(db: Session):
     return db.query(model.Feature).all()
+

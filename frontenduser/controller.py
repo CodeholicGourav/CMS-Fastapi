@@ -16,10 +16,8 @@ from dependencies import (
 )
 
 from dependencies import (
-    SETTINGS, 
-    PAYPAL_BASE_URL, 
-    generatePaypalAccessToken, 
-    convertCurrency
+    SETTINGS, PAYPAL_BASE_URL, 
+    generatePaypalAccessToken, convertCurrency
 )
 
 from . import model, schema
@@ -583,6 +581,16 @@ def all_subscription_plans(limit: int, offset: int, db: Session):
 
 
 def subscription_plan_detail(suid: str, db: Session):
+    """
+    Calls the subscription_plan_details function from the backendusercontroller module and returns its result.
+
+    Args:
+        suid (str): The ID of the subscription plan.
+        db (Session): The SQLAlchemy database session.
+
+    Returns:
+        The result of the subscription_plan_details function.
+    """
     return backendusercontroller.subscription_plan_details(suid, db)
 
 
@@ -700,26 +708,64 @@ def stripe_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, 
     return order
 
 
-def stripe_add_transaction(request: schema.StripeReturn, authToken: model.FrontendToken, db: Session):
+def stripe_add_transaction(request: schema.StripeReturn, authToken: model.FrontendToken, db: Session) -> model.Transaction:
+    """
+    Updates the status of an order in the database based on the Stripe payment status.
+    Creates a new transaction record for the order if it doesn't already exist.
+    Updates the active plan of the user associated with the authentication token based on the product ID from the order.
+
+    Args:
+        request (schema.StripeReturn): An object containing the details of the Stripe payment.
+        authToken (model.FrontendToken): The authentication token of the user.
+        db (Session): The SQLAlchemy database session.
+
+    Returns:
+        model.Transaction: The transaction record associated with the order.
+    """
+    # Retrieve the order from the database based on the order unique ID provided in the request
     order = db.query(model.Order).filter_by(ouid=request.description).first()
+
+    # Update the status of the order with the status from the request
     order.status = request.status
+
+    # Add the updated order to the database and commit the changes
     db.add(order)
     db.commit()
 
+    # Retrieve the transaction record associated with the order from the database
     transaction = db.query(model.Transaction).filter_by(order_id=order.id).first()
-    if transaction:
-        return transaction
 
-    transaction = model.Transaction(
-        order_id = order.id,
-        status = request.status,
-        payment_gateway = "stripe",
-        payment_id = request.id,
-    )
+    # If the transaction record doesn't exist, create a new transaction record with the order ID, status, payment gateway, and payment ID from the request
+    if not transaction:
+        transaction = model.Transaction(
+            order_id=order.id,
+            status=request.status,
+            payment_gateway="stripe",
+            payment_id=request.id,
+        )
 
-    db.add(transaction)
+        # Add the new transaction record to the database and commit the changes
+        db.add(transaction)
+        db.commit()
+        db.refresh(transaction)
+
+    # Retrieve the user associated with the authentication token
+    user = authToken.user
+
+    # Retrieve the order product from the database based on the order ID
+    order_product = db.query(model.OrderProduct).filter_by(order_id=order.id).first()
+
+    # Update the active plan of the user with the product ID from the order product
+    user.active_plan = order_product.product_id
+
+    # Add the updated user to the database and commit the changes
+    db.add(user)
     db.commit()
+
+    # Refresh the transaction record to include any changes made during the commit
     db.refresh(transaction)
+
+    # Return the transaction record
     return transaction
 
 
@@ -845,25 +891,64 @@ def paypal_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, 
 
 
 def paypal_add_transaction(request: schema.StripeReturn, authToken: model.FrontendToken, db: Session):
+    """
+    Add a transaction to the database when a payment is made through PayPal.
+
+    Args:
+        request (schema.StripeReturn): An object containing the details of the PayPal payment.
+        authToken (model.FrontendToken): The authentication token of the user making the payment.
+        db (Session): The SQLAlchemy database session.
+
+    Returns:
+        model.Transaction: The newly created transaction object.
+    """
+    # Retrieve the order from the database based on the provided order ID
     order = db.query(model.Order).filter_by(ouid=request.description).first()
+
+    # Update the status of the order with the status from the payment request
     order.status = request.status
+
+    # Add the updated order to the database
     db.add(order)
     db.commit()
 
+    # Check if a transaction already exists for the order
     transaction = db.query(model.Transaction).filter_by(order_id=order.id).first()
     if transaction:
         return transaction
 
+    # Create a new transaction record with the details of the payment
     transaction = model.Transaction(
-        order_id = order.id,
-        status = request.status,
-        payment_gateway = "stripe",
-        payment_id = request.id,
+        order_id=order.id,
+        status=request.status,
+        payment_gateway="stripe",
+        payment_id=request.id,
     )
 
+    # Add the transaction to the database
     db.add(transaction)
     db.commit()
+
+    # Refresh the transaction object with the updated values
     db.refresh(transaction)
+
+    # Retrieve the user associated with the authentication token
+    user = authToken.user
+
+    # Retrieve the order product from the database based on the order ID
+    order_product = db.query(model.OrderProduct).filter_by(order_id=order.id).first()
+
+    # Update the active plan of the user with the product ID from the order product
+    user.active_plan = order_product.product_id
+
+    # Add the updated user to the database and commit the changes
+    db.add(user)
+    db.commit()
+
+    # Refresh the transaction record to include any changes made during the commit
+    db.refresh(transaction)
+
+    # Return the transaction record
     return transaction
 
 
@@ -879,7 +964,6 @@ def razorpay_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken
     Returns:
         model.Order: The newly created order object.
     """
-
     # Retrieve the subscription details based on the provided subscription ID
     subscription = backendusercontroller.subscription_plan_details(request.suid, db)
 
@@ -894,7 +978,6 @@ def razorpay_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken
 
     # Calculate the total amount of the order
     currency = convertCurrency(request.currency)
-
     total_amount = subscription.sale_price * currency["conversion_rate"]
     final_amount = round(total_amount, 2)
 
@@ -963,32 +1046,65 @@ def razorpay_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken
 
 
 def razorpay_add_transaction(request: schema.RazorpayReturn, authToken: model.FrontendToken, db: Session):
+    """
+    Updates the status of an order in the database and creates a new transaction record for the order.
+    If a transaction record already exists for the order, it returns the existing record.
+    It also updates the active plan of the user associated with the order.
+
+    Args:
+        request (schema.RazorpayReturn): An object containing the details of the Razorpay payment return.
+        authToken (model.FrontendToken): The authentication token of the user.
+        db (Session): The SQLAlchemy database session.
+
+    Returns:
+        model.Transaction: The newly created or existing transaction record for the order.
+    """
+    # Retrieve the order from the database based on the provided order unique ID (ouid)
     order = db.query(model.Order).filter_by(ouid=request.ouid).first()
+
+    # Update the status of the order with the status provided in the request
     order.status = request.status
+
+    # Add the updated order to the database and commit the changes
     db.add(order)
     db.commit()
 
+    # Check if a transaction record already exists for the order
     transaction = db.query(model.Transaction).filter_by(order_id=order.id).first()
+
     if transaction:
+        # If a transaction record exists, return the existing record
         return transaction
 
+    # If a transaction record does not exist, create a new transaction record with the details from the request
     transaction = model.Transaction(
-        order_id = order.id,
-        status = request.status,
-        payment_gateway = "razorpay",
-        payment_id = request.razorpay_payment_id,
+        order_id=order.id,
+        status=request.status,
+        payment_gateway="razorpay",
+        payment_id=request.razorpay_payment_id,
     )
 
+    # Add the new transaction record to the database and commit the changes
     db.add(transaction)
     db.commit()
 
+    # Retrieve the user associated with the authentication token
     user = authToken.user
 
+    # Retrieve the order product from the database based on the order ID
     order_product = db.query(model.OrderProduct).filter_by(order_id=order.id).first()
+
+    # Update the active plan of the user with the product ID from the order product
     user.active_plan = order_product.product_id
+
+    # Add the updated user to the database and commit the changes
     db.add(user)
     db.commit()
+
+    # Refresh the transaction record to include any changes made during the commit
     db.refresh(transaction)
+
+    # Return the transaction record
     return transaction
 
 
