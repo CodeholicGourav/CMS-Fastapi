@@ -4,6 +4,7 @@ from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from backenduser.route import backendUserRoutes
 from frontenduser.route import frontendUserRoutes
+from organization.route import organizationRoutes
 from dependencies import SETTINGS, TEMPLATES
 
 app = FastAPI()
@@ -34,4 +35,10 @@ app.include_router(
     frontendUserRoutes,
     prefix="/frontend-user",
     tags=["frontend-user"],
+)
+
+app.include_router(
+    organizationRoutes,
+    prefix="/organization",
+    tags=["organization"],
 )
