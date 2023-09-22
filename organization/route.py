@@ -7,6 +7,7 @@ from dependencies import ALLOWED_EXTENSIONS, TEMPLATES
 import os
 from . import model, controller, schema
 from frontenduser import model as frontendModel
+from .middleware import check_feature
 from frontenduser.middleware import authenticate_token
 
 organizationRoutes = APIRouter()
@@ -17,6 +18,6 @@ def get_all_organizations(
     offset : Optional[int]=0, 
     db : Session = Depends(get_db), 
     authToken: frontendModel.FrontendToken = Depends(authenticate_token),
-    # permissions: model.BackendUser = Depends(check_permission(["read_user"])),
+    subscription: frontendModel.FrontendToken = Depends(check_feature("create_organization")),
 ): return controller.all_organizations(limit, offset, db)
 
