@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, EmailStr, constr, validator
+from pydantic import BaseModel, constr, validator, Field
 
 from dependencies import CustomValidations
 
@@ -16,3 +16,10 @@ class BasicOrganization(BaseModel):
     is_deleted: bool
     created_at: datetime
     updated_at: datetime
+
+
+class CreateOrganization(BaseModel):
+    org_name: constr(min_length=5, max_length=50) = Field(title="organization's name")
+    gtoken: dict = Field(title="google token json")
+    registration_type: str = Field(title="Registration type", description="Use one of these value only(e.g., 'open', 'approval_required', 'admin_only')")
+

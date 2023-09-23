@@ -47,7 +47,7 @@ def check_feature(feature_code: str):
                 ctx={"authtoken": "valid"}
             )
 
-        if user_token.user.active_plan:
+        if not user_token.user.active_plan:
             CustomValidations.customError(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 type="unauthenticated",
@@ -57,8 +57,12 @@ def check_feature(feature_code: str):
                 ctx={"subscription": "not found"}
             )
         
-        for feature in user_token.user.active_plan.features:
-            if feature.feature.featurecode == feature_code:
+        subscription_features = db.query(backendModel.SubscriptionFeature).filter(
+            backendModel.SubscriptionFeature.subscription_id==user_token.user.active_plan
+        ).all()
+
+        for feature in subscription_features:
+            if feature.feature.feature_code == feature_code:
                 return feature
 
         CustomValidations.customError(

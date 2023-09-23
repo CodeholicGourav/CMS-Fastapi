@@ -21,3 +21,12 @@ def get_all_organizations(
     subscription: frontendModel.FrontendToken = Depends(check_feature("create_organization")),
 ): return controller.all_organizations(limit, offset, db)
 
+
+@organizationRoutes.post('create-organization')
+def create_organization(
+    data: schema.CreateOrganization,
+    db : Session = Depends(get_db), 
+    authToken: frontendModel.FrontendToken = Depends(authenticate_token),
+    subscription: frontendModel.FrontendToken = Depends(check_feature("create_organization")),
+): return controller.create_organization(data, db, authToken)
+

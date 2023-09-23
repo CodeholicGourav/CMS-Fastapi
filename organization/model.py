@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 
 from database import Base
@@ -10,14 +10,14 @@ class Organization(Base):
     """
     The `Organization` class represents a table in a database called 'organization'.
     """
-    __tablename__ = 'organization'
+    __tablename__ = 'organizations'
 
     id = Column(Integer, primary_key=True, index=True)
     orguid = Column(String(50), index=True, unique=True)
     org_name = Column(String(50), nullable=False)
     admin_id = Column(Integer, ForeignKey("frontendusers.id"))
-    gtoken = Column(String(255), nullable=True)
-    registration_type = Column(Integer, default=1, comment="(e.g., 'open', 'approval_required', 'admin_only')")
+    gtoken = Column(Text, nullable=True)
+    registration_type = Column(String(20), default=1, comment="(e.g., 'open', 'approval_required', 'admin_only')")
     is_active = Column(Boolean, default=True)
     is_deleted = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -29,6 +29,8 @@ class Organization(Base):
 
     def __str__(self):
         return self.org_name
+
+    allowed_registration = ['open', 'approval_required', 'admin_only']
 
 
 class OrganizationRoles(Base):

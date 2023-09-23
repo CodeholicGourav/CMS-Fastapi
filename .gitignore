@@ -177,3 +177,7 @@ pyrightconfig.json
 .vscode/
 
 uploads/*
+
+google.py
+token.json
+credentials.json
