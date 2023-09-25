@@ -23,14 +23,14 @@ class Organization(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow)
 
+    admin = relationship("FrontendUser", foreign_keys=admin_id)
+    allowed_registration = ['open', 'approval_required', 'admin_only']
 
     def __repr__(self):
         return f"<Organization(id={self.id}, organization_uid='{self.orguid}', organization_name='{self.org_name}')>"
 
     def __str__(self):
         return self.org_name
-
-    allowed_registration = ['open', 'approval_required', 'admin_only']
 
 
 class OrganizationRoles(Base):
