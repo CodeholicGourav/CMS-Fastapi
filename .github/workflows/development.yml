@@ -25,4 +25,6 @@ jobs:
             "cd /var/www/html/codeholic_product/fastapi_cms && \
             git checkout develop && \
             git pull origin develop && \
+            source venv/bin/activate && \
+            pip -r requirements.txt && \
             sudo systemctl restart fastapi_cms"
