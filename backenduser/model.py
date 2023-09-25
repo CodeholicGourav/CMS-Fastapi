@@ -91,6 +91,7 @@ def create_permissions():
         dict: A message indicating the success or failure of the operation.
     """
     try:
+        print("Creating permissions data...")
         db = SessionLocal()
         permissions = [BackendPermission(**permission) for permission in predefined_permissions]
         db.add_all(permissions)
@@ -205,6 +206,7 @@ def create_features():
         A dictionary with the error message if an exception occurs.
     """
     try:
+        print("Creating features data...")
         db = SessionLocal()
         features = [Feature(**feature) for feature in predefined_feature]
         db.add_all(features)

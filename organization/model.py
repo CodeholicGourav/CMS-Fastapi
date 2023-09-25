@@ -42,9 +42,10 @@ class OrganizationRoles(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     ruid = Column(String(50), index=True, unique=True)
-    role = Column(String(50), unique=True)
+    role = Column(String(50))
+    created_by = Column(Integer, ForeignKey("frontendusers.id"))
+    org_id = Column(Integer, ForeignKey("organizations.id"))
     is_deleted = Column(Boolean, default=False)
-    created_by = Column(Integer, ForeignKey("organization_users.id"))
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow)
 
@@ -67,8 +68,14 @@ class OrganizationUser(Base):
     user_id = Column(Integer, ForeignKey("frontendusers.id"))
     org_id = Column(Integer, ForeignKey("organizations.id"))
     role_id = Column(Integer, ForeignKey("organization_roles.id"))
+    is_active = Column(Boolean, default=True)
+    is_deleted = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("FrontendUser", foreign_keys=user_id)
+    Organization = relationship("Organization", foreign_keys=org_id)
+    role = relationship("OrganizationRoles", foreign_keys=role_id)
 
     def __repr__(self):
         return f"OrganizationUser(id={self.id}, uuid={self.uuid}, user_id={self.user_id}, org_id={self.org_id}, role_id={self.role_id}, created_at={self.created_at}, updated_at={self.updated_at})"

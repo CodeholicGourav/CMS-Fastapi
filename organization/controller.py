@@ -122,5 +122,53 @@ def create_organization(data: schema.CreateOrganization, db: Session, authToken:
     db.commit()
     db.refresh(organization)
 
+    # Create default role
+    org_role = model.OrganizationRoles(
+        ruid = generate_uuid(data.org_name+"Default"),
+        role = 'Default',
+        created_by = authToken.user_id,
+        org_id = organization.id
+    )
+    db.add(org_role)
+    db.commit()
+
     return organization
 
+
+def register_to_organization(data: schema.OrgUserRegister, db: Session, authToken: frontendModel.FrontendToken):
+    user = authToken.user
+    organization = db.query(model.Organization).filter_by(orguid=data.org_uid).first()
+
+    if not organization:
+        CustomValidations.customError(
+            type="not_exist",
+            loc="org_uid",
+            msg="Organization does not exist.",
+            inp=str(data.org_uid),
+            ctx={"org_uid": "exist"}
+        )
+
+    if organization.registration_type=="admin_only":
+        CustomValidations.customError(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            type="not_allowed",
+            loc="org_uid",
+            msg="Organization does allow new registration.",
+            inp=str(data.org_uid),
+            ctx={"registration": "admin_only"}
+        )
+
+    org_user = model.OrganizationUser(
+        uuid = generate_uuid(organization.org_name + user.username),
+        user_id = user.id,
+        org_id = organization.id,
+        role_id = 1 # Assign default role
+    )
+
+    if organization.registration_type=="approval_required":
+        org_user.is_active = False
+
+    db.add(org_user)
+    db.commit()
+    db.refresh(org_user)
+    return org_user
