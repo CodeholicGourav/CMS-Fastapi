@@ -26,5 +26,5 @@ jobs:
             git checkout develop && \
             git pull origin develop && \
             source venv/bin/activate && \
-            pip -r requirements.txt && \
+            pip install -r requirements.txt && \
             sudo systemctl restart fastapi_cms"
