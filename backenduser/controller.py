@@ -828,3 +828,34 @@ def couponDetails(coupon_code: str, db: Session) -> model.Coupon:
 def get_all_features(db: Session):
     return db.query(model.Feature).all()
 
+
+def create_subscription_user(subscription_id: int, user_id: int, transaction_id: int, db: Session) -> model.SubscriptionUser:
+    """
+    Creates a new subscription user in the database by associating a subscription, a user, and a transaction.
+    Sets the expiry date of the subscription based on the validity of the subscription.
+
+    Args:
+        subscription_id (int): The ID of the subscription to associate with the user.
+        user_id (int): The ID of the user to associate with the subscription.
+        transaction_id (int): The ID of the transaction associated with the subscription.
+        db (Session): The SQLAlchemy session object used to interact with the database.
+
+    Returns:
+        SubscriptionUser: The newly created SubscriptionUser object.
+    """
+    subscription = db.query(model.Subscription).get(subscription_id)
+    expiry = datetime.utcnow() + timedelta(days=int(subscription.validity))
+
+    subscription_user = model.SubscriptionUser(
+        subscription_id=subscription.id,
+        user_id=user_id,
+        transaction_id=transaction_id,
+        expiry=expiry
+    )
+
+    db.add(subscription_user)
+    db.commit()
+    db.refresh(subscription_user)
+    return subscription_user
+
+

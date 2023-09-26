@@ -176,6 +176,28 @@ class Subscription(Base):
         return f"Subscription: {self.name}"
 
 
+class SubscriptionUser(Base):
+    __tablename__ = 'subscription_users'
+
+    id = Column(Integer, primary_key=True, index=True)
+    subscription_id = Column(Integer, ForeignKey("subscriptions.id"))
+    user_id = Column(Integer, ForeignKey("frontendusers.id"))
+    transaction_id = Column(Integer, ForeignKey("transactions.id"))
+    expiry = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationships
+    subscription = relationship("Subscription", foreign_keys=subscription_id)
+    user = relationship("FrontendUser", foreign_keys=user_id)
+    transaction = relationship("Transaction", foreign_keys=transaction_id)
+
+    def __repr__(self):
+        pass
+
+    def __str__(self):
+        pass
+
+
 class Feature(Base):
     """
     The `Feature` class represents a table in the database called `features`.
@@ -185,8 +207,8 @@ class Feature(Base):
     __tablename__ = 'features'
 
     id = Column(Integer, primary_key=True)
-    feature_type = Column(String(255))
-    feature_code = Column(String(50))
+    feature_type = Column(String(255), unique=True)
+    feature_code = Column(String(50), unique=True)
 
     subscriptions = relationship("SubscriptionFeature", back_populates="feature")
 

@@ -56,7 +56,32 @@ def check_feature(feature_code: str):
                 inp=authtoken,
                 ctx={"subscription": "not found"}
             )
-        
+
+        subscription_user = db.query(backendModel.SubscriptionUser).filter(
+            backendModel.SubscriptionUser.subscription_id==user_token.user.active_plan,
+            backendModel.SubscriptionUser.user_id==user_token.user.id,
+        ).first()
+
+        if not subscription_user:
+            CustomValidations.customError(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                type="unauthenticated",
+                loc="subscription",
+                msg="No active subscription.",
+                inp=authtoken,
+                ctx={"subscription": "not found"}
+            )
+
+        if subscription_user.expiry<=datetime.utcnow():
+            CustomValidations.customError(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                type="plan_expired",
+                loc="subscription",
+                msg="Your subscription plan is expired.",
+                inp=authtoken,
+                ctx={"subscription": "expired"}
+            )
+
         subscription_features = db.query(backendModel.SubscriptionFeature).filter(
             backendModel.SubscriptionFeature.subscription_id==user_token.user.active_plan
         ).all()

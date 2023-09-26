@@ -59,11 +59,7 @@ def create_organization(data: schema.CreateOrganization, db: Session, authToken:
     # Check if the number of organizations created by the user exceeds the limit defined in the subscription plan.
     org_quantity = subscription.quantity
     
-    total_organizations = (
-        db.query(func.count())
-        .filter_by(admin_id=authToken.user_id)
-        .scalar()
-    )
+    total_organizations = db.query(func.count(model.Organization.id)).filter(model.Organization.admin_id==authToken.id).scalar()
 
     if total_organizations >= org_quantity:
         CustomValidations.customError(

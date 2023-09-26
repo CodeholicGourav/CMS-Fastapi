@@ -1101,6 +1101,9 @@ def razorpay_add_transaction(request: schema.RazorpayReturn, authToken: model.Fr
     db.add(user)
     db.commit()
 
+    # Create subscription-user mapping
+    subscription_user = backendusercontroller.create_subscription_user(order_product.product_id, user.id, transaction.id, db)
+
     # Refresh the transaction record to include any changes made during the commit
     db.refresh(transaction)
 
