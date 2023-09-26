@@ -64,3 +64,22 @@ class ShowOrgUser(BaseModel):
     created_at: datetime
     updated_at: datetime
     role: BasicRole
+
+class ShowOrgUserList(BaseModel):
+    total: int
+    users: List[ShowOrgUser]
+
+
+class ShowOrgRole(BaseModel):
+    ruid: str
+    role: str
+    created_by: int
+    is_deleted: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+class ShowOrgRoleList(BaseModel):
+    total: int
+    roles: List[ShowOrgRole]
+

@@ -10,7 +10,7 @@ from dependencies import CustomValidations
 from .model import FrontendToken, FrontendUser
 
 
-async def authenticate_token(authtoken: Annotated[str, Header()], db: Session = Depends(get_db)) -> FrontendUser:
+async def authenticate_token(authtoken: Annotated[str, Header(title="Authentication token", description="The token you get from login.")], db: Session = Depends(get_db)) -> FrontendUser:
     """
     Check token from header and return details of current user
 

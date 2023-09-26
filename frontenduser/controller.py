@@ -152,7 +152,7 @@ def userDetails(user_id: str, db: Session):
     """
     user = db.query(model.FrontendUser).filter_by(uuid=user_id).first()
     if not user:
-        raise CustomValidations.customError(
+        CustomValidations.customError(
             type="not_exist",
             loc="user_id",
             msg="User does not exist",

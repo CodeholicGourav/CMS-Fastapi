@@ -71,7 +71,7 @@ def check_permission(codenames: list[str]):
     Raises:
         HTTPException: If the user is not found or does not have the required permissions.
     """
-    def has_permissions(authtoken: str = Header(), db: Session = Depends(get_db)):
+    def has_permissions(authtoken: Annotated[str, Header(title="Authentication token", description="The token you get from login.")], db: Session = Depends(get_db)):
         """
         Checks if a user has the required permissions by comparing the user's permission codenames with the provided list of codenames.
 

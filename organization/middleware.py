@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from dependencies import CustomValidations
 
+from . import model
 from frontenduser import model as frontendModel
 from backenduser import model as backendModel
 
@@ -21,7 +22,7 @@ def check_feature(feature_code: str):
     Returns:
         has_feature (function): Dependency function that checks if the user has the specified feature.
     """
-    def has_feature(authtoken: str = Header(), db: Session = Depends(get_db)):
+    def has_feature(authtoken: Annotated[str, Header(title="Authentication token", description="The token you get from login.")], db: Session = Depends(get_db)):
         """
         Dependency function that checks if the user has the specified feature.
         
@@ -90,4 +91,36 @@ def check_feature(feature_code: str):
         )
 
     return has_feature
-    
+
+
+def organization_exist(orguid: str = Header(title="Organization id", description="orguid of the organization you are accessing."), db: Session = Depends(get_db)):
+    organization = db.query(model.Organization).filter_by(orguid=orguid).first()
+
+    if not organization:
+        CustomValidations.customError(
+            type="not_exist",
+            loc="org_uid",
+            msg="Organization does not exist.",
+            inp=str(orguid),
+            ctx={"org_uid": "exist"}
+        )
+
+    admin = organization.admin
+
+    subscription_user = db.query(backendModel.SubscriptionUser).filter(
+        backendModel.SubscriptionUser.subscription_id==admin.active_plan,
+        backendModel.SubscriptionUser.user_id==admin.id,
+    ).first()
+
+    if not subscription_user or subscription_user.expiry<=datetime.utcnow():
+        CustomValidations.customError(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            type="unauthenticated",
+            loc="subscription",
+            msg="No active subscription.",
+            inp=str(),
+            ctx={"subscription": "not found" if not subscription_user else "expired"}
+        )
+
+    return organization
+

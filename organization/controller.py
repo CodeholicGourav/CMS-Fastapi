@@ -181,7 +181,7 @@ def register_to_organization(data: schema.OrgUserRegister, db: Session, authToke
 
     user_quantity = subscription_feature.quantity
 
-    total_users = db.query(func.count()).filter(
+    total_users = db.query(func.count(model.OrganizationUser.id)).filter(
         model.OrganizationUser.org_id == organization.id,
         model.OrganizationUser.is_deleted == False,
         model.OrganizationUser.is_active == True,
@@ -224,3 +224,67 @@ def register_to_organization(data: schema.OrgUserRegister, db: Session, authToke
     db.commit()
     db.refresh(org_user)
     return org_user
+
+
+def get_all_users(limit: int, offset: int, organization: model.Organization, db: Session):
+    """
+    Retrieves a specified number of users belonging to a specific organization from the database, 
+    along with the total count of users.
+
+    Args:
+        limit (int): The maximum number of users to retrieve.
+        offset (int): The number of users to skip before retrieving.
+        organization (model.Organization): The organization object for which to retrieve the users.
+        db (Session): A SQLAlchemy Session object representing the database connection.
+
+    Returns:
+        dict: A dictionary containing the total count of users and the retrieved users.
+            - "total": The total count of users belonging to the organization in the database.
+            - "users": A list of user objects retrieved from the database.
+    """
+    users = db.query(model.OrganizationUser).filter_by(org_id=organization.id).limit(limit).offset(offset).all()
+    count = db.query(func.count(model.OrganizationUser.id)).filter_by(org_id=organization.id).scalar()
+
+    return {
+        "total": count,
+        "users": users
+    }
+
+
+def get_user_details(uuid: str, organization: model.Organization, db:Session):
+    user = db.query(model.OrganizationUser).filter_by(uuid=uuid, org_id=organization.id).first()
+    if not user:
+        CustomValidations.customError(
+            type="not_exist",
+            loc="user_id",
+            msg="User does not exist",
+            inp=uuid,
+            ctx={"user": "exist"}
+        )
+
+    return user
+
+
+def get_all_roles(limit: int, offset: int, organization: model.Organization, db: Session):
+    roles = db.query(model.OrganizationRoles).filter_by(org_id=organization.id).limit(limit).offset(offset).all()
+    count = db.query(func.count(model.OrganizationRoles.id)).filter_by(org_id=organization.id).scalar()
+
+    return {
+        "total": count,
+        "roles": roles
+    }
+
+
+def get_role_details(uuid: str, organization: model.Organization, db:Session):
+    role = db.query(model.OrganizationRoles).filter_by(ruid=uuid, org_id=organization.id).first()
+    if not role:
+        CustomValidations.customError(
+            type="not_exist",
+            loc="role_id",
+            msg="User does not exist",
+            inp=uuid,
+            ctx={"role": "exist"}
+        )
+
+    return role
+
