@@ -42,7 +42,7 @@ def all_organizations(limit: int, offset: int, db: Session):
     }
 
 
-def create_organization(data: schema.CreateOrganization, db: Session, authToken: frontendModel.FrontendToken, subscription: backendModel.SubscriptionFeature) -> model.Organization:
+def create_organization(data: schema.CreateOrganization, db: Session, authToken: frontendModel.FrontendToken, subscription: backendModel.SubscriptionFeature):
     """
     Creates a new organization in the database, performing several validations before saving the organization.
 
