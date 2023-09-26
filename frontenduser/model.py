@@ -38,6 +38,8 @@ class FrontendUser(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow)
 
+    subscription = relationship("Subscription", foreign_keys=active_plan)
+
     def __repr__(self):
         return f"<FrontendUser(id={self.id}, username='{self.username}')>"
 

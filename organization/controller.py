@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 
 from fastapi import UploadFile, status
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, select
 
 from . import model, schema
 from frontenduser import model as frontendModel
@@ -32,7 +32,8 @@ def all_organizations(limit: int, offset: int, db: Session):
             - "total": The total count of organizations in the database.
             - "organizations": A list of organization objects retrieved from the database.
     """
-    count = db.query(model.Organization).count()
+    count = db.query(func.count(model.Organization.id)).scalar()
+    
     organizations = db.query(model.Organization).limit(limit).offset(offset).all()
 
     return {
@@ -57,7 +58,12 @@ def create_organization(data: schema.CreateOrganization, db: Session, authToken:
 
     # Check if the number of organizations created by the user exceeds the limit defined in the subscription plan.
     org_quantity = subscription.quantity
-    total_organizations = db.query(model.Organization).filter_by(admin_id=authToken.user_id).count()
+    
+    total_organizations = (
+        db.query(func.count())
+        .filter_by(admin_id=authToken.user_id)
+        .scalar()
+    )
 
     if total_organizations >= org_quantity:
         CustomValidations.customError(
@@ -136,6 +142,17 @@ def create_organization(data: schema.CreateOrganization, db: Session, authToken:
 
 
 def register_to_organization(data: schema.OrgUserRegister, db: Session, authToken: frontendModel.FrontendToken):
+    """
+    This function registers a user to an organization by creating a new entry in the OrganizationUser table in the database.
+
+    Args:
+        data (schema.OrgUserRegister): The data required to register a user to an organization.
+        db (Session): A SQLAlchemy Session object representing the database connection.
+        authToken (frontendModel.FrontendToken): An authentication token for the frontend user.
+
+    Returns:
+        model.OrganizationUser: The newly created OrganizationUser object.
+    """
     user = authToken.user
     organization = db.query(model.Organization).filter_by(orguid=data.org_uid).first()
 
@@ -148,7 +165,7 @@ def register_to_organization(data: schema.OrgUserRegister, db: Session, authToke
             ctx={"org_uid": "exist"}
         )
 
-    if organization.registration_type=="admin_only":
+    if organization.registration_type == "admin_only":
         CustomValidations.customError(
             status_code=status.HTTP_401_UNAUTHORIZED,
             type="not_allowed",
@@ -158,14 +175,53 @@ def register_to_organization(data: schema.OrgUserRegister, db: Session, authToke
             ctx={"registration": "admin_only"}
         )
 
+    admin = organization.admin
+    feature = db.query(backendModel.Feature).filter_by(feature_code="add_member").first()
+
+    subscription_feature = db.query(backendModel.SubscriptionFeature).filter(
+        backendModel.SubscriptionFeature.subscription_id == admin.active_plan,
+        backendModel.SubscriptionFeature.feature_id == feature.id
+    ).first()
+
+    user_quantity = subscription_feature.quantity
+
+    total_users = db.query(func.count()).filter(
+        model.OrganizationUser.org_id == organization.id,
+        model.OrganizationUser.is_deleted == False,
+        model.OrganizationUser.is_active == True,
+    ).scalar()
+
+    if total_users >= user_quantity:
+        CustomValidations.customError(
+            type="limit_exceed",
+            loc="organization",
+            msg=f"Can not add more than '{user_quantity}' users.",
+            inp=data.org_uid,
+            ctx={"organization": "limited_creation"}
+        )
+
+    org_user = db.query(model.OrganizationUser).filter(
+        model.OrganizationUser.org_id == organization.id,
+        model.OrganizationUser.user_id == user.id
+    ).first()
+
+    if org_user:
+        CustomValidations.customError(
+            type="already_exist",
+            loc="organization",
+            msg=f"User already registered.",
+            inp=data.org_uid,
+            ctx={"organization": "new_registration"}
+        )
+
     org_user = model.OrganizationUser(
-        uuid = generate_uuid(organization.org_name + user.username),
-        user_id = user.id,
-        org_id = organization.id,
-        role_id = 1 # Assign default role
+        uuid=generate_uuid(organization.org_name + user.username),
+        user_id=user.id,
+        org_id=organization.id,
+        role_id=1  # Assign default role
     )
 
-    if organization.registration_type=="approval_required":
+    if organization.registration_type == "approval_required":
         org_user.is_active = False
 
     db.add(org_user)
