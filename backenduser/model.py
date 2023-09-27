@@ -27,7 +27,7 @@ class BackendUser(Base):
     is_active = Column(Boolean, default=True)
     is_deleted = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     role = relationship('BackendRole', foreign_keys=role_id)
     subscriptions = relationship('Subscription', back_populates='creator')
@@ -52,7 +52,7 @@ class BackendRole(Base):
     is_deleted = Column(Boolean, default=False)
     created_by = Column(Integer, ForeignKey("backendusers.id"))
     created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     creator = relationship('BackendUser', foreign_keys=created_by)
     permissions = relationship('BackendRolePermission', back_populates='role')
@@ -279,7 +279,7 @@ class Coupon(Base):
     coupon_type = Column(String(50))
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def __repr__(self):
         return f"Coupon(id={self.id}, coupon_code='{self.coupon_code}', name='{self.name}', percentage={self.percentage}, coupon_type='{self.coupon_type}', is_active={self.is_active}, created_at={self.created_at}, updated_at={self.updated_at})"

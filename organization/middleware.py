@@ -94,6 +94,19 @@ def check_feature(feature_code: str):
 
 
 def organization_exist(orguid: str = Header(title="Organization id", description="orguid of the organization you are accessing."), db: Session = Depends(get_db)):
+    """
+    Checks if an organization with the given orguid exists in the database and if the organization's admin has an active subscription.
+
+    Args:
+        orguid (str): The unique identifier of the organization.
+        db (Session): The database session object.
+
+    Returns:
+        Organization: The organization object if it exists and the admin has an active subscription.
+
+    Raises:
+        CustomError: If the organization does not exist or if there is no active subscription for the admin.
+    """
     organization = db.query(model.Organization).filter_by(orguid=orguid).first()
 
     if not organization:
@@ -126,11 +139,26 @@ def organization_exist(orguid: str = Header(title="Organization id", description
 
 
 def check_permission(codenames: list[str]):
+
     def has_permissions(
         authtoken: Annotated[str, Header(title="Authentication token", description="The token you get from login.")],
         orguid: str = Header(title="Organization id", description="orguid of the organization you are accessing."),
         db: Session = Depends(get_db)
     ):
+        """
+        Check if a user has the required permissions to access a specific organization.
+
+        Args:
+            authtoken (str): The authentication token obtained from login.
+            orguid (str): The organization ID being accessed.
+            db (Session): The database session.
+
+        Returns:
+            Union[str, List[str]]: The user's permission codenames if the user has the required permissions.
+
+        Raises:
+            HTTPException: If the organization does not exist, the token is expired, or the user does not have the required permissions.
+        """
         organization = db.query(model.Organization).filter_by(orguid=orguid).first()
 
         if not organization:
@@ -143,7 +171,7 @@ def check_permission(codenames: list[str]):
             )
 
         user_token = db.query(frontendModel.FrontendToken).filter_by(token=authtoken).first()
-    
+
         if not user_token or not user_token.user:
             CustomValidations.customError(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -153,7 +181,7 @@ def check_permission(codenames: list[str]):
                 inp=authtoken,
                 ctx={"authtoken": "valid"}
             )
-    
+
         if user_token.user.id == organization.admin_id:
             return "__all__"
 
@@ -163,7 +191,7 @@ def check_permission(codenames: list[str]):
         ).first()
         user_permissions = org_user.role.permissions
         user_permission_codenames = [item.permission.codename for item in user_permissions]
-   
+
         if not all(codename in user_permission_codenames for codename in codenames):
             CustomValidations.customError(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -173,9 +201,9 @@ def check_permission(codenames: list[str]):
                 inp=", ".join(codenames),
                 ctx={"permission": ", ".join(codenames)}
             )
-                
+
         return user_permission_codenames
-            
+
     return has_permissions
 
 

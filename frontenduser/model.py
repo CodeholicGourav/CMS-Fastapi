@@ -36,7 +36,7 @@ class FrontendUser(Base):
     is_active = Column(Boolean, default=True)
     is_deleted = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     subscription = relationship("Subscription", foreign_keys=active_plan)
 
@@ -140,7 +140,7 @@ class Order(Base):
     coupon_id = Column(Integer, ForeignKey("coupons.id"))
     status = Column(Text, default="pending")
     created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
     user = relationship("FrontendUser", foreign_keys=user_id)
@@ -166,7 +166,7 @@ class Transaction(Base):
     payment_gateway = Column(String(50))
     payment_id = Column(String(255))
     created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def __repr__(self):
         return f"Transaction(id={self.id}, order_id={self.order_id}, status='{self.status}', payment_gateway='{self.payment_gateway}', payment_id='{self.payment_id}', created_at='{self.created_at}', updated_at='{self.updated_at}')"

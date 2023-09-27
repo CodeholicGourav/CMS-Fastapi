@@ -388,8 +388,6 @@ def update_role(data: schema.UpdateRole, organization: model.Organization, autht
 
     if data.role:
         role.role = data.role
-    
-    role.updated_at = datetime.utcnow()
 
     if data.permissions:
         # Delete all existing role permissions for the role from the database

@@ -239,7 +239,6 @@ def updateUser(data: schema.UpdateUser, db: Session):
         user.is_active = data.is_active
     if data.is_deleted is not None:
         user.is_deleted = data.is_deleted
-    user.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(user)
     return user
@@ -283,7 +282,6 @@ def verify_email(token: str, db: Session):
 
     user.email_verified_at = datetime.utcnow()
     user.verification_token = None 
-    user.updated_at = datetime.utcnow()
     db.commit()
     return {"details": "Email verified successfully"}
 
@@ -500,9 +498,6 @@ def create_new_password(request: schema.ForgotPassword, db: Session):
 
     # Set the verification token to None
     user.verification_token = None
-
-    # Update the user's updated_at field with the current datetime
-    user.updated_at = datetime.utcnow()
 
     # Commit the changes to the database
     db.commit()

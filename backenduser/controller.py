@@ -251,7 +251,6 @@ def updateUserRole(data: schema.UpdateUser, authToken: model.BackendToken, db: S
     if data.is_deleted is not None:
         user.is_deleted = data.is_deleted
 
-    user.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(user)
     return user
@@ -492,7 +491,6 @@ def create_new_password(request: schema.ForgotPassword, db: Session):
 
     user.password = Hash.bcrypt(request.password)
     user.verification_token = None
-    user.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(user)
     return user

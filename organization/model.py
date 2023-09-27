@@ -22,7 +22,7 @@ class Organization(Base):
     is_active = Column(Boolean, default=True)
     is_deleted = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     admin = relationship("FrontendUser", foreign_keys=admin_id)
     allowed_registration = ['open', 'approval_required', 'admin_only']
@@ -49,7 +49,7 @@ class OrganizationUser(Base):
     is_active = Column(Boolean, default=True)
     is_deleted = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     user = relationship("FrontendUser", foreign_keys=user_id)
     Organization = relationship("Organization", foreign_keys=org_id)
@@ -76,7 +76,7 @@ class OrganizationRole(Base):
     org_id = Column(Integer, ForeignKey("organizations.id"))
     is_deleted = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     permissions = relationship("OrganizationRolePermission", back_populates="role")
 
