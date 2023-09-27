@@ -36,7 +36,6 @@ def register_to_organization(
     data: schema.OrgUserRegister,
     db : Session = Depends(get_db), 
     authToken: frontendModel.FrontendToken = Depends(authenticate_token),
-    # subscription: backendModel.SubscriptionFeature = Depends(check_feature("create_organization")),
 ): return controller.register_to_organization(data, db, authToken)
 
 
@@ -47,6 +46,7 @@ def get_all_users(
     db : Session = Depends(get_db), 
     authToken: frontendModel.FrontendToken = Depends(authenticate_token),
     organization: backendModel.SubscriptionFeature = Depends(organization_exist),
+    have_permission: list[str] = Depends(check_permission(["read_user"])),
 ): return controller.get_all_users(limit, offset, organization, db)
 
 
@@ -56,6 +56,7 @@ def get_user_details(
     db : Session = Depends(get_db), 
     authToken: frontendModel.FrontendToken = Depends(authenticate_token),
     organization: backendModel.SubscriptionFeature = Depends(organization_exist),
+    have_permission: list[str] = Depends(check_permission(["read_user"])),
 ): return controller.get_user_details(user_id, organization, db)
 
 
@@ -76,6 +77,7 @@ def get_role_details(
     db : Session = Depends(get_db), 
     authToken: frontendModel.FrontendToken = Depends(authenticate_token),
     organization: backendModel.SubscriptionFeature = Depends(organization_exist),
+    have_permission: list[str] = Depends(check_permission(["read_role"])),
 ): return controller.get_role_details(role_id, organization, db)
 
 
@@ -91,7 +93,7 @@ def create_role(
     db : Session = Depends(get_db), 
     authToken: frontendModel.FrontendToken = Depends(authenticate_token),
     organization: backendModel.SubscriptionFeature = Depends(organization_exist),
-    # have_permission: model.OrganizationRoles = Depends(check_permission(["read_user"])),
+    have_permission: model.OrganizationRoles = Depends(check_permission(["create_role"])),
 ): return controller.create_role(data, organization, authToken, db)
 
 
@@ -101,6 +103,6 @@ def update_role(
     db : Session = Depends(get_db), 
     authToken: frontendModel.FrontendToken = Depends(authenticate_token),
     organization: backendModel.SubscriptionFeature = Depends(organization_exist),
-    # have_permission: model.OrganizationRoles = Depends(check_permission(["read_user"])),
+    have_permission: model.OrganizationRoles = Depends(check_permission(["update_role"])),
 ): return controller.update_role(data, organization, authToken, db)
 
