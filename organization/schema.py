@@ -70,6 +70,16 @@ class ShowOrgUserList(BaseModel):
     users: List[ShowOrgUser]
 
 
+class BasicOrgPermission(BaseModel):
+    type: int
+    permission: str
+    codename: str
+
+
+class BasicOrgRolePermission(BaseModel):
+    permission: BasicOrgPermission
+
+
 class ShowOrgRole(BaseModel):
     ruid: str
     role: str
@@ -77,6 +87,7 @@ class ShowOrgRole(BaseModel):
     is_deleted: bool
     created_at: datetime
     updated_at: datetime
+    permissions: List[BasicOrgRolePermission]
 
 
 class ShowOrgRoleList(BaseModel):
@@ -84,10 +95,6 @@ class ShowOrgRoleList(BaseModel):
     roles: List[ShowOrgRole]
 
 
-class ShowOrgPermission(BaseModel):
-    code: str
-
-
 class CreateRole(BaseModel):
-    role: str
-    permissions: List[ShowOrgPermission]
+    role: str = Field(title="Name of the role")
+    permissions: List[str] = Field(title="permission code")

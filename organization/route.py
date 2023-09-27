@@ -78,12 +78,18 @@ def get_role_details(
 ): return controller.get_role_details(role_id, organization, db)
 
 
-@organizationRoutes.post('/create-role', response_model=schema.ShowOrgRole)
+@organizationRoutes.get('/permissions', response_model=schema.BasicOrgPermission, status_code=status.HTTP_200_OK)
+def get_all_permissions(
+    db : Session = Depends(get_db), 
+): return controller.get_all_permissions(db)
+
+
+@organizationRoutes.post('/create-role', response_model=schema.ShowOrgRole, status_code=status.HTTP_201_CREATED)
 def create_role(
     data : schema.CreateRole, 
     db : Session = Depends(get_db), 
     authToken: frontendModel.FrontendToken = Depends(authenticate_token),
     organization: backendModel.SubscriptionFeature = Depends(organization_exist),
     # have_permission: model.OrganizationRoles = Depends(check_permission(["read_user"])),
-): return controller.create_role(data, organization, db)
+): return controller.create_role(data, organization, authToken, db)
 

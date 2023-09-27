@@ -298,5 +298,37 @@ def get_role_details(uuid: str, organization: model.Organization, db:Session):
     return role
 
 
-def create_role(data, organization: model.Organization, db:Session):
-    pass
+def get_all_permissions(db: Session):
+    return db.query(model.OrganizationPermission).all()
+
+
+def create_role(data: schema.CreateRole, organization: model.Organization, authtoken: frontendModel.FrontendToken, db:Session):
+    role = db.query(model.OrganizationRole).filter_by(role=data.role).first()
+    if role:
+        CustomValidations.customError(
+            type="already_exist",
+            loc="role",
+            msg="Role already exists",
+            inp=data.role,
+            ctx={"role": "unique"}
+        )
+
+    new_role = model.OrganizationRole(
+        ruid=generate_uuid(data.role),
+        role=data.role,
+        org_id = organization.id,
+        created_by=authtoken.user_id
+    )
+    db.add(new_role)
+    db.commit()
+    db.refresh(new_role)
+
+    codenames = data.permissions
+    permissions = db.query(model.OrganizationPermission).filter(model.OrganizationPermission.codename.in_(codenames)).all()
+
+    for permission in permissions:
+        role_permission = model.OrganizationRolePermission(role_id=new_role.id, permission_id=permission.id)
+        db.add(role_permission)
+
+    db.commit()
+    return new_role

@@ -4,10 +4,11 @@ import sys
 import uvicorn
 
 from app import app
-from backenduser import model as backendModel
-from backenduser.controller import createsuperuser
 from database import SessionLocal, engine
+from backenduser.controller import createsuperuser
+from backenduser import model as backendModel
 from frontenduser import model as frontendModel
+from organization import model as organizationdModel
 
 
 def run():
@@ -37,6 +38,7 @@ def migrate_tables() -> None:
     frontendModel.Base.metadata.create_all(bind=engine)
     backendModel.create_permissions()
     backendModel.create_features()
+    organizationdModel.create_permissions()
     frontendModel.create_timezones()
 
 

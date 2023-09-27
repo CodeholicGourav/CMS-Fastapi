@@ -34,29 +34,6 @@ class Organization(Base):
         return self.org_name
 
 
-class OrganizationRoles(Base):
-    """
-    The `OrganizationRoles` class represents a table in a database called 'organization_roles'.
-    It is used to store information about different roles within an organization.
-    """
-    __tablename__ = "organization_roles"
-
-    id = Column(Integer, primary_key=True, index=True)
-    ruid = Column(String(50), index=True, unique=True)
-    role = Column(String(50))
-    created_by = Column(Integer, ForeignKey("frontendusers.id"))
-    org_id = Column(Integer, ForeignKey("organizations.id"))
-    is_deleted = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow)
-
-    def __repr__(self):
-        return f"<OrganizationRoles(id={self.id}, role='{self.role}')>"
-
-    def __str__(self):
-        return f"Organization Role: {self.role}"
-
-
 class OrganizationUser(Base):
     """
     The OrganizationUser class represents a table in a database called 'organization_users'.
@@ -76,13 +53,38 @@ class OrganizationUser(Base):
 
     user = relationship("FrontendUser", foreign_keys=user_id)
     Organization = relationship("Organization", foreign_keys=org_id)
-    role = relationship("OrganizationRoles", foreign_keys=role_id)
+    role = relationship("OrganizationRole", foreign_keys=role_id)
 
     def __repr__(self):
         return f"OrganizationUser(id={self.id}, uuid={self.uuid}, user_id={self.user_id}, org_id={self.org_id}, role_id={self.role_id}, created_at={self.created_at}, updated_at={self.updated_at})"
 
     def __str__(self):
         return f"OrganizationUser(id={self.id}, uuid={self.uuid}, user_id={self.user_id}, org_id={self.org_id}, role_id={self.role_id}, created_at={self.created_at}, updated_at={self.updated_at})"
+
+
+class OrganizationRole(Base):
+    """
+    The `OrganizationRole` class represents a table in a database called 'organization_roles'.
+    It is used to store information about different roles within an organization.
+    """
+    __tablename__ = "organization_roles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    ruid = Column(String(50), index=True, unique=True)
+    role = Column(String(50))
+    created_by = Column(Integer, ForeignKey("frontendusers.id"))
+    org_id = Column(Integer, ForeignKey("organizations.id"))
+    is_deleted = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+
+    permissions = relationship("OrganizationRolePermission", back_populates="role")
+
+    def __repr__(self):
+        return f"<OrganizationRole(id={self.id}, role='{self.role}')>"
+
+    def __str__(self):
+        return f"Organization Role: {self.role}"
 
 
 class OrganizationPermission(Base):
@@ -113,3 +115,26 @@ def create_permissions():
         return {"error": str(e)}
     finally:
         db.close()
+
+
+class OrganizationRolePermission(Base):
+    """
+    The `OrganizationRolePermission` class represents a table in a database called 'organization_rolepermissions'.
+    It is used to store information about the permissions assigned to different roles within an organization.
+    """
+    __tablename__ = 'organization_rolepermissions'
+
+    id = Column(Integer, primary_key=True, index=True)
+    role_id = Column(Integer, ForeignKey("organization_roles.id"), nullable=False)
+    permission_id = Column(Integer, ForeignKey("organization_permissions.id"), nullable=False)
+
+    role = relationship("OrganizationRole", foreign_keys=role_id, back_populates="permissions")
+    permission = relationship("OrganizationPermission", foreign_keys=permission_id)
+
+    def __repr__(self):
+        return f"<OrganizationRolePermission(id={self.id}, role_id={self.role_id}, permission_id={self.permission_id})>"
+
+    def __str__(self):
+        return f"OrganizationRolePermission(id={self.id}, role_id={self.role_id}, permission_id={self.permission_id})"
+
+
