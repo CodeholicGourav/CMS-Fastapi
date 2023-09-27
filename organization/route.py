@@ -8,7 +8,7 @@ import os
 from . import model, controller, schema
 from frontenduser import model as frontendModel
 from backenduser import model as backendModel
-from .middleware import check_feature, organization_exist, check_permission
+from .middleware import check_feature, organization_exist
 from frontenduser.middleware import authenticate_token
 
 organizationRoutes = APIRouter()
@@ -17,7 +17,7 @@ organizationRoutes = APIRouter()
 def get_all_organizations(
     limit: int = Query(10, ge=1, le=100, description="number of results to retrieve"), 
     offset : int = Query(0, ge=0, description="Number of results to skip."), 
-    db : Session = Depends(get_db), 
+    db : Session = Depends(get_db),
     authToken: frontendModel.FrontendToken = Depends(authenticate_token),
 ): return controller.all_organizations(limit, offset, db)
 

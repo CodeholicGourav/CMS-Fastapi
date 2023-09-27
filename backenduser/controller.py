@@ -724,13 +724,13 @@ def add_subscription(data: schema.CreateSubscription, current_user: model.Backen
     return subscription
 
 
-def delete_subscription_plan(data: schema.UpdateSubscription, db: Session):
+def update_subscription_plan(data: schema.UpdateSubscription, db: Session):
     """
-    Deletes a subscription plan from the database based on the provided `suid` (subscription ID).
+    Updates the details of a subscription plan in the database.
 
     Args:
-        data (schema.UpdateSubscription): The data object containing the `suid` (subscription ID) and `is_deleted` flag.
-        db (Session): The database session object.
+        data (schema.UpdateSubscription): The data containing the subscription details to be updated.
+        db (Session): The database session object used to query and update the database.
 
     Returns:
         model.Subscription: The updated subscription object.
@@ -749,8 +749,74 @@ def delete_subscription_plan(data: schema.UpdateSubscription, db: Session):
             ctx={"suid": "exist"}
         )
 
+    # Update the subscription's name, description, price, validity, is_deleted, and features based on the provided data
+    if data.name is not None:
+        subscription.name = data.name
+
+    if data.description is not None:
+        subscription.description = data.description
+
+    if data.price is not None:
+        subscription.price = data.price
+
+    if data.validity is not None:
+        subscription.validity = data.validity
+
+    if data.is_deleted is not None:
+        subscription.is_deleted = data.is_deleted
+
+    # Commit the changes to the database
+    db.commit()
+    # Refresh the subscription object to reflect the updated values
+    db.refresh(subscription)
+
+    if data.features is not None:
+        # Delete any existing subscription features
+        db.query(model.SubscriptionFeature).filter(model.SubscriptionFeature.subscription_id == subscription.id).delete()
+
+        # Add new subscription features
+        for feature in data.features:
+            feature_exsit = db.query(model.Feature).filter_by(feature_code=feature.feature_code).first()
+            if feature_exsit:
+                subscription_feature = model.SubscriptionFeature(subscription_id=subscription.id, feature_id=feature_exsit.id, quantity=feature.quantity)
+                db.add(subscription_feature)
+
+        # Commit the changes to the database
+        db.commit()
+        # Refresh the subscription feature object to reflect the updated values
+        db.refresh(subscription_feature)
+
+    # Return the updated subscription object
+    return subscription
+
+
+def delete_subscription_plan(suid: str, is_deleted: bool, db: Session):
+    """
+    Deletes a subscription plan from the database based on the provided `suid` (subscription ID).
+
+    Args:
+        data (schema.UpdateSubscription): The data object containing the `suid` (subscription ID) and `is_deleted` flag.
+        db (Session): The database session object.
+
+    Returns:
+        model.Subscription: The updated subscription object.
+    """
+    # Query the database to find the subscription with the provided `suid`
+    subscription = db.query(model.Subscription).filter(model.Subscription.suid == suid).first()
+
+    # If the subscription does not exist, raise a custom error indicating that the subscription does not exist
+    if not subscription:
+        CustomValidations.customError(
+            status_code=status.HTTP_403_FORBIDDEN,
+            type="not_exist",
+            loc="suid",
+            msg="Subscription does not exist!",
+            inp=suid,
+            ctx={"suid": "exist"}
+        )
+
     # Update the `is_deleted` attribute of the subscription to the value specified in the `data` parameter
-    subscription.is_deleted = data.is_deleted
+    subscription.is_deleted = is_deleted
 
     # Commit the changes to the database
     db.commit()
@@ -760,6 +826,7 @@ def delete_subscription_plan(data: schema.UpdateSubscription, db: Session):
 
     # Return the updated subscription object
     return subscription
+
 
 
 from frontenduser import controller as frontendUserController

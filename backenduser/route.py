@@ -149,15 +149,6 @@ async def add_subscription(
 ): return controller.add_subscription(data, authToken.user, db)
 
 
-@backendUserRoutes.get('/subscriptions/{suid}', response_model=schema.BaseSubscription, status_code=status.HTTP_200_OK) #Read all subscriptions
-def subscription_details(
-    suid: str,
-    db : Session = Depends(get_db), 
-    authToken: model.BackendToken = Depends(authenticate_token),
-    permissions: model.BackendUser = Depends(check_permission(["read_subscription"])),
-): return controller.subscription_plan_details(suid, db)
-
-
 @backendUserRoutes.get('/subscriptions', response_model=List[schema.BaseSubscription], status_code=status.HTTP_200_OK) #Read all subscriptions
 def all_subscriptions(
     limit : Optional[int]=10, 
@@ -168,13 +159,32 @@ def all_subscriptions(
 ): return controller.all_subscription_plans(limit, offset, db)
 
 
-@backendUserRoutes.put('/delete-subscription', response_model=schema.BaseSubscription, status_code=status.HTTP_200_OK) #Delete a subscriptions
-def delete_subscription(
+@backendUserRoutes.get('/subscriptions/{suid}', response_model=schema.BaseSubscription, status_code=status.HTTP_200_OK) #Read all subscriptions
+def subscription_details(
+    suid: str = Path(title="Subscription ID", description="Pass the suid of the subscription to get"),
+    db : Session = Depends(get_db), 
+    authToken: model.BackendToken = Depends(authenticate_token),
+    permissions: model.BackendUser = Depends(check_permission(["read_subscription"])),
+): return controller.subscription_plan_details(suid, db)
+
+
+@backendUserRoutes.put('/update-subscription', response_model=schema.BaseSubscription, status_code=status.HTTP_200_OK) #Update/delet a subscriptions
+def update_subscription(
     data: schema.UpdateSubscription,
     db : Session = Depends(get_db), 
     authToken: model.BackendToken = Depends(authenticate_token),
     permissions: model.BackendUser = Depends(check_permission(["update_subscription"])),
-): return controller.delete_subscription_plan(data, db)
+): return controller.update_subscription_plan(data, db)
+
+
+@backendUserRoutes.delete('/delete-subscription/{suid}', response_model=schema.BaseSubscription, status_code=status.HTTP_200_OK) #Delete a subscriptions
+def delete_subscription(
+    suid: Annotated[str, Path(title="Subscription suid")],
+    is_deleted: Annotated[bool, Query(title="delete subscription", description="Pass true to delete and false to restore the susbcription.")],
+    db : Session = Depends(get_db), 
+    authToken: model.BackendToken = Depends(authenticate_token),
+    permissions: model.BackendUser = Depends(check_permission(["delete_subscription"])),
+): return controller.delete_subscription_plan(suid, is_deleted, db)
 
 
 @backendUserRoutes.get("/get-all-frontend-users", response_model=schema.FrontenduserList, status_code=status.HTTP_200_OK) #Read users

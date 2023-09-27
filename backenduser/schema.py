@@ -190,7 +190,12 @@ class BaseSubscription(BaseModel):
 
 class UpdateSubscription(BaseModel):
     suid : str = Field(..., description="suid of the subscription")
-    is_deleted : bool = Field(..., description="deletesubscription or not")
+    name : Optional[str] = None
+    description : Optional[str] = None
+    price : Optional[float] = None
+    validity : Optional[int] = None
+    is_deleted : Optional[bool] = None
+    features: Optional[list[FeatureQuantity]] = None
 
 
 class FrontendBaseUser(BaseModel):
