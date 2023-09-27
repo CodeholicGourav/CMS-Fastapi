@@ -178,6 +178,6 @@ pyrightconfig.json
 
 uploads/*
 
-google.py
+drive.py
 token.json
 credentials.json
