@@ -83,3 +83,11 @@ class ShowOrgRoleList(BaseModel):
     total: int
     roles: List[ShowOrgRole]
 
+
+class ShowOrgPermission(BaseModel):
+    code: str
+
+
+class CreateRole(BaseModel):
+    role: str
+    permissions: List[ShowOrgPermission]

@@ -8,7 +8,7 @@ import os
 from . import model, controller, schema
 from frontenduser import model as frontendModel
 from backenduser import model as backendModel
-from .middleware import check_feature, organization_exist
+from .middleware import check_feature, organization_exist, check_permission
 from frontenduser.middleware import authenticate_token
 
 organizationRoutes = APIRouter()
@@ -52,7 +52,7 @@ def get_all_users(
 
 @organizationRoutes.get('/users/{user_id}', response_model=schema.ShowOrgUser)
 def get_user_details(
-    user_id : str = Path(description="UUID of the user to retrieve."), 
+    user_id : str = Path(description="UUID of the frontend user to retrieve."), 
     db : Session = Depends(get_db), 
     authToken: frontendModel.FrontendToken = Depends(authenticate_token),
     organization: backendModel.SubscriptionFeature = Depends(organization_exist),
@@ -76,4 +76,14 @@ def get_role_details(
     authToken: frontendModel.FrontendToken = Depends(authenticate_token),
     organization: backendModel.SubscriptionFeature = Depends(organization_exist),
 ): return controller.get_role_details(role_id, organization, db)
+
+
+@organizationRoutes.post('/create-role', response_model=schema.ShowOrgRole)
+def create_role(
+    data : schema.CreateRole, 
+    db : Session = Depends(get_db), 
+    authToken: frontendModel.FrontendToken = Depends(authenticate_token),
+    organization: backendModel.SubscriptionFeature = Depends(organization_exist),
+    # have_permission: model.OrganizationRoles = Depends(check_permission(["read_user"])),
+): return controller.create_role(data, organization, db)
 

@@ -252,7 +252,7 @@ def get_all_users(limit: int, offset: int, organization: model.Organization, db:
 
 
 def get_user_details(uuid: str, organization: model.Organization, db:Session):
-    user = db.query(model.OrganizationUser).filter_by(uuid=uuid, org_id=organization.id).first()
+    user = db.query(frontendModel.FrontendUser).filter_by(uuid=uuid).first()
     if not user:
         CustomValidations.customError(
             type="not_exist",
@@ -261,8 +261,17 @@ def get_user_details(uuid: str, organization: model.Organization, db:Session):
             inp=uuid,
             ctx={"user": "exist"}
         )
+    org_useruser = db.query(model.OrganizationUser).filter_by(user_id=user.id, org_id=organization.id).first()
+    if not org_useruser:
+        CustomValidations.customError(
+            type="not_exist",
+            loc="user_id",
+            msg="User does not exist in organization",
+            inp=uuid,
+            ctx={"user": "exist"}
+        )
 
-    return user
+    return org_useruser
 
 
 def get_all_roles(limit: int, offset: int, organization: model.Organization, db: Session):
@@ -288,3 +297,6 @@ def get_role_details(uuid: str, organization: model.Organization, db:Session):
 
     return role
 
+
+def create_role(data, organization: model.Organization, db:Session):
+    pass

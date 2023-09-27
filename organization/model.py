@@ -3,7 +3,8 @@ from datetime import datetime
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 
-from database import Base
+from database import Base, SessionLocal
+from dependencies import predefined_organization_permissions
 
 
 class Organization(Base):
@@ -83,3 +84,32 @@ class OrganizationUser(Base):
     def __str__(self):
         return f"OrganizationUser(id={self.id}, uuid={self.uuid}, user_id={self.user_id}, org_id={self.org_id}, role_id={self.role_id}, created_at={self.created_at}, updated_at={self.updated_at})"
 
+
+class OrganizationPermission(Base):
+    __tablename__ = "organization_permissions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    permission = Column(String(255), nullable=False)
+    type = Column(Integer, nullable=False)
+    codename = Column(String(50), index=True, unique=True, nullable=False)
+
+
+def create_permissions():
+    """
+    Create predefined permissions in the database.
+
+    Returns:
+        dict: A message indicating the success or failure of the operation.
+    """
+    try:
+        print("Creating permissions data...")
+        db = SessionLocal()
+        permissions = [OrganizationPermission(**permission) for permission in predefined_organization_permissions]
+        db.add_all(permissions)
+        db.commit()
+        return {"message": "Organization Permissions created successfully"}
+    except Exception as e:
+        db.rollback()
+        return {"error": str(e)}
+    finally:
+        db.close()

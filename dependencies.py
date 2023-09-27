@@ -380,7 +380,7 @@ def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-predefined_permissions = [
+predefined_backend_permissions = [
     {"permission": "Can create user", "type": 1, "codename": "create_user"},
     {"permission": "Can read user", "type": 1, "codename": "read_user"},
     {"permission": "Can update user", "type": 1, "codename": "update_user"},
@@ -395,7 +395,28 @@ predefined_permissions = [
     {"permission": "Can delete permission", "type": 3, "codename": "delete_permission"},
     {"permission": "Can create subscription", "type": 4, "codename": "create_subscription"},
     {"permission": "Can read subscription", "type": 4, "codename": "read_subscription"},
+    {"permission": "Can Update subscription", "type": 4, "codename": "update_subscription"},
     {"permission": "Can delete subscription", "type": 4, "codename": "delete_subscription"}
+]
+
+
+predefined_organization_permissions = [
+    {"permission": "Can create user", "type": 1, "codename": "create_user"},
+    {"permission": "Can read user", "type": 1, "codename": "read_user"},
+    {"permission": "Can update user", "type": 1, "codename": "update_user"},
+    {"permission": "Can delete user", "type": 1, "codename": "delete_user"},
+    {"permission": "Can create role", "type": 2, "codename": "create_role"},
+    {"permission": "Can read role", "type": 2, "codename": "read_role"},
+    {"permission": "Can update role", "type": 2, "codename": "update_role"},
+    {"permission": "Can delete role", "type": 2, "codename": "delete_role"},
+    {"permission": "Can create permission", "type": 3, "codename": "create_permission"},
+    {"permission": "Can read permission", "type": 3, "codename": "read_permission"},
+    {"permission": "Can update permission", "type": 3, "codename": "update_permission"},
+    {"permission": "Can delete permission", "type": 3, "codename": "delete_permission"},
+    {"permission": "Can create Task", "type": 4, "codename": "create_task"},
+    {"permission": "Can read Task", "type": 4, "codename": "read_task"},
+    {"permission": "Can update Task", "type": 4, "codename": "update_task"},
+    {"permission": "Can delete Task", "type": 4, "codename": "delete_task"}
 ]
 
 

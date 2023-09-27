@@ -7,7 +7,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 
 from database import Base, SessionLocal
-from dependencies import predefined_feature, predefined_permissions
+from dependencies import predefined_feature, predefined_backend_permissions
 
 
 class BackendUser(Base):
@@ -93,10 +93,10 @@ def create_permissions():
     try:
         print("Creating permissions data...")
         db = SessionLocal()
-        permissions = [BackendPermission(**permission) for permission in predefined_permissions]
+        permissions = [BackendPermission(**permission) for permission in predefined_backend_permissions]
         db.add_all(permissions)
         db.commit()
-        return {"message": "Permissions created successfully"}
+        return {"message": "Backend permissions created successfully"}
     except Exception as e:
         db.rollback()
         return {"error": str(e)}
