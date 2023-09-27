@@ -8,7 +8,7 @@ import os
 from . import model, controller, schema
 from frontenduser import model as frontendModel
 from backenduser import model as backendModel
-from .middleware import check_feature, organization_exist
+from .middleware import check_feature, organization_exist, check_permission
 from frontenduser.middleware import authenticate_token
 
 organizationRoutes = APIRouter()
@@ -66,6 +66,7 @@ def get_all_roles(
     db : Session = Depends(get_db), 
     authToken: frontendModel.FrontendToken = Depends(authenticate_token),
     organization: backendModel.SubscriptionFeature = Depends(organization_exist),
+    have_permission: list[str] = Depends(check_permission(["read_role"])),
 ): return controller.get_all_roles(limit, offset, organization, db)
 
 
@@ -92,4 +93,14 @@ def create_role(
     organization: backendModel.SubscriptionFeature = Depends(organization_exist),
     # have_permission: model.OrganizationRoles = Depends(check_permission(["read_user"])),
 ): return controller.create_role(data, organization, authToken, db)
+
+
+@organizationRoutes.post('/update-role', response_model=schema.ShowOrgRole, status_code=status.HTTP_200_OK)
+def update_role(
+    data : schema.UpdateRole, 
+    db : Session = Depends(get_db), 
+    authToken: frontendModel.FrontendToken = Depends(authenticate_token),
+    organization: backendModel.SubscriptionFeature = Depends(organization_exist),
+    # have_permission: model.OrganizationRoles = Depends(check_permission(["read_user"])),
+): return controller.update_role(data, organization, authToken, db)
 

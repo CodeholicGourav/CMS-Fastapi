@@ -275,8 +275,8 @@ def get_user_details(uuid: str, organization: model.Organization, db:Session):
 
 
 def get_all_roles(limit: int, offset: int, organization: model.Organization, db: Session):
-    roles = db.query(model.OrganizationRoles).filter_by(org_id=organization.id).limit(limit).offset(offset).all()
-    count = db.query(func.count(model.OrganizationRoles.id)).filter_by(org_id=organization.id).scalar()
+    roles = db.query(model.OrganizationRole).filter_by(org_id=organization.id).limit(limit).offset(offset).all()
+    count = db.query(func.count(model.OrganizationRole.id)).filter_by(org_id=organization.id).scalar()
 
     return {
         "total": count,
@@ -303,6 +303,19 @@ def get_all_permissions(db: Session):
 
 
 def create_role(data: schema.CreateRole, organization: model.Organization, authtoken: frontendModel.FrontendToken, db:Session):
+    """
+    This function creates a new role for an organization in the database, performing validations to ensure the role does not already exist.
+
+    Args:
+        data (schema.CreateRole): The data required to create a new role.
+        organization (model.Organization): The organization object for which to create the role.
+        authtoken (frontendModel.FrontendToken): An authentication token for the frontend user.
+        db (Session): A SQLAlchemy Session object representing the database connection.
+
+    Returns:
+        model.OrganizationRole: The newly created role object.
+    """
+    # Check if a role with the same name already exists in the organization
     role = db.query(model.OrganizationRole).filter_by(role=data.role).first()
     if role:
         CustomValidations.customError(
@@ -313,22 +326,83 @@ def create_role(data: schema.CreateRole, organization: model.Organization, autht
             ctx={"role": "unique"}
         )
 
+    # Create a new role object
     new_role = model.OrganizationRole(
         ruid=generate_uuid(data.role),
         role=data.role,
-        org_id = organization.id,
+        org_id=organization.id,
         created_by=authtoken.user_id
     )
     db.add(new_role)
     db.commit()
     db.refresh(new_role)
 
+    # Retrieve the permissions associated with the role from the input data
     codenames = data.permissions
     permissions = db.query(model.OrganizationPermission).filter(model.OrganizationPermission.codename.in_(codenames)).all()
 
-    for permission in permissions:
-        role_permission = model.OrganizationRolePermission(role_id=new_role.id, permission_id=permission.id)
-        db.add(role_permission)
-
+    # Create role_permission objects and add them to the database
+    role_permissions = [model.OrganizationRolePermission(role_id=new_role.id, permission_id=permission.id) for permission in permissions]
+    db.add_all(role_permissions)
     db.commit()
+
     return new_role
+
+
+def update_role(data: schema.UpdateRole, organization: model.Organization, authtoken: frontendModel.FrontendToken, db:Session):
+    """
+    Updates the role of an organization by creating a new role entry in the OrganizationRole table in the database.
+
+    Args:
+        data (schema.UpdateRole): The data required to update the role.
+        organization (model.Organization): The organization object for which to update the role.
+        authtoken (frontendModel.FrontendToken): An authentication token for the frontend user.
+        db (Session): A SQLAlchemy Session object representing the database connection.
+
+    Returns:
+        model.OrganizationRole: The newly created role object.
+    """
+    # Retrieve the existing role from the database based on the provided role UUID
+    role = db.query(model.OrganizationRole).filter_by(ruid=data.ruid).first()
+
+    # If the role does not exist, raise a custom error
+    if not role:
+        CustomValidations.customError(
+            type="not_exist",
+            loc="role",
+            msg="Role does not exist",
+            inp=data.ruid,
+            ctx={"ruid": "exist"}
+        )
+
+    # Check if there is already a role with the same name in the organization. If so, raise a custom error
+    exit_role = db.query(model.OrganizationRole).filter_by(role=data.role).first()
+    if exit_role:
+        CustomValidations.customError(
+            type="already_exist",
+            loc="role",
+            msg="Role already exists",
+            inp=data.role,
+            ctx={"role": "unique"}
+        )
+
+    if data.role:
+        role.role = data.role
+    
+    role.updated_at = datetime.utcnow()
+
+    if data.permissions:
+        # Delete all existing role permissions for the role from the database
+        db.query(model.OrganizationRolePermission).filter_by(role_id=role.id).delete()
+
+        # Retrieve the permissions associated with the provided permission codenames
+        codenames = data.permissions
+        permissions = db.query(model.OrganizationPermission).filter(model.OrganizationPermission.codename.in_(codenames)).all()
+
+        # Create new role permission objects for each permission and add them to the database
+        role_permissions = [model.OrganizationRolePermission(role_id=role.id, permission_id=permission.id) for permission in permissions]
+        db.add_all(role_permissions)
+    db.commit()
+    db.refresh(role)
+
+    return role

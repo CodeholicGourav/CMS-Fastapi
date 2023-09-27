@@ -125,67 +125,57 @@ def organization_exist(orguid: str = Header(title="Organization id", description
     return organization
 
 
-# def check_permission(codenames: list[str]):
-#     """
-#     Returns a function to check if a user has the required permissions.
-    
-#     Args:
-#         codenames (list[str]): A list of permission codenames that the user must have to pass the permission check.
-    
-#     Returns:
-#         function: A function that can be used as a dependency in FastAPI routes to check if a user has the required permissions.
-        
-#     Raises:
-#         HTTPException: If the user is not found or does not have the required permissions.
-#     """
-#     def has_permissions(
-#         authtoken: Annotated[str, Header(title="Authentication token", description="The token you get from login.")],
-#         orguid: str = Header(title="Organization id", description="orguid of the organization you are accessing."),
-#         db: Session = Depends(get_db)
-#     ):
-#         """
-#         Checks if a user has the required permissions by comparing the user's permission codenames with the provided list of codenames.
+def check_permission(codenames: list[str]):
+    def has_permissions(
+        authtoken: Annotated[str, Header(title="Authentication token", description="The token you get from login.")],
+        orguid: str = Header(title="Organization id", description="orguid of the organization you are accessing."),
+        db: Session = Depends(get_db)
+    ):
+        organization = db.query(model.Organization).filter_by(orguid=orguid).first()
 
-#         Args:
-#             authtoken (str): The authentication token provided in the header of the request.
-#             db (Session): The database session used to query the user token.
+        if not organization:
+            CustomValidations.customError(
+                type="not_exist",
+                loc="org_uid",
+                msg="Organization does not exist.",
+                inp=str(orguid),
+                ctx={"org_uid": "exist"}
+            )
 
-#         Returns:
-#             Union[str, List[str]]: The permission codenames of the user or "__all__" if the user is a superuser.
-
-#         Raises:
-#             HTTPException: If the user token is not found or expired, or if the required permission is not granted.
-#         """
-#         user_token = db.query(BackendToken).filter_by(token=authtoken).first()
+        user_token = db.query(frontendModel.FrontendToken).filter_by(token=authtoken).first()
     
-#         if not user_token or not user_token.user:
-#             CustomValidations.customError(
-#                 status_code=status.HTTP_401_UNAUTHORIZED,
-#                 type="expired",
-#                 loc="authtoken",
-#                 msg="Token is expired, try login again.",
-#                 inp=authtoken,
-#                 ctx={"authtoken": "valid"}
-#             )
+        if not user_token or not user_token.user:
+            CustomValidations.customError(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                type="expired",
+                loc="authtoken",
+                msg="Token is expired, try login again.",
+                inp=authtoken,
+                ctx={"authtoken": "valid"}
+            )
     
-#         if user_token.user.role.id == 0:
-#             return "__all__"
+        if user_token.user.id == organization.admin_id:
+            return "__all__"
 
-#         user_permissions = user_token.user.role.permissions
-#         user_permission_codenames = [item.permission.codename for item in user_permissions]
+        org_user = db.query(model.OrganizationUser).filter(
+            model.OrganizationUser.user_id == user_token.user_id,
+            model.OrganizationUser.org_id == organization.id
+        ).first()
+        user_permissions = org_user.role.permissions
+        user_permission_codenames = [item.permission.codename for item in user_permissions]
    
-#         if not all(codename in user_permission_codenames for codename in codenames):
-#             CustomValidations.customError(
-#                 status_code=status.HTTP_403_FORBIDDEN,
-#                 type="unauthenticated",
-#                 loc="permission",
-#                 msg="Permission not granted.",
-#                 inp=", ".join(codenames),
-#                 ctx={"permission": ", ".join(codenames)}
-#             )
+        if not all(codename in user_permission_codenames for codename in codenames):
+            CustomValidations.customError(
+                status_code=status.HTTP_403_FORBIDDEN,
+                type="unauthenticated",
+                loc="permission",
+                msg="Permission not granted.",
+                inp=", ".join(codenames),
+                ctx={"permission": ", ".join(codenames)}
+            )
                 
-#         return user_permission_codenames
+        return user_permission_codenames
             
-#     return has_permissions
+    return has_permissions
 
 

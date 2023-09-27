@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Annotated
 
 from pydantic import BaseModel, constr, validator, Field
 
@@ -98,3 +98,10 @@ class ShowOrgRoleList(BaseModel):
 class CreateRole(BaseModel):
     role: str = Field(title="Name of the role")
     permissions: List[str] = Field(title="permission code")
+
+
+class UpdateRole(BaseModel):
+    ruid: str
+    role: Annotated[str, Field(None, title="Name of the role")]
+    permissions: Annotated[List[str], Field(None, title="permission code")]
+
