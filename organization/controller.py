@@ -396,41 +396,41 @@ def update_role(data: schema.UpdateRole, organization: model.Organization, autht
     return role
 
 
-def assign_user_permission(data: schema.UpdateUserPermission, organization: model.Organization, authtoken: frontendModel.FrontendToken, db:Session):
-    # Retrieve the existing role from the database based on the provided role UUID and organization ID
-    user = db.query(frontendModel.FrontendUser).filter_by(uuid=data.uuid).first()
-    # If the role does not exist, raise a custom error
-    if not user:
-        CustomValidations.customError(
-            type="not_exist",
-            loc="uuid",
-            msg="user does not exist",
-            inp=data.ruid,
-            ctx={"uuid": "exist"}
-        )
+# def assign_user_permission(data: schema.UpdateUserPermission, organization: model.Organization, authtoken: frontendModel.FrontendToken, db:Session):
+#     # Retrieve the existing role from the database based on the provided role UUID and organization ID
+#     user = db.query(frontendModel.FrontendUser).filter_by(uuid=data.uuid).first()
+#     # If the role does not exist, raise a custom error
+#     if not user:
+#         CustomValidations.customError(
+#             type="not_exist",
+#             loc="uuid",
+#             msg="user does not exist",
+#             inp=data.ruid,
+#             ctx={"uuid": "exist"}
+#         )
     
-    org_user = db.query(model.OrganizationUser).filter_by(user_id=user.id, org_id=organization.id).first()
-    if not org_user:
-        CustomValidations.customError(
-            type="not_exist",
-            loc="uuid",
-            msg="user does not exist in the organization",
-            inp=data.ruid,
-            ctx={"uuid": "exist"}
-        )
+#     org_user = db.query(model.OrganizationUser).filter_by(user_id=user.id, org_id=organization.id).first()
+#     if not org_user:
+#         CustomValidations.customError(
+#             type="not_exist",
+#             loc="uuid",
+#             msg="user does not exist in the organization",
+#             inp=data.ruid,
+#             ctx={"uuid": "exist"}
+#         )
 
-    # Delete all existing role permissions for the role from the database
-    db.query(model.OrganizationRolePermission).filter_by(user_id=org_user.id).delete()
+#     # Delete all existing role permissions for the role from the database
+#     db.query(model.OrganizationRolePermission).filter_by(user_id=org_user.id).delete()
 
-    # Retrieve the permissions associated with the provided permission codenames
-    codenames = data.permissions
-    permissions = db.query(model.OrganizationPermission).filter(model.OrganizationPermission.codename.in_(codenames)).all()
+#     # Retrieve the permissions associated with the provided permission codenames
+#     codenames = data.permissions
+#     permissions = db.query(model.OrganizationPermission).filter(model.OrganizationPermission.codename.in_(codenames)).all()
 
-    # Create new role permission objects for each permission and add them to the database
-    role_permissions = [model.OrganizationRolePermission(user_id=org_user.id, permission_id=permission.id) for permission in permissions]
+#     # Create new role permission objects for each permission and add them to the database
+#     role_permissions = [model.OrganizationRolePermission(user_id=org_user.id, permission_id=permission.id) for permission in permissions]
 
-    db.add_all(role_permissions)
-    db.commit()
-    db.refresh(role_permissions)
+#     db.add_all(role_permissions)
+#     db.commit()
+#     db.refresh(role_permissions)
 
-    return org_user
+#     return org_user
