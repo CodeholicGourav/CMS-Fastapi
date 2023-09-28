@@ -241,7 +241,18 @@ def get_all_users(limit: int, offset: int, organization: model.Organization, db:
     }
 
 
-def get_user_details(uuid: str, organization: model.Organization, db:Session):
+def get_user_details(uuid: str, organization: model.Organization, db: Session) -> model.OrganizationUser:
+    """
+    Retrieves the details of a user in an organization based on the user's UUID.
+
+    Args:
+        uuid (str): The UUID of the user to retrieve.
+        organization (model.Organization): The organization object for which to retrieve the user details.
+        db (Session): A SQLAlchemy Session object representing the database connection.
+
+    Returns:
+        model.OrganizationUser: The retrieved organization user object.
+    """
     user = db.query(frontendModel.FrontendUser).filter_by(uuid=uuid).first()
     if not user:
         CustomValidations.customError(
@@ -251,8 +262,8 @@ def get_user_details(uuid: str, organization: model.Organization, db:Session):
             inp=uuid,
             ctx={"user": "exist"}
         )
-    org_useruser = db.query(model.OrganizationUser).filter_by(user_id=user.id, org_id=organization.id).first()
-    if not org_useruser:
+    org_user = db.query(model.OrganizationUser).filter_by(user_id=user.id, org_id=organization.id).first()
+    if not org_user:
         CustomValidations.customError(
             type="not_exist",
             loc="user_id",
@@ -261,10 +272,23 @@ def get_user_details(uuid: str, organization: model.Organization, db:Session):
             ctx={"user": "exist"}
         )
 
-    return org_useruser
+    return org_user
 
 
 def get_all_roles(limit: int, offset: int, organization: model.Organization, db: Session):
+    """
+    Retrieves a specified number of roles belonging to a specific organization from the database,
+    along with the total count of roles.
+
+    Args:
+        limit (int): The maximum number of roles to retrieve.
+        offset (int): The number of roles to skip before retrieving.
+        organization (model.Organization): The organization object for which to retrieve the roles.
+        db (Session): A SQLAlchemy Session object representing the database connection.
+
+    Returns:
+        dict: A dictionary containing the total count of roles and the retrieved roles.
+    """
     roles = db.query(model.OrganizationRole).filter_by(org_id=organization.id).limit(limit).offset(offset).all()
     count = db.query(func.count(model.OrganizationRole.id)).filter_by(org_id=organization.id).scalar()
 
@@ -274,7 +298,21 @@ def get_all_roles(limit: int, offset: int, organization: model.Organization, db:
     }
 
 
-def get_role_details(uuid: str, organization: model.Organization, db:Session):
+def get_role_details(uuid: str, organization: model.Organization, db: Session) -> model.OrganizationRoles:
+    """
+    Retrieves the details of a role in an organization based on the role's UUID.
+
+    Args:
+        uuid (str): The UUID of the role to retrieve.
+        organization (model.Organization): The organization object for which to retrieve the role details.
+        db (Session): A SQLAlchemy Session object representing the database connection.
+
+    Returns:
+        model.OrganizationRoles: The retrieved role object.
+        
+    Raises:
+        CustomError: If the role does not exist.
+    """
     role = db.query(model.OrganizationRoles).filter_by(ruid=uuid, org_id=organization.id).first()
     if not role:
         CustomValidations.customError(
@@ -289,6 +327,15 @@ def get_role_details(uuid: str, organization: model.Organization, db:Session):
 
 
 def get_all_permissions(db: Session):
+    """
+    Retrieves all the organization permissions from the database.
+
+    Args:
+        db (Session): A SQLAlchemy Session object representing the database connection.
+
+    Returns:
+        List[OrganizationPermission]: The retrieved organization permissions from the database.
+    """
     return db.query(model.OrganizationPermission).all()
 
 
@@ -339,14 +386,13 @@ def create_role(data: schema.CreateRole, organization: model.Organization, autht
     return new_role
 
 
-def update_role(data: schema.UpdateRole, organization: model.Organization, authtoken: frontendModel.FrontendToken, db:Session):
+def update_role(data: schema.UpdateRole, organization: model.Organization, db:Session):
     """
     Updates the role of an organization by creating a new role entry in the OrganizationRole table in the database.
 
     Args:
         data (schema.UpdateRole): The data required to update the role.
         organization (model.Organization): The organization object for which to update the role.
-        authtoken (frontendModel.FrontendToken): An authentication token for the frontend user.
         db (Session): A SQLAlchemy Session object representing the database connection.
 
     Returns:
@@ -396,11 +442,79 @@ def update_role(data: schema.UpdateRole, organization: model.Organization, autht
     return role
 
 
-def assign_user_permission(data: schema.UpdateUserPermission, organization: model.Organization, db:Session):
-    # Retrieve the existing role from the database based on the provided role UUID and organization ID
-    user = db.query(frontendModel.FrontendUser).filter_by(uuid=data.uuid).first()
-    # If the role does not exist, raise a custom error
+def assign_role(data: schema.AssignRole, organization: model.Organization, db:Session):
+    """
+    Assigns a role to a user in an organization.
+
+    Args:
+        data (schema.AssignRole): An instance of the AssignRole schema class containing the role ID and user ID.
+        organization (model.Organization): An instance of the Organization model class representing the organization.
+        db (Session): An instance of the SQLAlchemy Session class representing the database session.
+
+    Returns:
+        model.OrganizationUser: An instance of the OrganizationUser model class representing the updated organization user entry.
+    """
+
+    # Find the role with the specified role ID and belonging to the given organization
+    role = db.query(model.OrganizationRole).filter_by(ruid=data.role_id, org_id=organization.id).first()
+    if not role:
+        CustomValidations.customError(
+            type="not_exist",
+            loc="role",
+            msg="Role does not exist",
+            inp=data.user_id,
+            ctx={"ruid": "exist"}
+        )
+
+    # Find the user with the specified user ID
+    user = db.query(frontendModel.FrontendUser).filter_by(uuid=data.user_id).first()
     if not user:
+        CustomValidations.customError(
+            type="not_exist",
+            loc="role",
+            msg="Role does not exist",
+            inp=data.user_id,
+            ctx={"ruid": "exist"}
+        )
+
+    # Find the organization user entry for the user and organization
+    org_user = db.query(model.OrganizationUser).filter_by(user_id=user.id, org_id=organization.id).first()
+    if not org_user:
+        CustomValidations.customError(
+            type="not_exist",
+            loc="role",
+            msg="Role does not exist",
+            inp=data.role_id,
+            ctx={"ruid": "exist"}
+        )
+
+    # Update the role ID of the organization user entry
+    org_user.role_id = role.id
+
+    # Commit the changes to the database and refresh the organization user entry
+    db.commit()
+    db.refresh(org_user)
+
+    return org_user
+
+
+
+def assign_user_permission(data: schema.UpdateUserPermission, organization: model.Organization, db: Session):
+    """
+    Assigns permissions to a user in an organization.
+
+    Args:
+        data (schema.UpdateUserPermission): The user's data including the UUID and the permissions to assign.
+        organization (model.Organization): The organization object to which the user belongs.
+        db (Session): The database session object.
+
+    Returns:
+        frontenduser.model.OrganizationUser: The updated organization user object with the assigned permissions.
+    """
+    # Retrieve the user object from the database based on the provided UUID
+    user = db.query(frontendModel.FrontendUser).filter_by(uuid=data.uuid).first()
+    if not user:
+        # If the user does not exist, raise a custom error indicating that the user does not exist
         CustomValidations.customError(
             type="not_exist",
             loc="uuid",
@@ -409,8 +523,10 @@ def assign_user_permission(data: schema.UpdateUserPermission, organization: mode
             ctx={"uuid": "exist"}
         )
     
+    # Retrieve the organization user object from the database based on the user ID and organization ID
     org_user = db.query(model.OrganizationUser).filter_by(user_id=user.id, org_id=organization.id).first()
     if not org_user:
+        # If the organization user does not exist, raise a custom error indicating that the user does not exist in the organization
         CustomValidations.customError(
             type="not_exist",
             loc="uuid",
@@ -419,18 +535,21 @@ def assign_user_permission(data: schema.UpdateUserPermission, organization: mode
             ctx={"uuid": "exist"}
         )
 
-    # Delete all existing role permissions for the role from the database
+    # Delete any existing role permissions for the organization user
     db.query(model.OrganizationRolePermission).filter_by(user_id=org_user.id).delete()
 
-    # Retrieve the permissions associated with the provided permission codenames
+    # Retrieve the requested permissions from the database
     codenames = data.permissions
     permissions = db.query(model.OrganizationPermission).filter(model.OrganizationPermission.codename.in_(codenames)).all()
 
-    # Create new role permission objects for each permission and add them to the database
+    # Create new role permissions for the organization user based on the retrieved permissions
     role_permissions = [model.OrganizationRolePermission(user_id=org_user.id, permission_id=permission.id) for permission in permissions]
 
+    # Add the new role permissions to the database
     db.add_all(role_permissions)
     db.commit()
     db.refresh(org_user)
 
     return org_user
+
+

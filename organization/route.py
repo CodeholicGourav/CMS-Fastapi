@@ -104,7 +104,17 @@ def update_role(
     authToken: frontendModel.FrontendToken = Depends(authenticate_token),
     organization: backendModel.SubscriptionFeature = Depends(organization_exist),
     have_permission: list[str] = Depends(check_permission(["update_role"])),
-): return controller.update_role(data, organization, authToken, db)
+): return controller.update_role(data, organization, db)
+
+
+@organizationRoutes.post('/assign-role', response_model=schema.ShowOrgUser, status_code=status.HTTP_200_OK)
+def assign_role(
+    data : schema.AssignRole, 
+    db : Session = Depends(get_db), 
+    authToken: frontendModel.FrontendToken = Depends(authenticate_token),
+    organization: backendModel.SubscriptionFeature = Depends(organization_exist),
+    have_permission: list[str] = Depends(check_permission(["update_role"])),
+): return controller.assign_role(data, organization, db)
 
 
 @organizationRoutes.post('/assign-user-permission', response_model=schema.ShowOrgUser, status_code=status.HTTP_200_OK)

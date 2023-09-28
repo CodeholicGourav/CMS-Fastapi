@@ -110,3 +110,10 @@ class UpdateRole(BaseModel):
 class UpdateUserPermission(BaseModel):
     uuid: str
     permissions: Annotated[List[str], Field(None, title="permission code")]
+
+
+class AssignRole(BaseModel):
+    user_id: str
+    role_id: str
+
+
