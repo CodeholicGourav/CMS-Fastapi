@@ -316,7 +316,10 @@ def create_role(data: schema.CreateRole, organization: model.Organization, autht
         model.OrganizationRole: The newly created role object.
     """
     # Check if a role with the same name already exists in the organization
-    role = db.query(model.OrganizationRole).filter_by(role=data.role).first()
+    role = db.query(model.OrganizationRole).filter_by(
+        model.OrganizationRole.role==data.role,
+        model.OrganizationRole.org_id==organization.id
+    ).first()
     if role:
         CustomValidations.customError(
             type="already_exist",
@@ -362,8 +365,11 @@ def update_role(data: schema.UpdateRole, organization: model.Organization, autht
     Returns:
         model.OrganizationRole: The newly created role object.
     """
-    # Retrieve the existing role from the database based on the provided role UUID
-    role = db.query(model.OrganizationRole).filter_by(ruid=data.ruid).first()
+    # Retrieve the existing role from the database based on the provided role UUID and organization ID
+    role = db.query(model.OrganizationRole).filter(
+        model.OrganizationRole.ruid==data.ruid, 
+        model.OrganizationRole.org_id==organization.id
+    ).first()
 
     # If the role does not exist, raise a custom error
     if not role:
@@ -376,7 +382,10 @@ def update_role(data: schema.UpdateRole, organization: model.Organization, autht
         )
 
     # Check if there is already a role with the same name in the organization. If so, raise a custom error
-    exit_role = db.query(model.OrganizationRole).filter_by(role=data.role).first()
+    exit_role = db.query(model.OrganizationRole).filter(
+        model.OrganizationRole.role==data.role,
+        model.OrganizationRole.org_id==organization.id
+    ).first()
     if exit_role:
         CustomValidations.customError(
             type="already_exist",
@@ -404,3 +413,6 @@ def update_role(data: schema.UpdateRole, organization: model.Organization, autht
     db.refresh(role)
 
     return role
+
+
+# def assign_user_permission(data, organization, authToken, db)
