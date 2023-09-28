@@ -112,7 +112,7 @@ def update_role(
 #     data : schema.UpdateUserPermission, 
 #     db : Session = Depends(get_db), 
 #     authToken: frontendModel.FrontendToken = Depends(authenticate_token),
-#     organization: backendModel.SubscriptionFeature = Depends(organization_exist),
+#     organization: model.Organization = Depends(organization_exist),
 #     have_permission: list[str] = Depends(check_permission(["update_role"])),
-# ): return controller.assign_user_permission(data, organization, authToken, db)
+# ): return controller.assign_user_permission(data, organization, db)
 
