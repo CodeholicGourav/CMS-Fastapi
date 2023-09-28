@@ -56,20 +56,6 @@ class BasicRole(BaseModel):
     role: str
 
 
-class ShowOrgUser(BaseModel):
-    uuid: str
-    user: ShowUser
-    is_active: bool
-    is_deleted: bool
-    created_at: datetime
-    updated_at: datetime
-    role: BasicRole
-
-class ShowOrgUserList(BaseModel):
-    total: int
-    users: List[ShowOrgUser]
-
-
 class BasicOrgPermission(BaseModel):
     type: int
     permission: str
@@ -78,6 +64,21 @@ class BasicOrgPermission(BaseModel):
 
 class BasicOrgRolePermission(BaseModel):
     permission: BasicOrgPermission
+
+
+class ShowOrgUser(BaseModel):
+    uuid: str
+    user: ShowUser
+    is_active: bool
+    is_deleted: bool
+    created_at: datetime
+    updated_at: datetime
+    role: BasicRole
+    permissions: List[BasicOrgRolePermission]
+
+class ShowOrgUserList(BaseModel):
+    total: int
+    users: List[ShowOrgUser]
 
 
 class ShowOrgRole(BaseModel):
@@ -105,3 +106,7 @@ class UpdateRole(BaseModel):
     role: Annotated[str, Field(None, title="Name of the role")]
     permissions: Annotated[List[str], Field(None, title="permission code")]
 
+
+class UpdateUserPermission(BaseModel):
+    uuid: str
+    permissions: Annotated[List[str], Field(None, title="permission code")]

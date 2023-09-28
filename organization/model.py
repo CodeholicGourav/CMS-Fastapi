@@ -54,6 +54,7 @@ class OrganizationUser(Base):
     user = relationship("FrontendUser", foreign_keys=user_id)
     Organization = relationship("Organization", foreign_keys=org_id)
     role = relationship("OrganizationRole", foreign_keys=role_id)
+    permissions = relationship("OrganizationRolePermission", back_populates=user)
 
     def __repr__(self):
         return f"OrganizationUser(id={self.id}, uuid={self.uuid}, user_id={self.user_id}, org_id={self.org_id}, role_id={self.role_id}, created_at={self.created_at}, updated_at={self.updated_at})"
@@ -125,10 +126,12 @@ class OrganizationRolePermission(Base):
     __tablename__ = 'organization_rolepermissions'
 
     id = Column(Integer, primary_key=True, index=True)
-    role_id = Column(Integer, ForeignKey("organization_roles.id"), nullable=False)
+    role_id = Column(Integer, ForeignKey("organization_roles.id"), nullable=True)
+    user_id = Column(Integer, ForeignKey("organization_users.id"), nullable=True)
     permission_id = Column(Integer, ForeignKey("organization_permissions.id"), nullable=False)
 
     role = relationship("OrganizationRole", foreign_keys=role_id, back_populates="permissions")
+    user = relationship("OrganizationUser", foreign_keys=user_id, back_populates="permissions")
     permission = relationship("OrganizationPermission", foreign_keys=permission_id)
 
     def __repr__(self):

@@ -59,7 +59,7 @@ def create_organization(data: schema.CreateOrganization, db: Session, authToken:
     # Check if the number of organizations created by the user exceeds the limit defined in the subscription plan.
     org_quantity = subscription.quantity
     
-    total_organizations = db.query(func.count(model.Organization.id)).filter(model.Organization.admin_id==authToken.id).scalar()
+    total_organizations = db.query(func.count(model.Organization.id)).filter_by(admin_id=authToken.id).scalar()
 
     if total_organizations >= org_quantity:
         CustomValidations.customError(
@@ -71,7 +71,7 @@ def create_organization(data: schema.CreateOrganization, db: Session, authToken:
         )
 
     # Check if the organization name already exists in the database.
-    existing_name = db.query(model.Organization).filter(model.Organization.org_name == data.org_name).first()
+    existing_name = db.query(model.Organization).filter_by(org_name=data.org_name).first()
     if existing_name:
         CustomValidations.customError(
             type="existing",
@@ -174,18 +174,11 @@ def register_to_organization(data: schema.OrgUserRegister, db: Session, authToke
     admin = organization.admin
     feature = db.query(backendModel.Feature).filter_by(feature_code="add_member").first()
 
-    subscription_feature = db.query(backendModel.SubscriptionFeature).filter(
-        backendModel.SubscriptionFeature.subscription_id == admin.active_plan,
-        backendModel.SubscriptionFeature.feature_id == feature.id
-    ).first()
+    subscription_feature = db.query(backendModel.SubscriptionFeature).filter_by(subscription_id=admin.active_plan, feature_id=feature.id).first()
 
     user_quantity = subscription_feature.quantity
 
-    total_users = db.query(func.count(model.OrganizationUser.id)).filter(
-        model.OrganizationUser.org_id == organization.id,
-        model.OrganizationUser.is_deleted == False,
-        model.OrganizationUser.is_active == True,
-    ).scalar()
+    total_users = db.query(func.count(model.OrganizationUser.id)).filter_by(org_id=organization.id, is_deleted=False, is_active=True).scalar()
 
     if total_users >= user_quantity:
         CustomValidations.customError(
@@ -196,10 +189,7 @@ def register_to_organization(data: schema.OrgUserRegister, db: Session, authToke
             ctx={"organization": "limited_creation"}
         )
 
-    org_user = db.query(model.OrganizationUser).filter(
-        model.OrganizationUser.org_id == organization.id,
-        model.OrganizationUser.user_id == user.id
-    ).first()
+    org_user = db.query(model.OrganizationUser).filter_by(org_id=organization.id, user_id=user.id).first()
 
     if org_user:
         CustomValidations.customError(
@@ -316,10 +306,7 @@ def create_role(data: schema.CreateRole, organization: model.Organization, autht
         model.OrganizationRole: The newly created role object.
     """
     # Check if a role with the same name already exists in the organization
-    role = db.query(model.OrganizationRole).filter_by(
-        model.OrganizationRole.role==data.role,
-        model.OrganizationRole.org_id==organization.id
-    ).first()
+    role = db.query(model.OrganizationRole).filter_by(role=data.role, org_id=organization.id).first()
     if role:
         CustomValidations.customError(
             type="already_exist",
@@ -366,10 +353,7 @@ def update_role(data: schema.UpdateRole, organization: model.Organization, autht
         model.OrganizationRole: The newly created role object.
     """
     # Retrieve the existing role from the database based on the provided role UUID and organization ID
-    role = db.query(model.OrganizationRole).filter(
-        model.OrganizationRole.ruid==data.ruid, 
-        model.OrganizationRole.org_id==organization.id
-    ).first()
+    role = db.query(model.OrganizationRole).filter_by(ruid=data.ruid, org_id=organization.id).first()
 
     # If the role does not exist, raise a custom error
     if not role:
@@ -382,10 +366,7 @@ def update_role(data: schema.UpdateRole, organization: model.Organization, autht
         )
 
     # Check if there is already a role with the same name in the organization. If so, raise a custom error
-    exit_role = db.query(model.OrganizationRole).filter(
-        model.OrganizationRole.role==data.role,
-        model.OrganizationRole.org_id==organization.id
-    ).first()
+    exit_role = db.query(model.OrganizationRole).filter_by(role=data.role, org_id=organization.id).first()
     if exit_role:
         CustomValidations.customError(
             type="already_exist",
@@ -415,4 +396,41 @@ def update_role(data: schema.UpdateRole, organization: model.Organization, autht
     return role
 
 
-# def assign_user_permission(data, organization, authToken, db)
+def assign_user_permission(data: schema.UpdateUserPermission, organization: model.Organization, authtoken: frontendModel.FrontendToken, db:Session):
+    # Retrieve the existing role from the database based on the provided role UUID and organization ID
+    user = db.query(frontendModel.FrontendUser).filter_by(uuid=data.uuid).first()
+    # If the role does not exist, raise a custom error
+    if not user:
+        CustomValidations.customError(
+            type="not_exist",
+            loc="uuid",
+            msg="user does not exist",
+            inp=data.ruid,
+            ctx={"uuid": "exist"}
+        )
+    
+    org_user = db.query(model.OrganizationUser).filter_by(user_id=user.id, org_id=organization.id).first()
+    if not org_user:
+        CustomValidations.customError(
+            type="not_exist",
+            loc="uuid",
+            msg="user does not exist in the organization",
+            inp=data.ruid,
+            ctx={"uuid": "exist"}
+        )
+
+    # Delete all existing role permissions for the role from the database
+    db.query(model.OrganizationRolePermission).filter_by(user_id=org_user.id).delete()
+
+    # Retrieve the permissions associated with the provided permission codenames
+    codenames = data.permissions
+    permissions = db.query(model.OrganizationPermission).filter(model.OrganizationPermission.codename.in_(codenames)).all()
+
+    # Create new role permission objects for each permission and add them to the database
+    role_permissions = [model.OrganizationRolePermission(user_id=org_user.id, permission_id=permission.id) for permission in permissions]
+
+    db.add_all(role_permissions)
+    db.commit()
+    db.refresh(role_permissions)
+
+    return org_user

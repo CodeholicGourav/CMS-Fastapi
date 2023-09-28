@@ -112,6 +112,7 @@ class BaseSubscription(BaseModel):
     name: str
     description: str
     price: float
+    sale_price: float
     validity: int
     creator: ShowUser
     is_deleted: bool

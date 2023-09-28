@@ -36,6 +36,7 @@ def migrate_tables() -> None:
     print("Migrating all tables...")
     backendModel.Base.metadata.create_all(bind=engine)
     frontendModel.Base.metadata.create_all(bind=engine)
+    organizationdModel.Base.metadata.create_all(bind=engine)
     backendModel.create_permissions()
     backendModel.create_features()
     organizationdModel.create_permissions()

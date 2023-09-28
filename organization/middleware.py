@@ -127,7 +127,7 @@ def organization_exist(orguid: str = Header(title="Organization id", description
 
     if not subscription_user or subscription_user.expiry<=datetime.utcnow():
         CustomValidations.customError(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=status.HTTP_403_FORBIDDEN,
             type="unauthenticated",
             loc="subscription",
             msg="No active subscription.",
