@@ -405,7 +405,7 @@ def assign_user_permission(data: schema.UpdateUserPermission, organization: mode
             type="not_exist",
             loc="uuid",
             msg="user does not exist",
-            inp=data.ruid,
+            inp=data.uuid,
             ctx={"uuid": "exist"}
         )
     
@@ -431,6 +431,6 @@ def assign_user_permission(data: schema.UpdateUserPermission, organization: mode
 
     db.add_all(role_permissions)
     db.commit()
-    db.refresh(role_permissions)
+    db.refresh(org_user)
 
     return org_user

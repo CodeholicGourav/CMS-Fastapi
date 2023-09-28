@@ -107,12 +107,12 @@ def update_role(
 ): return controller.update_role(data, organization, authToken, db)
 
 
-# @organizationRoutes.post('/assign-user-permission', response_model=schema.ShowOrgUser, status_code=status.HTTP_200_OK)
-# def assign_user_permission(
-#     data : schema.UpdateUserPermission, 
-#     db : Session = Depends(get_db), 
-#     authToken: frontendModel.FrontendToken = Depends(authenticate_token),
-#     organization: model.Organization = Depends(organization_exist),
-#     have_permission: list[str] = Depends(check_permission(["update_role"])),
-# ): return controller.assign_user_permission(data, organization, db)
+@organizationRoutes.post('/assign-user-permission', response_model=schema.ShowOrgUser, status_code=status.HTTP_200_OK)
+def assign_user_permission(
+    data : schema.UpdateUserPermission, 
+    db : Session = Depends(get_db), 
+    authToken: frontendModel.FrontendToken = Depends(authenticate_token),
+    organization: model.Organization = Depends(organization_exist),
+    have_permission: list[str] = Depends(check_permission(["update_role"])),
+): return controller.assign_user_permission(data, organization, db)
 
