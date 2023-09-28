@@ -189,8 +189,15 @@ def check_permission(codenames: list[str]):
             model.OrganizationUser.user_id == user_token.user_id,
             model.OrganizationUser.org_id == organization.id
         ).first()
-        user_permissions = org_user.role.permissions
-        user_permission_codenames = [item.permission.codename for item in user_permissions]
+        role_permissions = org_user.role.permissions
+        user_permission_codenames = [item.permission.codename for item in role_permissions]
+
+        user_permissions = org_user.permissions
+        for item in user_permissions:
+            user_permission_codenames.append(item.permission.codename)
+
+        print(user_permission_codenames)
+
 
         if not all(codename in user_permission_codenames for codename in codenames):
             CustomValidations.customError(
