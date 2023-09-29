@@ -1,5 +1,10 @@
+"""
+schema.py
+Author: Gourav Sahu
+Date: 23/09/2023
+"""
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
 
 from pydantic import BaseModel, EmailStr, constr, validator
 
@@ -7,6 +12,9 @@ from dependencies import CustomValidations
 
 
 class BaseUser(BaseModel):
+    """
+    A pydantic model
+    """
     uuid: str
     email: str
     username: str
@@ -27,11 +35,26 @@ class BaseUser(BaseModel):
     updated_at: datetime
 
     def __str__(self):
-        return f"BaseUser(uuid={self.uuid}, email={self.email}, username={self.username}, is_active={self.is_active}, " \
-               f"is_deleted={self.is_deleted}, created_at={self.created_at}, updated_at={self.updated_at})"
+        """
+        String representation of the object of this class.
+        """
+        return (
+            "BaseUser("
+                f"uuid={self.uuid}, "
+                f"email={self.email}, "
+                f"username={self.username}, "
+                f"is_active={self.is_active}, "
+                f"is_deleted={self.is_deleted}, "
+                f"created_at={self.created_at}, "
+                f"updated_at={self.updated_at}"
+            ")"
+        )
 
 
 class UpdateProfile(BaseModel):
+    """
+    A pydantic model
+    """
     username: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
@@ -43,11 +66,17 @@ class UpdateProfile(BaseModel):
     social_platform: Optional[str] = None
 
     @validator("username")
-    def username_valid(cls, value):
+    def username_valid(self, value):
+        """
+        Validates a given username value.
+        """
         return CustomValidations.validate_username(value)
 
 
 class RegisterUser(BaseModel):
+    """
+    A pydantic model
+    """
     email: EmailStr
     username: constr(min_length=6, max_length=30)
     first_name: Optional[str] = None
@@ -57,21 +86,33 @@ class RegisterUser(BaseModel):
     timezone: Optional[str] = None
 
     @validator("username")
-    def username_valid(cls, value):
+    def username_valid(self, value):
+        """
+        Validates a given username value.
+        """
         return CustomValidations.validate_username(value)
-    
+
     @validator("password")
-    def password_validate(cls, value):
+    def password_validate(self, value):
+        """
+        Validates a given password value.
+        """
         return CustomValidations.validate_password(value)
 
 
 class UpdateUser(BaseModel):
+    """
+    A pydantic model
+    """
     user_id: str
     is_active: Optional[bool] = None
     is_deleted: Optional[bool] = None
 
 
 class ShowToken(BaseModel):
+    """
+    A pydantic model
+    """
     token: str
     expire_at: datetime
     details: str
@@ -79,35 +120,61 @@ class ShowToken(BaseModel):
 
 
 class SystemDetails(BaseModel):
+    """
+    A pydantic model
+    """
     ip_address: constr(max_length=30)
     browser: constr(max_length=30)
     system: constr(max_length=30)
 
     def to_string(self):
-        return f"IP Address: {self.ip_address}, Browser: {self.browser}, System: {self.system}"
+        """
+        Returns string representation of the object of this class.
+        """
+        return (
+            f"IP Address: {self.ip_address}, "
+            f"Browser: {self.browser}, "
+            f"System: {self.system}"
+        )
+
 
 class LoginUser(BaseModel):
+    """
+    A pydantic model
+    """
     username_or_email: str
     password: str
     details: SystemDetails
 
 
 class ForgotPassword(BaseModel):
+    """
+    A pydantic model
+    """
     token: str
     password: constr(min_length=8)
 
     @validator("password")
-    def _password(cls, value):
+    def _password(self, value):
+        """
+        Validates a given password value.
+        """
         return CustomValidations.validate_password( value)
 
 
 class ShowUser(BaseModel):
+    """
+    A pydantic model
+    """
     uuid: str
     username: str
     email: str
 
 
 class BaseSubscription(BaseModel):
+    """
+    A pydantic model
+    """
     suid: str
     name: str
     description: str
@@ -120,11 +187,18 @@ class BaseSubscription(BaseModel):
 
 
 class TimeZones(BaseModel):
+    """
+    A pydantic model
+    """
     timezone_name: str
     code: str
     time_difference: str
 
+
 class Orders(BaseModel):
+    """
+    A pydantic model
+    """
     ouid: str
     total_amount: float
     final_amount: float
@@ -139,42 +213,56 @@ class Orders(BaseModel):
     clientSecret: str
 
 
-
 class AddOrder(BaseModel):
+    """
+    A pydantic model
+    """
     suid : str
-    currency: str        
+    currency: str
     coupon_code:Optional[str] = None
 
 
 class Createtransaction(BaseModel):
-   transaction_id:str 
-   order_id:str 
+    """
+    A pydantic model
+    """
+    transaction_id:str
+    order_id:str
 
 
 class AddTransaction(BaseModel):
+    """
+    A pydantic model
+    """
     status: str
     payment_gateway: str
 
 
 class StripeReturn(BaseModel):
-  id: str
-  amount: int
-  canceled_at: int | None
-  cancellation_reason: str | None
-  capture_method: str
-  client_secret: str
-  confirmation_method: str
-  created: int
-  currency: str
-  description: str
-  livemode: bool
-  payment_method: str
-  payment_method_types: list
-  receipt_email: EmailStr
-  status: str
+    """
+    A pydantic model
+    """
+    id: str
+    amount: int
+    canceled_at: int | None
+    cancellation_reason: str | None
+    capture_method: str
+    client_secret: str
+    confirmation_method: str
+    created: int
+    currency: str
+    description: str
+    livemode: bool
+    payment_method: str
+    payment_method_types: list
+    receipt_email: EmailStr
+    status: str
 
 
 class RazorpayReturn(BaseModel):
+    """
+    A pydantic model
+    """
     razorpay_payment_id: str
     razorpay_order_id: str
     razorpay_signature: str

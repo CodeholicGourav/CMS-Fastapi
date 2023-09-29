@@ -1,12 +1,16 @@
-from typing import Optional
+"""
+main.py
+Author: Gourav Sahu
+Date: 20/08/2023
+"""
 import sys
 
 import uvicorn
 
 from app import app
-from database import SessionLocal, engine
-from backenduser.controller import createsuperuser
 from backenduser import model as backendModel
+from backenduser.controller import createsuperuser
+from database import SessionLocal, engine
 from frontenduser import model as frontendModel
 from organization import model as organizationdModel
 
@@ -43,11 +47,12 @@ def migrate_tables() -> None:
     frontendModel.create_timezones()
 
 
-def drop_tables() -> None:
+def drop_tables():
     """
     Prompts the user for confirmation to delete all tables in the database.
-    If the user confirms by entering 'y', the function drops all tables by calling the `drop_all` method on the metadata
-    of the backend and frontend models. If the user enters any other input or 'n', the function exits without dropping any tables.
+    
+    If the user confirms, it drops all tables related to the backend and frontend models.
+    If the user does not confirm, it prints "Exited."
     """
     confirmation = input("Are you sure to delete all tables? (y/n): ")
     if confirmation.lower() == "y":
@@ -59,7 +64,8 @@ def drop_tables() -> None:
 
 def main():
     """
-    The `main` function is the entry point of the program. It takes command line arguments and performs different actions based on the provided command.
+    The `main` function is the entry point of the program.
+    It takes command line arguments and performs different actions based on the provided command.
     """
     command = sys.argv[1] if len(sys.argv) > 1 else None
 

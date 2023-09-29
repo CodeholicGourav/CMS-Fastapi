@@ -1,9 +1,15 @@
+"""
+model.py
+Author: Gourav Sahu
+Date: 23/09/2023
+"""
 import csv
 from datetime import datetime
 from pathlib import Path
 
 from sqlalchemy import (
-    Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Text
+    Boolean, Column, DateTime, Float,
+    ForeignKey, Integer,String, Text
 )
 from sqlalchemy.orm import relationship
 
@@ -12,7 +18,7 @@ from database import Base, SessionLocal
 
 class FrontendUser(Base):
     """
-    The `FrontendUser` class represents a table in a database that stores information about frontend users.
+    Represents a table in a database that stores information about frontend users.
     """
     __tablename__ = 'frontendusers'
 
@@ -28,22 +34,41 @@ class FrontendUser(Base):
     storage_token = Column(Text, nullable=True)
     storage_platform = Column(String(10), nullable=True)
     language = Column(String(10), default="en")
-    timezone = Column(String(50), default="Asia/Kolkata", comment="Should be a valid codename from table `timezones`")
-    active_plan = Column(Integer, ForeignKey("subscriptions.id"), nullable=True)
+    timezone = Column(
+        String(50),
+        default="Asia/Kolkata",
+        comment="Should be a valid codename from table `timezones`"
+    )
+    active_plan = Column(
+        Integer,
+        ForeignKey("subscriptions.id"),
+        nullable=True
+    )
     profile_photo = Column(String(50), nullable=True)
     social_token = Column(Text, nullable=True)
     social_platform = Column(String(10), nullable=True)
     is_active = Column(Boolean, default=True)
     is_deleted = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow
+    )
 
     subscription = relationship("Subscription", foreign_keys=active_plan)
 
     def __repr__(self):
-        return f"<FrontendUser(id={self.id}, username='{self.username}')>"
+        """String representation of object"""
+        return (
+            "<FrontendUser("
+                f"id={self.id}, "
+                f"username='{self.username}'"
+            ")>"
+        )
 
     def __str__(self):
+        """String representation of object"""
         return f"FrontendUser: {self.username}"
 
 
@@ -63,16 +88,24 @@ class FrontendToken(Base):
     user = relationship('FrontendUser', foreign_keys=user_id)
 
     def __repr__(self):
-        return f"FrontendToken(id={self.id}, token='{self.token}', user_id={self.user_id}, details='{self.details}')"
-    
+        """String representation of object"""
+        return (
+            "FrontendToken("
+                f"id={self.id}, "
+                f"token='{self.token}', "
+                f"user_id={self.user_id}, "
+                f"details='{self.details}'"
+            ")"
+        )
+
     def __str__(self):
-        return f"Id: {self.id}\nToken: {self.token}\nUser Id: {self.user_id}\nDetails: {self.details}"
+        """String representation of object"""
+        return f"FrontendToken: {self.token}"
 
 
 class Timezone(Base):
     """
-    The `Timezone` class represents a table in a database that stores information about different timezones.
-    It inherits from the `Base` class, which is the base class for all SQLAlchemy models.
+    Represents a table that stores information about different timezones.
     """
     __tablename__ = 'timezones'
 
@@ -82,24 +115,32 @@ class Timezone(Base):
     time_difference = Column(String(50))
 
     def __repr__(self):
-        pass
+        """String representation of object"""
+        return (
+            "Timezone("
+                f"id={self.id}, "
+                f"timezone_name='{self.timezone_name}', "
+                f"code='{self.code}', "
+                f"time_difference='{self.time_difference}'"
+            ")"
+        )
 
     def __str__(self):
-        pass
+        """String representation of object"""
+        return f"Timezone: {self.timezone_name}'"
 
 
 def create_timezones():
     """
-    Reads data from a CSV file and inserts it into the Timezone table in the database.
-
-    :return: None
+    Reads data from a CSV file and 
+    inserts it into the Timezone table in the database.
     """
     print("Creating timezone data...")
     csv_file_path = Path(__file__).parent.parent / "timezones.csv"
 
     try:
-        db = SessionLocal()
-        with open(csv_file_path, "r", newline="") as csvfile:
+        sql = SessionLocal()
+        with open(csv_file_path, "r", newline="", encoding="UTF-8") as csvfile:
             csvreader = csv.DictReader(csvfile)
             for row in csvreader:
                 name = row["Name"]
@@ -111,23 +152,22 @@ def create_timezones():
                     code=code,
                     time_difference=time_difference
                 )
-                db.add(timezone_entry)
+                sql.add(timezone_entry)
 
-        db.commit()
-    except Exception as e:
-        db.rollback()
-        raise e
+        sql.commit()
+    except csv.Error as error:
+        sql.rollback()
+        raise error
     finally:
-        db.close()
+        sql.close()
 
 
 class Order(Base):
     """
     Represents a table in a database that stores information about orders.
-    Inherits from the Base class, which is the base class for all SQLAlchemy models.
     """
     __tablename__ = 'orders'
-     
+
     id = Column(Integer, primary_key=True, index=True)
     ouid = Column(String(50), index=True, unique=True)
     user_id = Column(Integer, ForeignKey("frontendusers.id"))
@@ -140,23 +180,43 @@ class Order(Base):
     coupon_id = Column(Integer, ForeignKey("coupons.id"))
     status = Column(Text, default="pending")
     created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow
+    )
 
     # Relationships
     user = relationship("FrontendUser", foreign_keys=user_id)
     coupon = relationship("Coupon", foreign_keys=coupon_id)
 
     def __repr__(self):
-        pass
-
+        """String representation of object"""
+        return (
+            "Order("
+                f"id={self.id}, "
+                f"ouid={self.ouid}, "
+                f"user_id={self.user_id}, "
+                f"total_amount={self.total_amount}, "
+                f"final_amount={self.final_amount}, "
+                f"currency={self.currency}, "
+                f"conversion_rate={self.conversion_rate}, "
+                f"coupon_amount={self.coupon_amount}, "
+                f"coupon_code={self.coupon_code}, "
+                f"coupon_id={self.coupon_id}, "
+                f"status={self.status}, "
+                f"created_at={self.created_at}, "
+                f"updated_at={self.updated_at}"
+            ")"
+        )
     def __str__(self):
-        pass
+        """String representation of object"""
+        return f"Order: {self.ouid}"
 
 
 class Transaction(Base):
     """
-    The `Transaction` class represents a table in a database that stores information about transactions.
-    It contains fields to store details such as the order ID, status, payment gateway, payment ID, and timestamps for creation and update.
+    Represents a table in a database that stores information about transactions.
     """
     __tablename__ = 'transactions'
 
@@ -169,17 +229,38 @@ class Transaction(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def __repr__(self):
-        return f"Transaction(id={self.id}, order_id={self.order_id}, status='{self.status}', payment_gateway='{self.payment_gateway}', payment_id='{self.payment_id}', created_at='{self.created_at}', updated_at='{self.updated_at}')"
+        """String representation of object"""
+        return (
+            "Transaction("
+                f"id={self.id}, "
+                f"order_id={self.order_id}, "
+                f"status='{self.status}', "
+                f"payment_gateway='{self.payment_gateway}', "
+                f"payment_id='{self.payment_id}', "
+                f"created_at='{self.created_at}', "
+                f"updated_at='{self.updated_at}'"
+            ")"
+        )
 
     def __str__(self):
-        return f"Transaction ID: {self.id}\nOrder ID: {self.order_id}\nStatus: {self.status}\nPayment Gateway: {self.payment_gateway}\nPayment ID: {self.payment_id}\nCreated At: {self.created_at}\nUpdated At: {self.updated_at}"
+        """String representation of object"""
+        return (
+            "Transaction("
+                f"id={self.id}, "
+                f"order_id={self.order_id}, "
+                f"status='{self.status}', "
+                f"payment_gateway='{self.payment_gateway}', "
+                f"payment_id='{self.payment_id}', "
+                f"created_at='{self.created_at}', "
+                f"updated_at='{self.updated_at}'"
+            ")"
+        )
 
 
 class OrderProduct(Base):
     """
-    The `OrderProduct` class represents a table in a database that stores information about products in an order.
+    Represents a table that stores information about products in an order.
     """
-
     __tablename__ = 'order_products'
 
     id = Column(Integer, primary_key=True)
@@ -193,9 +274,27 @@ class OrderProduct(Base):
     product = relationship("Subscription", foreign_keys=product_id)
 
     def __repr__(self):
-        return f"OrderProduct(id={self.id}, product_price={self.product_price}, product_sale_price={self.product_sale_price}, order_id={self.order_id}, product_id={self.product_id}, quantity={self.quantity})"
+        """String representation of object"""
+        return (
+            "OrderProduct("
+                f"id={self.id}, "
+                f"product_price={self.product_price}, "
+                f"product_sale_price={self.product_sale_price}, "
+                f"order_id={self.order_id}, "
+                f"product_id={self.product_id}, "
+                f"quantity={self.quantity}"
+            ")"
+        )
 
     def __str__(self):
-        return f"OrderProduct(id={self.id}, product_price={self.product_price}, product_sale_price={self.product_sale_price}, order_id={self.order_id}, product_id={self.product_id}, quantity={self.quantity})"
-
-
+        """String representation of object"""
+        return (
+            "OrderProduct("
+                f"id={self.id}, "
+                f"product_price={self.product_price}, "
+                f"product_sale_price={self.product_sale_price}, "
+                f"order_id={self.order_id}, "
+                f"product_id={self.product_id}, "
+                f"quantity={self.quantity}"
+            ")"
+        )

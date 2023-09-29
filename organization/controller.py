@@ -1,3 +1,8 @@
+"""
+controller.py
+Author: Gourav Sahu
+Date: 23/09/2023
+"""
 from typing import Optional
 import math
 import time
@@ -62,7 +67,7 @@ def create_organization(data: schema.CreateOrganization, db: Session, authToken:
     total_organizations = db.query(func.count(model.Organization.id)).filter_by(admin_id=authToken.id).scalar()
 
     if total_organizations >= org_quantity:
-        CustomValidations.customError(
+        CustomValidations.custom_error(
             type="limit_exceed",
             loc="organization",
             msg=f"Can not create more than '{org_quantity}' organizations.",
@@ -73,7 +78,7 @@ def create_organization(data: schema.CreateOrganization, db: Session, authToken:
     # Check if the organization name already exists in the database.
     existing_name = db.query(model.Organization).filter_by(org_name=data.org_name).first()
     if existing_name:
-        CustomValidations.customError(
+        CustomValidations.custom_error(
             type="existing",
             loc="org_name",
             msg="Organization name already exists.",
@@ -83,7 +88,7 @@ def create_organization(data: schema.CreateOrganization, db: Session, authToken:
 
     # Check if the registration type provided is allowed.
     if data.registration_type not in model.Organization.allowed_registration:
-        CustomValidations.customError(
+        CustomValidations.custom_error(
             type="invalid",
             loc="registration_type",
             msg=f"Allowed values are {model.Organization.allowed_registration}",
@@ -96,7 +101,7 @@ def create_organization(data: schema.CreateOrganization, db: Session, authToken:
         # Create an instance of OAuth 2.0 credentials using the dictionary
         creds = Credentials.from_authorized_user_info(data.gtoken)
     except Exception as e:
-        CustomValidations.customError(
+        CustomValidations.custom_error(
             type="Invalid",
             loc="gtoken",
             msg="Not a valid Google token.",
@@ -104,7 +109,7 @@ def create_organization(data: schema.CreateOrganization, db: Session, authToken:
             ctx={"gtoken": "valid"}
         )
     if not creds or not creds.valid:
-        CustomValidations.customError(
+        CustomValidations.custom_error(
             type="Invalid",
             loc="gtoken",
             msg="Not a valid Google token.",
@@ -153,7 +158,7 @@ def register_to_organization(data: schema.OrgUserRegister, db: Session, authToke
     organization = db.query(model.Organization).filter_by(orguid=data.org_uid).first()
 
     if not organization:
-        CustomValidations.customError(
+        CustomValidations.custom_error(
             type="not_exist",
             loc="org_uid",
             msg="Organization does not exist.",
@@ -162,7 +167,7 @@ def register_to_organization(data: schema.OrgUserRegister, db: Session, authToke
         )
 
     if organization.registration_type == "admin_only":
-        CustomValidations.customError(
+        CustomValidations.custom_error(
             status_code=status.HTTP_401_UNAUTHORIZED,
             type="not_allowed",
             loc="org_uid",
@@ -181,7 +186,7 @@ def register_to_organization(data: schema.OrgUserRegister, db: Session, authToke
     total_users = db.query(func.count(model.OrganizationUser.id)).filter_by(org_id=organization.id, is_deleted=False, is_active=True).scalar()
 
     if total_users >= user_quantity:
-        CustomValidations.customError(
+        CustomValidations.custom_error(
             type="limit_exceed",
             loc="organization",
             msg=f"Can not add more than '{user_quantity}' users.",
@@ -192,7 +197,7 @@ def register_to_organization(data: schema.OrgUserRegister, db: Session, authToke
     org_user = db.query(model.OrganizationUser).filter_by(org_id=organization.id, user_id=user.id).first()
 
     if org_user:
-        CustomValidations.customError(
+        CustomValidations.custom_error(
             type="already_exist",
             loc="organization",
             msg=f"User already registered.",
@@ -255,7 +260,7 @@ def get_user_details(uuid: str, organization: model.Organization, db: Session) -
     """
     user = db.query(frontendModel.FrontendUser).filter_by(uuid=uuid).first()
     if not user:
-        CustomValidations.customError(
+        CustomValidations.custom_error(
             type="not_exist",
             loc="user_id",
             msg="User does not exist",
@@ -264,7 +269,7 @@ def get_user_details(uuid: str, organization: model.Organization, db: Session) -
         )
     org_user = db.query(model.OrganizationUser).filter_by(user_id=user.id, org_id=organization.id).first()
     if not org_user:
-        CustomValidations.customError(
+        CustomValidations.custom_error(
             type="not_exist",
             loc="user_id",
             msg="User does not exist in organization",
@@ -298,7 +303,7 @@ def get_all_roles(limit: int, offset: int, organization: model.Organization, db:
     }
 
 
-def get_role_details(uuid: str, organization: model.Organization, db: Session) -> model.OrganizationRoles:
+def get_role_details(uuid: str, organization: model.Organization, db: Session):
     """
     Retrieves the details of a role in an organization based on the role's UUID.
 
@@ -311,11 +316,11 @@ def get_role_details(uuid: str, organization: model.Organization, db: Session) -
         model.OrganizationRoles: The retrieved role object.
         
     Raises:
-        CustomError: If the role does not exist.
+        custom_error: If the role does not exist.
     """
     role = db.query(model.OrganizationRoles).filter_by(ruid=uuid, org_id=organization.id).first()
     if not role:
-        CustomValidations.customError(
+        CustomValidations.custom_error(
             type="not_exist",
             loc="role_id",
             msg="User does not exist",
@@ -355,7 +360,7 @@ def create_role(data: schema.CreateRole, organization: model.Organization, autht
     # Check if a role with the same name already exists in the organization
     role = db.query(model.OrganizationRole).filter_by(role=data.role, org_id=organization.id).first()
     if role:
-        CustomValidations.customError(
+        CustomValidations.custom_error(
             type="already_exist",
             loc="role",
             msg="Role already exists",
@@ -403,7 +408,7 @@ def update_role(data: schema.UpdateRole, organization: model.Organization, db:Se
 
     # If the role does not exist, raise a custom error
     if not role:
-        CustomValidations.customError(
+        CustomValidations.custom_error(
             type="not_exist",
             loc="role",
             msg="Role does not exist",
@@ -414,7 +419,7 @@ def update_role(data: schema.UpdateRole, organization: model.Organization, db:Se
     # Check if there is already a role with the same name in the organization. If so, raise a custom error
     exit_role = db.query(model.OrganizationRole).filter_by(role=data.role, org_id=organization.id).first()
     if exit_role:
-        CustomValidations.customError(
+        CustomValidations.custom_error(
             type="already_exist",
             loc="role",
             msg="Role already exists",
@@ -458,7 +463,7 @@ def assign_role(data: schema.AssignRole, organization: model.Organization, db:Se
     # Find the role with the specified role ID and belonging to the given organization
     role = db.query(model.OrganizationRole).filter_by(ruid=data.role_id, org_id=organization.id).first()
     if not role:
-        CustomValidations.customError(
+        CustomValidations.custom_error(
             type="not_exist",
             loc="role",
             msg="Role does not exist",
@@ -469,7 +474,7 @@ def assign_role(data: schema.AssignRole, organization: model.Organization, db:Se
     # Find the user with the specified user ID
     user = db.query(frontendModel.FrontendUser).filter_by(uuid=data.user_id).first()
     if not user:
-        CustomValidations.customError(
+        CustomValidations.custom_error(
             type="not_exist",
             loc="role",
             msg="Role does not exist",
@@ -480,7 +485,7 @@ def assign_role(data: schema.AssignRole, organization: model.Organization, db:Se
     # Find the organization user entry for the user and organization
     org_user = db.query(model.OrganizationUser).filter_by(user_id=user.id, org_id=organization.id).first()
     if not org_user:
-        CustomValidations.customError(
+        CustomValidations.custom_error(
             type="not_exist",
             loc="role",
             msg="Role does not exist",
@@ -515,7 +520,7 @@ def assign_user_permission(data: schema.UpdateUserPermission, organization: mode
     user = db.query(frontendModel.FrontendUser).filter_by(uuid=data.uuid).first()
     if not user:
         # If the user does not exist, raise a custom error indicating that the user does not exist
-        CustomValidations.customError(
+        CustomValidations.custom_error(
             type="not_exist",
             loc="uuid",
             msg="user does not exist",
@@ -527,7 +532,7 @@ def assign_user_permission(data: schema.UpdateUserPermission, organization: mode
     org_user = db.query(model.OrganizationUser).filter_by(user_id=user.id, org_id=organization.id).first()
     if not org_user:
         # If the organization user does not exist, raise a custom error indicating that the user does not exist in the organization
-        CustomValidations.customError(
+        CustomValidations.custom_error(
             type="not_exist",
             loc="uuid",
             msg="user does not exist in the organization",

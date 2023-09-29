@@ -1,4 +1,8 @@
-from sqlalchemy.ext.declarative import declarative_base
+"""
+model.py
+Author: Gourav Sahu
+Date: 23/09/2023
+"""
 from datetime import datetime
 
 from sqlalchemy import (
@@ -7,12 +11,12 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 
 from database import Base, SessionLocal
-from dependencies import predefined_feature, predefined_backend_permissions
+from dependencies import predefined_backend_permissions, predefined_feature
 
 
 class BackendUser(Base):
     """
-    The BackendUser class represents a table in the database that stores information about backend users.
+    Represents a table in the database that stores information about backend users.
     """
     __tablename__ = 'backendusers'
 
@@ -33,7 +37,15 @@ class BackendUser(Base):
     subscriptions = relationship('Subscription', back_populates='creator')
 
     def __repr__(self):
-        return f"BackendUser(id={self.id}, uuid={self.uuid}, username={self.username}, email={self.email}, password={self.password})"
+        return (
+            "BackendUser("
+                f"id={self.id}, "
+                f"uuid={self.uuid}, "
+                f"username={self.username}, "
+                f"email={self.email}, "
+                f"password={self.password}"
+            ")"
+        )
 
     def __str__(self):
         return f"BackendUser: {self.username}"
@@ -41,8 +53,7 @@ class BackendUser(Base):
 
 class BackendRole(Base):
     """
-    The BackendRole class represents a table in the database that stores information about backend roles.
-    It defines the structure and relationships of the table.
+    Represents a table in the database that stores information about backend roles.
     """
     __tablename__ = 'backendroles'
 
@@ -58,16 +69,21 @@ class BackendRole(Base):
     permissions = relationship('BackendRolePermission', back_populates='role')
 
     def __repr__(self):
-        return f"<BackendRole(id={self.id}, ruid='{self.ruid}', role='{self.role}')>"
+        return (
+            "<BackendRole("
+                f"id={self.id}, "
+                f"ruid='{self.ruid}', "
+                f"role='{self.role}')"
+            ">"
+        )
 
     def __str__(self):
-        return f"BackendRole(id={self.id}, ruid='{self.ruid}', role='{self.role}')"
+        return f"BackendRole: '{self.role}')"
 
 
 class BackendPermission(Base):
     """
-    The `BackendPermission` class represents a table in the database called `backendpermissions`.
-    It has fields for the permission ID, permission name, permission type, and permission codename.
+    Represents a table in the database called `backendpermissions`.
     """
     __tablename__ = 'backendpermissions'
 
@@ -77,37 +93,38 @@ class BackendPermission(Base):
     codename = Column(String(50), index=True, unique=True, nullable=False)
 
     def __repr__(self):
-        return f"<BackendPermission(id={self.id}, permission={self.permission}, type={self.type}, codename={self.codename})>"
+        return (
+            "<BackendPermission("
+                "id={self.id}, "
+                "permission={self.permission}, "
+                "type={self.type}, "
+                "codename={self.codename})"
+            ">"
+        )
 
     def __str__(self):
-        return f"BackendPermission(id={self.id}, permission={self.permission}, type={self.type}, codename={self.codename})"
+        return f"BackendPermission: {self.codename})"
 
 
 def create_permissions():
     """
     Create predefined permissions in the database.
-
-    Returns:
-        dict: A message indicating the success or failure of the operation.
     """
-    try:
-        print("Creating permissions data...")
-        db = SessionLocal()
-        permissions = [BackendPermission(**permission) for permission in predefined_backend_permissions]
-        db.add_all(permissions)
-        db.commit()
-        return {"message": "Backend permissions created successfully"}
-    except Exception as e:
-        db.rollback()
-        return {"error": str(e)}
-    finally:
-        db.close()
+    print("Creating permissions data...")
+    sql = SessionLocal()
+    permissions = [
+        BackendPermission(**permission) for permission in predefined_backend_permissions
+    ]
+    sql.add_all(permissions)
+    sql.commit()
+    sql.close()
+    return {"message": "Backend permissions created successfully"}
 
 
 class BackendRolePermission(Base):
     """
-    The `BackendRolePermission` class represents a table in the database that stores information about the permissions associated with backend roles.
-    It defines the structure and relationships of the table.
+    Represents a table in the database that stores 
+    information about the permissions associated with backend roles.
     """
     __tablename__ = 'backendrolepermissions'
 
@@ -119,10 +136,20 @@ class BackendRolePermission(Base):
     permission = relationship("BackendPermission", foreign_keys=permission_id)
 
     def __repr__(self):
-        return f"<BackendRolePermission(id={self.id}, role_id={self.role_id}, permission_id={self.permission_id})>"
+        return (
+            "<BackendRolePermission("
+                f"id={self.id}, "
+                f"role_id={self.role_id}, "
+                f"permission_id={self.permission_id})"
+            ">")
 
     def __str__(self):
-        return f"BackendRolePermission(id={self.id}, role_id={self.role_id}, permission_id={self.permission_id})"
+        return (
+            "<BackendRolePermission("
+                f"id={self.id}, "
+                f"role_id={self.role_id}, "
+                f"permission_id={self.permission_id})"
+            ">")
 
 
 class BackendToken(Base):
@@ -144,13 +171,12 @@ class BackendToken(Base):
         return f"<BackendToken(id={self.id}, token={self.token}, user_id={self.user_id})>"
 
     def __str__(self):
-        return self.token
+        return f"BackendToken: {self.token}"
 
 
 class Subscription(Base):
     """
-    The `Subscription` class represents a table in the database that stores information about subscriptions.
-    It defines the structure and relationships of the table.
+    Represents a table in the database that stores information about subscriptions.
     """
     __tablename__ = 'subscriptions'
 
@@ -177,6 +203,10 @@ class Subscription(Base):
 
 
 class SubscriptionUser(Base):
+    """
+    Represents a table in a database 
+    that stores information about users who have subscribed to a service.
+    """
     __tablename__ = 'subscription_users'
 
     id = Column(Integer, primary_key=True, index=True)
@@ -192,10 +222,28 @@ class SubscriptionUser(Base):
     transaction = relationship("Transaction", foreign_keys=transaction_id)
 
     def __repr__(self):
-        pass
+        """
+        Returns a string representation of the SubscriptionUser object.
+        """
+        return (
+            "<SubscriptionUser("
+                f"id={self.id}, "
+                f"subscription_id={self.subscription_id}, "
+                f"user_id={self.user_id}, "
+                f"transaction_id={self.transaction_id})"
+            ">")
 
     def __str__(self):
-        pass
+        """
+        Returns a string representation of the SubscriptionUser object.
+        """
+        return (
+            "<SubscriptionUser("
+                f"id={self.id}, "
+                f"subscription_id={self.subscription_id}, "
+                f"user_id={self.user_id}, "
+                f"transaction_id={self.transaction_id})"
+            ">")
 
 
 class Feature(Base):
@@ -213,39 +261,41 @@ class Feature(Base):
     subscriptions = relationship("SubscriptionFeature", back_populates="feature")
 
     def __repr__(self):
-        return f"Feature(id={self.id}, feature_type='{self.feature_type}', feature_code='{self.feature_code}')"
+        return (
+            "Feature("
+                f"id={self.id}, "
+                f"feature_type='{self.feature_type}', "
+                f"feature_code='{self.feature_code}'"
+            ")"
+        )
 
     def __str__(self):
-        return f"Feature(id={self.id}, feature_type='{self.feature_type}', feature_code='{self.feature_code}')"
+        return (
+            "Feature("
+                f"id={self.id}, "
+                f"feature_type='{self.feature_type}', "
+                f"feature_code='{self.feature_code}'"
+            ")"
+        )
 
 
 def create_features():
     """
     Creates feature objects in the database using predefined data.
-
-    Returns:
-        A dictionary with the message "features created successfully" if the features are created successfully.
-        A dictionary with the error message if an exception occurs.
     """
-    try:
-        print("Creating features data...")
-        db = SessionLocal()
-        features = [Feature(**feature) for feature in predefined_feature]
-        db.add_all(features)
-        db.commit()
-        return {"message": "features created successfully"}
-    except Exception as e:
-        db.rollback()
-        return {"error": str(e)}
-    finally:
-        db.close()
+    print("Creating features data...")
+    sql = SessionLocal()
+    features = [Feature(**feature) for feature in predefined_feature]
+    sql.add_all(features)
+    sql.commit()
+    sql.close()
+    return {"message": "features created successfully"}
 
 
 
 class SubscriptionFeature(Base):
     """
-    The `SubscriptionFeature` class represents a table in the database called `subscription_features`.
-    It defines the structure and relationships of the table.
+    Represents a table in the database called `subscription_features`.
     """
     __tablename__ = 'subscription_features'
 
@@ -259,16 +309,31 @@ class SubscriptionFeature(Base):
     feature = relationship('Feature', foreign_keys=feature_id)
 
     def __repr__(self):
-        return f"SubscriptionFeature(id={self.id}, subscription_id={self.subscription_id}, feature_id={self.feature_id}, quantity={self.quantity}, created_at={self.created_at})"
+        return (
+            "SubscriptionFeature("
+                f"id={self.id}, "
+                f"subscription_id={self.subscription_id}, "
+                f"feature_id={self.feature_id}, "
+                f"quantity={self.quantity}, "
+                f"created_at={self.created_at}"
+            ")"
+        )
 
     def __str__(self):
-        return f"SubscriptionFeature(id={self.id}, subscription_id={self.subscription_id}, feature_id={self.feature_id}, quantity={self.quantity}, created_at={self.created_at})"
+        return (
+            "SubscriptionFeature("
+                f"id={self.id}, "
+                f"subscription_id={self.subscription_id}, "
+                f"feature_id={self.feature_id}, "
+                f"quantity={self.quantity}, "
+                f"created_at={self.created_at}"
+            ")"
+        )
 
 
 class Coupon(Base):
     """
-    The `Coupon` class is a SQLAlchemy model that represents a coupon in a database.
-    It has fields for the coupon's ID, code, name, percentage, type, active status, creation timestamp, and update timestamp.
+    Represents a coupon in a database.
     """
     __tablename__ = 'coupons'
 
@@ -282,7 +347,17 @@ class Coupon(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def __repr__(self):
-        return f"Coupon(id={self.id}, coupon_code='{self.coupon_code}', name='{self.name}', percentage={self.percentage}, coupon_type='{self.coupon_type}', is_active={self.is_active}, created_at={self.created_at}, updated_at={self.updated_at})"
-
+        return (
+            "Coupon("
+                f"id={self.id}, "
+                f"coupon_code='{self.coupon_code}', "
+                f"name='{self.name}', "
+                f"percentage={self.percentage}, "
+                f"coupon_type='{self.coupon_type}', "
+                f"is_active={self.is_active}, "
+                f"created_at={self.created_at}, "
+                f"updated_at={self.updated_at}"
+            ")"
+        )
     def __str__(self):
         return f"Coupon: {self.name} ({self.coupon_code}) - {self.percentage}% off"

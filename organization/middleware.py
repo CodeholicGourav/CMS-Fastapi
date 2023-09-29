@@ -39,7 +39,7 @@ def check_feature(feature_code: str):
         user_token = db.query(frontendModel.FrontendToken).filter_by(token=authtoken).first()
         
         if not user_token or not user_token.user:
-            CustomValidations.customError(
+            CustomValidations.custom_error(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 type="expired",
                 loc="authtoken",
@@ -49,7 +49,7 @@ def check_feature(feature_code: str):
             )
 
         if not user_token.user.active_plan:
-            CustomValidations.customError(
+            CustomValidations.custom_error(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 type="unauthenticated",
                 loc="subscription",
@@ -64,7 +64,7 @@ def check_feature(feature_code: str):
         ).first()
 
         if not subscription_user or subscription_user.expiry<=datetime.utcnow():
-            CustomValidations.customError(
+            CustomValidations.custom_error(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 type="unauthenticated",
                 loc="subscription",
@@ -81,7 +81,7 @@ def check_feature(feature_code: str):
             if feature.feature.feature_code == feature_code:
                 return feature
 
-        CustomValidations.customError(
+        CustomValidations.custom_error(
             status_code=status.HTTP_401_UNAUTHORIZED,
             type="unauthenticated",
             loc="feature",
@@ -105,12 +105,12 @@ def organization_exist(orguid: str = Header(title="Organization id", description
         Organization: The organization object if it exists and the admin has an active subscription.
 
     Raises:
-        CustomError: If the organization does not exist or if there is no active subscription for the admin.
+        custom_error: If the organization does not exist or if there is no active subscription for the admin.
     """
     organization = db.query(model.Organization).filter_by(orguid=orguid).first()
 
     if not organization:
-        CustomValidations.customError(
+        CustomValidations.custom_error(
             type="not_exist",
             loc="org_uid",
             msg="Organization does not exist.",
@@ -126,7 +126,7 @@ def organization_exist(orguid: str = Header(title="Organization id", description
     ).first()
 
     if not subscription_user or subscription_user.expiry<=datetime.utcnow():
-        CustomValidations.customError(
+        CustomValidations.custom_error(
             status_code=status.HTTP_403_FORBIDDEN,
             type="unauthenticated",
             loc="subscription",
@@ -162,7 +162,7 @@ def check_permission(codenames: list[str]):
         organization = db.query(model.Organization).filter_by(orguid=orguid).first()
 
         if not organization:
-            CustomValidations.customError(
+            CustomValidations.custom_error(
                 type="not_exist",
                 loc="org_uid",
                 msg="Organization does not exist.",
@@ -173,7 +173,7 @@ def check_permission(codenames: list[str]):
         user_token = db.query(frontendModel.FrontendToken).filter_by(token=authtoken).first()
 
         if not user_token or not user_token.user:
-            CustomValidations.customError(
+            CustomValidations.custom_error(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 type="expired",
                 loc="authtoken",
@@ -200,7 +200,7 @@ def check_permission(codenames: list[str]):
 
 
         if not all(codename in user_permission_codenames for codename in codenames):
-            CustomValidations.customError(
+            CustomValidations.custom_error(
                 status_code=status.HTTP_403_FORBIDDEN,
                 type="unauthenticated",
                 loc="permission",

@@ -1,14 +1,19 @@
+"""
+schema.py
+Author: Gourav Sahu
+Date: 23/09/2023
+"""
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, EmailStr, constr, validator
+from pydantic import BaseModel, EmailStr, Field, constr, validator
 
 from dependencies import CustomValidations
 
 
 class User(BaseModel):
-    """ 
-    The User class represents a user in the system.
+    """
+    A pydantic model
     """
     id : int
     uuid : str
@@ -25,19 +30,33 @@ class User(BaseModel):
 
 
 class BasePermission(BaseModel):
+    """
+    A pydantic model
+    """
     permission :str
     type :int
     codename : str
 
 
 class RolePermissions(BaseModel):
+    """
+    A pydantic model
+    """
     permission : BasePermission
 
+
 class BasicUser(BaseModel):
+    """
+    A pydantic model
+    """
     username : str
     email : str
 
+
 class ShowRole(BaseModel):
+    """
+    A pydantic model
+    """
     ruid : Optional[str]
     role : str
     is_deleted : bool
@@ -48,20 +67,33 @@ class ShowRole(BaseModel):
 
 
 class ShowUser(BaseModel):
+    """
+    A pydantic model
+    """
     uuid : str
     username : str
     email : str
     role:ShowRole
 
-class permission(BaseModel):
+
+class Permission(BaseModel):
+    """
+    A pydantic model
+    """
     permission : str
 
 
 class ShowRoleName(BaseModel):
+    """
+    A pydantic model
+    """
     role : str
 
 
 class BaseUser(BaseModel):
+    """
+    A pydantic model
+    """
     uuid : str
     username : str
     email : str
@@ -74,40 +106,76 @@ class BaseUser(BaseModel):
 
 
 class ListUsers(BaseModel):
+    """
+    A pydantic model
+    """
     users: List[BaseUser]
     total: int
 
+
 class RegisterUser(BaseModel):
+    """
+    A pydantic model
+    """
     username: constr(min_length=6, max_length=30,)
     email: EmailStr
     password: constr(min_length=8)
     role_id: str = Field(..., description="ruid of a role.")
 
     @validator("username")
-    def username_valid(cls, value):
+    def username_valid(self, value):
+        """
+        Validates a given username value.
+        """
         return CustomValidations.validate_username(value)
-    
+
     @validator("password")
-    def password_validate(cls, value):
+    def password_validate(self, value):
+        """
+        Validates a given password value.
+        """
         return CustomValidations.validate_password(value)
 
 
 class SystemDetails(BaseModel):
-    ip_address: constr(max_length=30) = Field(..., description="IP address of you machine to link it with the login token")
-    browser: constr(max_length=30) = Field(..., description="Name of the browser to link it with the login token")
-    system: constr(max_length=30) = Field(..., description="Name of your machine to link it with the login token")
+    """
+    A pydantic model
+    """
+    ip_address: str = Field(
+        ..., le=30,
+        description="IP address of you machine to link it with the login token."
+    )
+    browser: str = Field(
+        ...,
+        le=30,
+        description="Name of the browser to link it with the login token."
+    )
+    system: str = Field(
+        ...,
+        le=30,
+        description="Name of your machine to link it with the login token."
+    )
 
     def to_string(self):
+        """
+        Returns string representation of the object of this class.
+        """
         return f"IP Address: {self.ip_address}, Browser: {self.browser}, System: {self.system}"
-    
+
 
 class LoginUser(BaseModel):
+    """
+    A pydantic model
+    """
     username_or_email: str
     password: str
     details: SystemDetails
 
 
 class UpdateUser(BaseModel):
+    """
+    A pydantic model
+    """
     user_id: str = Field(..., description="uuid of the user.")
     role_id: Optional[str] = Field(..., description="ruid of the role to assign.")
     is_deleted: Optional[bool] = Field(..., description="delete the user or not.")
@@ -115,35 +183,48 @@ class UpdateUser(BaseModel):
 
 
 class RolePermission(BaseModel):
-    role_id:str 
+    """
+    A pydantic model
+    """
+    role_id:str
     role:Optional[str]
-    permission:str 
+    permission:str
 
 
 class ShowToken(BaseModel):
+    """
+    A pydantic model
+    """
     token: str
     expire_at: datetime
     details: str
     user: ShowUser
-   
 
 
 class ForgotPassword(BaseModel):
+    """
+    A pydantic model
+    """
     token : str = Field(..., description="Token sent to user's email")
     password: constr(min_length=8)
 
     @validator("password")
-    def _password(cls, value):
+    def _password(self, value):
         return CustomValidations.validate_password( value)
 
 
 class FeatureQuantity(BaseModel):
+    """
+    A pydantic model
+    """
     feature_code: str = Field(..., description="feature_code from features list.")
     quantity: int = Field(..., description="Number of items allowed.")
 
 
-
 class CreateSubscription(BaseModel):
+    """
+    A pydantic model
+    """
     name : str
     description : Optional[str]
     price : float = Field(..., description="Price to show.")
@@ -153,30 +234,47 @@ class CreateSubscription(BaseModel):
 
 
 class BaseRolePermission(BaseModel):
+    """
+    A pydantic model
+    """
     permission : BasePermission
 
 
 class CreateRole(BaseModel):
-    role : constr(min_length=3, max_length=20) = Field(..., description="Name of the role.")
+    """
+    A pydantic model
+    """
+    role : str = Field(..., ge=3, le=20, description="Name of the role.")
 
 
 class AssignPermissions(BaseModel):
+    """
+    A pydantic model
+    """
     ruid : str = Field(..., description="ruid of the role.")
     permissions : List[str] = Field(..., description="codename of permissions")
 
 
 class ListFeatures(BaseModel):
-    # id: int
+    """
+    A pydantic model
+    """
     feature_type: str
     feature_code: str
 
 
 class SubscriptionFeaturesMapping(BaseModel):
+    """
+    A pydantic model
+    """
     quantity: int
     feature: ListFeatures
 
 
 class BaseSubscription(BaseModel):
+    """
+    A pydantic model
+    """
     suid : str
     name : str
     description : str
@@ -190,6 +288,9 @@ class BaseSubscription(BaseModel):
 
 
 class UpdateSubscription(BaseModel):
+    """
+    A pydantic model
+    """
     suid : str = Field(..., description="suid of the subscription")
     name : Optional[str] = None
     description : Optional[str] = None
@@ -200,6 +301,9 @@ class UpdateSubscription(BaseModel):
 
 
 class FrontendBaseUser(BaseModel):
+    """
+    A pydantic model
+    """
     uuid: str
     email: str
     username: str
@@ -220,13 +324,21 @@ class FrontendBaseUser(BaseModel):
     updated_at: datetime
 
     def __str__(self):
-        return f"BaseUser(uuid={self.uuid}, email={self.email}, username={self.username}, is_active={self.is_active}, " \
-               f"is_deleted={self.is_deleted}, created_at={self.created_at}, updated_at={self.updated_at})"
+        return (
+            "BaseUser("
+                f"uuid={self.uuid}, "
+                f"email={self.email}, "
+                f"username={self.username}, "
+                f"is_active={self.is_active}, "
+                f"is_deleted={self.is_deleted}, "
+                f"created_at={self.created_at}, "
+                f"updated_at={self.updated_at}"
+            ")")
 
 
 class FrontenduserList(BaseModel):
+    """
+    A pydantic model
+    """
     users: List[FrontendBaseUser]
     total: int
-
-
-

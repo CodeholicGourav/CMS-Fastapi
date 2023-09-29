@@ -1,161 +1,365 @@
-from fastapi import APIRouter, status, Query, Depends, UploadFile, File
+"""
+route.py
+Author: Gourav Sahu
+Date: 23/09/2023
+"""
+import os
+from typing import List, Optional
+
+from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from fastapi.responses import FileResponse
-from typing import List, Optional, Annotated
 from sqlalchemy.orm import Session
+
 from database import get_db
+from dependencies import ALLOWED_EXTENSIONS, TEMPLATES
+
 from . import controller, model, schema
 from .middleware import authenticate_token
-from dependencies import ALLOWED_EXTENSIONS, TEMPLATES
-import os
-import stripe
-
 
 frontendUserRoutes = APIRouter()
 
-@frontendUserRoutes.post("/register", response_model=schema.BaseUser, status_code=status.HTTP_201_CREATED) #Create user
+@frontendUserRoutes.post(
+    path="/register",
+    response_model=schema.BaseUser,
+    status_code=status.HTTP_201_CREATED,
+    description="Register a new user",
+    name="Register user"
+)
 def register(
-    request: schema.RegisterUser, 
-    db: Session = Depends(get_db),
-): return controller.register_user(request, db)
+    request: schema.RegisterUser,
+    sql: Session = Depends(get_db),
+):
+    """
+    Creates a new Frontend user
+    """
+    return controller.register_user(request, sql)
 
 
-@frontendUserRoutes.get("/verify-token", status_code=status.HTTP_202_ACCEPTED, description="Verify the token sent to email to verify your email address.") #Update email verification
+@frontendUserRoutes.get(
+    path="/verify-token",
+    status_code=status.HTTP_202_ACCEPTED,
+    description="Verify a email using token sent to that email address.",
+    name="Verify email"
+)
 def verify_email_token(
-    token: str = Query(..., description="Email verification token"), 
-    db: Session = Depends(get_db)
-): return controller.verify_email(token, db)
+    token: str = Query(..., description="Email verification token"),
+    sql: Session = Depends(get_db)
+):
+    """
+    Verify email through token and enable user account login.
+    """
+    return controller.verify_email(token, sql)
 
 
-@frontendUserRoutes.post("/login", response_model= schema.ShowToken, status_code=status.HTTP_200_OK) #Create login token
+@frontendUserRoutes.post(
+    path="/login",
+    response_model= schema.ShowToken,
+    status_code=status.HTTP_200_OK,
+    description="Create and get authtoken for a user.",
+    name="Login"
+)
 def login(
-    request: schema.LoginUser, 
-    db: Session = Depends(get_db),
-): return controller.create_auth_token(request, db)
+    request: schema.LoginUser,
+    sql: Session = Depends(get_db),
+):
+    """
+    Create a login token for backend user.
+    """
+    return controller.create_auth_token(request, sql)
 
 
-@frontendUserRoutes.delete("/logout", status_code=status.HTTP_204_NO_CONTENT, description="Logout from all devices.") #Delete login token
+@frontendUserRoutes.delete(
+    path="/logout",
+    status_code=status.HTTP_204_NO_CONTENT,
+    description="Delete login token of this user.",
+    name="Logout"
+)
 def logout(
-    db: Session = Depends(get_db),
-    authToken: model.FrontendToken = Depends(authenticate_token)
-): return controller.delete_token(authToken, db)
+    sql: Session = Depends(get_db),
+    auth_token: model.FrontendToken = Depends(authenticate_token)
+):
+    """
+    Deletes the login token for a user.
+    """
+    return controller.delete_token(auth_token, sql)
 
 
-@frontendUserRoutes.delete("/logout-all", status_code=status.HTTP_204_NO_CONTENT, description="Logout from all devices.") #Delete login token
+@frontendUserRoutes.delete(
+    path="/logout-all",
+    status_code=status.HTTP_204_NO_CONTENT,
+    description="Delete all login tokens of this user.",
+    name="Logout all devices"
+)
 def logout_all(
-    db: Session = Depends(get_db),
-    authToken: model.FrontendToken = Depends(authenticate_token)
-): return controller.delete_all_tokens(authToken, db)
+    sql: Session = Depends(get_db),
+    auth_token: model.FrontendToken = Depends(authenticate_token)
+):
+    """
+    Deletes all the login token for a user.
+    """
+    return controller.delete_all_tokens(auth_token, sql)
 
-@frontendUserRoutes.get("/send-token", status_code=status.HTTP_200_OK) #send forget password mail
+@frontendUserRoutes.get(
+    path="/send-token",
+    status_code=status.HTTP_200_OK,
+    description="Send a token to the email to reset the password",
+    name="Forgot password"
+)
 def send_token(
-    email: str = Query(..., description="Email verification token"), 
-    db: Session = Depends(get_db)
-): return controller.send_verification_mail(email, db)
+    email: str = Query(..., description="Email verification token"),
+    sql: Session = Depends(get_db)
+):
+    """
+    Sends a verification token in an email for the forget password feature.
+    """
+    return controller.send_verification_mail(email, sql)
 
 
-@frontendUserRoutes.post('/create-password', response_model=schema.BaseUser, status_code=status.HTTP_201_CREATED) #Update password
+@frontendUserRoutes.post(
+    path='/create-password',
+    response_model=schema.BaseUser,
+    status_code=status.HTTP_201_CREATED,
+    description="Create a new password if you forgot the old one.",
+    name="Reset password"
+)
 def create_new_password(
-    request: schema.ForgotPassword, 
-    db: Session = Depends(get_db)
-): return controller.create_new_password(request, db)
+    request: schema.ForgotPassword,
+    sql: Session = Depends(get_db)
+):
+    """
+    Verify the token and change the password of the user.
+    """
+    return controller.create_new_password(request, sql)
 
 
-@frontendUserRoutes.post('/update-profile', response_model=schema.BaseUser, status_code=status.HTTP_200_OK) #Update profile
-def update_profile(    
+@frontendUserRoutes.post(
+    path='/update-profile',
+    response_model=schema.BaseUser,
+    status_code=status.HTTP_200_OK,
+    description="Update details of your profile.",
+    name="Update profile"
+)
+def update_profile(
     data: schema.UpdateProfile,
-    db : Session = Depends(get_db), 
-    authToken: model.FrontendToken = Depends(authenticate_token),
-): return controller.updateProfile(data, authToken, db)
+    sql : Session = Depends(get_db),
+    auth_token: model.FrontendToken = Depends(authenticate_token)
+):
+    """
+    Updates the profile of a user based on the provided data.
+    """
+    return controller.update_profile(data, auth_token, sql)
 
 
-@frontendUserRoutes.post('/update-profile-photo', response_model=schema.BaseUser, status_code=status.HTTP_200_OK) #Update profile
-def update_profile_photo(    
-    image: Annotated[UploadFile, File(description=f"A image file to use it as profile photo. Allowed extensions are {ALLOWED_EXTENSIONS}")],
-    db : Session = Depends(get_db), 
-    authToken: model.FrontendToken = Depends(authenticate_token),
-): return controller.updateProfilePhoto(image, authToken, db)
+@frontendUserRoutes.post(
+    path='/update-profile-photo',
+    response_model=schema.BaseUser,
+    status_code=status.HTTP_200_OK,
+    description="Update the user's profile image.",
+    name="Update profile photo"
+)
+def update_profile_photo(
+    image: UploadFile = File(
+        description=f"Allowed extensions are {ALLOWED_EXTENSIONS}"
+    ),
+    sql : Session = Depends(get_db),
+    auth_token: model.FrontendToken = Depends(authenticate_token)
+):
+    """
+    Updates the profile photo of a user.
+    """
+    return controller.update_profile_photo(image, auth_token, sql)
 
 
-@frontendUserRoutes.get('/subscriptions', response_model=List[schema.BaseSubscription], status_code=status.HTTP_200_OK) #Read all subscriptions
+@frontendUserRoutes.get(
+    path='/subscriptions',
+    response_model=List[schema.BaseSubscription],
+    status_code=status.HTTP_200_OK,
+    description="Fetch all the subscriptions from database.",
+    name="List subscriptions"
+)
 def all_subscriptions(
-    limit : Optional[int]=10, 
-    offset : Optional[int]=0, 
-    db : Session = Depends(get_db), 
-    # current_user: model.FrontendUser = Depends(authenticate_token),
-): return controller.all_subscription_plans(limit, offset, db)
+    limit : Optional[int]=10,
+    offset : Optional[int]=0,
+    sql : Session = Depends(get_db),
+):
+    """
+    Retrieves details of a subscription plan based on the provided suid.
+    If the subscription does not exist, it raises a custom error .
+    """
+    return controller.all_subscription_plans(limit, offset, sql)
 
 
-@frontendUserRoutes.get('/subscriptions/{suid}', response_model=schema.BaseSubscription, status_code=status.HTTP_200_OK) #Read all subscriptions
+@frontendUserRoutes.get(
+    path='/subscriptions/{suid}',
+    response_model=schema.BaseSubscription,
+    status_code=status.HTTP_200_OK,
+    description="Get the details of a subscription.",
+    name="Subscription details"
+)
 def subscription_details(
     suid: str,
-    db : Session = Depends(get_db), 
-    # current_user: model.FrontendUser = Depends(authenticate_token),
-): return controller.subscription_plan_detail(suid, db)
+    sql : Session = Depends(get_db)
+):
+    """
+    Get the details of a subscription based on the provided suid.
+    """
+    return controller.subscription_plan_detail(suid, sql)
 
 
-@frontendUserRoutes.get('/timezones', response_model=List[schema.TimeZones], status_code=status.HTTP_200_OK) #Read all subscriptions
-def all_timezones( 
-    db : Session = Depends(get_db), 
-): return controller.timezonesList(db)
+@frontendUserRoutes.get(
+    path='/timezones',
+    response_model=List[schema.TimeZones],
+    status_code=status.HTTP_200_OK,
+    description="Fetch all the timezones available in database.",
+    name="List timezones"
+)
+def all_timezones(
+    sql : Session = Depends(get_db)
+):
+    """
+    Retrieves a list of all timezones from the database.
+    """
+    return controller.timezones_list(sql)
 
 
-@frontendUserRoutes.post('/stripe/create-order', response_model=schema.Orders,status_code=status.HTTP_201_CREATED)
-def create_order(
+@frontendUserRoutes.post(
+    path='/stripe/create-order',
+    response_model=schema.Orders,
+    status_code=status.HTTP_201_CREATED,
+    description="Create a new order in stripe.",
+    name="Create stripe order"
+)
+def create_stripe_order(
     request:schema.AddOrder,
-    authToken:model.FrontendToken = Depends(authenticate_token),
-    db: Session = Depends(get_db)      
-): return controller.stripe_add_orders(request, authToken, db)
+    auth_token:model.FrontendToken = Depends(authenticate_token),
+    sql: Session = Depends(get_db)
+):
+    """
+    Adds a new order to the database and stripe.
+    """
+    return controller.stripe_add_orders(request, auth_token, sql)
 
 
-@frontendUserRoutes.post('/stripe/create-transaction', status_code=status.HTTP_201_CREATED)
-def create_transaction(
+@frontendUserRoutes.post(
+    path='/stripe/create-transaction',
+    status_code=status.HTTP_201_CREATED,
+    description="Create a transaction for stripe order.",
+    name="Create stripe transaction"
+)
+def create_stripe_transaction(
     request: schema.StripeReturn,
-    authToken:model.FrontendToken = Depends(authenticate_token),
-    db: Session = Depends(get_db)      
-): return controller.stripe_add_transaction(request, authToken, db)
+    auth_token:model.FrontendToken = Depends(authenticate_token),
+    sql: Session = Depends(get_db)
+):
+    """
+    Updates the status of an order in the database based on the Stripe payment status.
+    Creates a new transaction record for the order if it doesn't already exist.
+    Updates the active plan of the user associated with the authentication token 
+    based on the product ID from the order.
+    """
+    return controller.stripe_add_transaction(request, auth_token, sql)
 
 
-@frontendUserRoutes.post('/paypal/create-order', response_model=schema.Orders,status_code=status.HTTP_201_CREATED)
-def create_order(
+@frontendUserRoutes.post(
+    path='/paypal/create-order',
+    response_model=schema.Orders,
+    status_code=status.HTTP_201_CREATED,
+    description="Create a new order in paypal.",
+    name="Create paypal order"
+)
+def create_paypal_order(
     request:schema.AddOrder,
-    authToken:model.FrontendToken = Depends(authenticate_token),
-    db: Session = Depends(get_db)      
-): return controller.paypal_add_orders(request, authToken, db)
+    auth_token:model.FrontendToken = Depends(authenticate_token),
+    sql: Session = Depends(get_db)
+):
+    """
+    Adds a new order to the database.
+    """
+    return controller.paypal_add_orders(request, auth_token, sql)
 
 
-@frontendUserRoutes.post('/paypal/create-transaction', status_code=status.HTTP_201_CREATED)
-def create_transaction(
+@frontendUserRoutes.post(
+    path='/paypal/create-transaction',
+    status_code=status.HTTP_201_CREATED,
+    description="Create a transaction for paypal order.",
+    name="Create paypal transaction"
+)
+def create_paypal_transaction(
     request: schema.StripeReturn,
-    authToken:model.FrontendToken = Depends(authenticate_token),
-    db: Session = Depends(get_db)      
-): return controller.paypal_add_transaction(request, authToken, db)
+    auth_token:model.FrontendToken = Depends(authenticate_token),
+    sql: Session = Depends(get_db)
+):
+    """
+    Add a transaction to the database when a payment is made through PayPal.
+    """
+    return controller.paypal_add_transaction(request, auth_token, sql)
 
 
-@frontendUserRoutes.post('/razorpay/create-order', response_model=schema.Orders,status_code=status.HTTP_201_CREATED)
-def create_order(
+@frontendUserRoutes.post(
+    path='/razorpay/create-order',
+    response_model=schema.Orders,
+    status_code=status.HTTP_201_CREATED,
+    description="Create a new order in razorpay.",
+    name="Create razorpays order"
+)
+def create_razorpay_order(
     request:schema.AddOrder,
-    authToken:model.FrontendToken = Depends(authenticate_token),
-    db: Session = Depends(get_db)      
-): return controller.razorpay_add_orders(request, authToken, db)
+    auth_token:model.FrontendToken = Depends(authenticate_token),
+    sql: Session = Depends(get_db)
+):
+    """
+    Adds a new order to the database.
+    """
+    return controller.razorpay_add_orders(request, auth_token, sql)
 
 
-@frontendUserRoutes.post('/razorpay/create-transaction', status_code=status.HTTP_201_CREATED)
-def create_transaction(
+@frontendUserRoutes.post(
+    path='/razorpay/create-transaction',
+    status_code=status.HTTP_201_CREATED,
+    description="Create a transaction for paypal order.",
+    name="Create paypal transaction"
+)
+def create_razorpay_transaction(
     request: schema.RazorpayReturn,
-    authToken:model.FrontendToken = Depends(authenticate_token),
-    db: Session = Depends(get_db)      
-): return controller.razorpay_add_transaction(request, authToken, db)
-            
+    auth_token:model.FrontendToken = Depends(authenticate_token),
+    sql: Session = Depends(get_db)
+):
+    """
+    Updates the status of an order in and creates a new transaction for the order.
+    If a transaction record already exists for the order, returns the existing record.
+    Also updates the active plan of the user associated with the order.
+    """
+    return controller.razorpay_add_transaction(request, auth_token, sql)
+
 
 @frontendUserRoutes.get('/stripe/checkout')
-def checkout(): return FileResponse(os.path.join(TEMPLATES, "stripe_checkout.html"), media_type="text/html")
+def stripe_checkout():
+    """
+    Serve the stripe_checkout.html file for the Stripe checkout route.
+    """
+    return FileResponse(
+        os.path.join(TEMPLATES, "stripe_checkout.html"),
+        media_type="text/html"
+    )
 
 
 @frontendUserRoutes.get('/razorpay/checkout')
-def checkout(): return FileResponse(os.path.join(TEMPLATES, "razorpay_checkout.html"), media_type="text/html")
+def razorpay_checkout():
+    """
+    Serve the razorpay_checkout.html file for the Razorpay checkout route.
+    """
+    return FileResponse(
+        os.path.join(TEMPLATES, "razorpay_checkout.html"),
+        media_type="text/html"
+    )
 
 
 @frontendUserRoutes.get('/paypal/checkout')
-def checkout(): return FileResponse(os.path.join(TEMPLATES, "paypal_checkout.html"), media_type="text/html")
-
-
+def paypal_checkout():
+    """
+    Serve the paypal_checkout.html file for the PayPal checkout route.
+    """
+    return FileResponse(
+        os.path.join(TEMPLATES, "paypal_checkout.html"),
+        media_type="text/html"
+    )
