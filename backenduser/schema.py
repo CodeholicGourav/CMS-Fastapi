@@ -123,14 +123,14 @@ class RegisterUser(BaseModel):
     role_id: str = Field(..., description="ruid of a role.")
 
     @validator("username")
-    def username_valid(self, value):
+    def username_valid(cls, value):
         """
         Validates a given username value.
         """
         return CustomValidations.validate_username(value)
 
     @validator("password")
-    def password_validate(self, value):
+    def password_validate(cls, value):
         """
         Validates a given password value.
         """
@@ -209,7 +209,7 @@ class ForgotPassword(BaseModel):
     password: constr(min_length=8)
 
     @validator("password")
-    def _password(self, value):
+    def _password(cls, value):
         return CustomValidations.validate_password( value)
 
 

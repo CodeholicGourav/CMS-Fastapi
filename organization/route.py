@@ -21,7 +21,7 @@ organizationRoutes = APIRouter()
     path='/get-organizations',
     response_model=schema.BasicOrganizationList,
     dependencies=[Depends(authenticate_token)],
-    status_code=status,
+    status_code=status.HTTP_200_OK,
     description="Get list of all organizations.",
     name="List organizations"
 )
