@@ -658,6 +658,9 @@ def update_subscription_plan(data: schema.UpdateSubscription, sql: Session):
     if data.price is not None:
         subscription.price = data.price
 
+    if data.sale_price is not None:
+        subscription.sale_price = data.sale_price
+
     if data.validity is not None:
         subscription.validity = data.validity
 

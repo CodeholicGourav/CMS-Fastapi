@@ -295,6 +295,7 @@ class UpdateSubscription(BaseModel):
     name : Optional[str] = None
     description : Optional[str] = None
     price : Optional[float] = None
+    sale_price : Optional[float] = None
     validity : Optional[int] = None
     is_deleted : Optional[bool] = None
     features: Optional[list[FeatureQuantity]] = None
