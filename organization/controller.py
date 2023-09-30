@@ -3,43 +3,32 @@ controller.py
 Author: Gourav Sahu
 Date: 23/09/2023
 """
-from typing import Optional
-import math
-import time
-import requests
 import json
-from datetime import datetime, timedelta
 
-from fastapi import UploadFile, status
+from fastapi import status
+from google.oauth2.credentials import Credentials
 from sqlalchemy.orm import Session
-from sqlalchemy import func, select
+
+from backenduser import model as backendModel
+from dependencies import CustomValidations, generate_uuid
+from frontenduser import model as frontendModel
 
 from . import model, schema
-from frontenduser import model as frontendModel
-from backenduser import model as backendModel
-from dependencies import CustomValidations
-from googleapiclient.discovery import build
-from google.oauth2.credentials import Credentials
-from dependencies import generate_uuid
 
 
-def all_organizations(limit: int, offset: int, db: Session):
+def all_organizations(
+    limit: int,
+    offset: int,
+    sql: Session
+):
     """
-    Retrieves a specified number of organizations from the database, along with the total count of organizations.
-
-    Args:
-        limit (int): The maximum number of organizations to retrieve.
-        offset (int): The number of organizations to skip before retrieving.
-        db (Session): A SQLAlchemy Session object representing the database connection.
-
-    Returns:
-        dict: A dictionary containing the total count of organizations and the retrieved organizations.
-            - "total": The total count of organizations in the database.
-            - "organizations": A list of organization objects retrieved from the database.
+    Retrieves a specified number of organizations from the database, 
+    along with the total count of organizations.
     """
-    count = db.query(func.count(model.Organization.id)).scalar()
-    
-    organizations = db.query(model.Organization).limit(limit).offset(offset).all()
+    count = sql.query(model.Organization).count()
+    organizations = sql.query(
+        model.Organization
+    ).limit(limit).offset(offset).all()
 
     return {
         "total": count,
@@ -47,24 +36,23 @@ def all_organizations(limit: int, offset: int, db: Session):
     }
 
 
-def create_organization(data: schema.CreateOrganization, db: Session, authToken: frontendModel.FrontendToken, subscription: backendModel.SubscriptionFeature):
+def create_organization(
+    data: schema.CreateOrganization,
+    sql: Session,
+    auth_token: frontendModel.FrontendToken,
+    subscription: backendModel.SubscriptionFeature
+):
     """
-    Creates a new organization in the database, performing several validations before saving the organization.
-
-    Args:
-        data (schema.CreateOrganization): The data required to create a new organization.
-        db (Session): A SQLAlchemy Session object representing the database connection.
-        authToken (frontendModel.FrontendToken): An authentication token for the frontend user.
-        subscription (backendModel.SubscriptionFeature): The subscription plan for the backend user.
-
-    Returns:
-        model.Organization: The newly created organization object.
+    Creates a new organization in the database, 
+    performing several validations before saving the organization.
     """
 
-    # Check if the number of organizations created by the user exceeds the limit defined in the subscription plan.
+    # Number of organizations can subscription allows.
     org_quantity = subscription.quantity
-    
-    total_organizations = db.query(func.count(model.Organization.id)).filter_by(admin_id=authToken.id).scalar()
+
+    total_organizations = sql.query(model.Organization.id).filter_by(
+        admin_id=auth_token.id
+    ).count()
 
     if total_organizations >= org_quantity:
         CustomValidations.custom_error(
@@ -76,7 +64,9 @@ def create_organization(data: schema.CreateOrganization, db: Session, authToken:
         )
 
     # Check if the organization name already exists in the database.
-    existing_name = db.query(model.Organization).filter_by(org_name=data.org_name).first()
+    existing_name = sql.query(model.Organization).filter_by(
+        org_name=data.org_name
+    ).first()
     if existing_name:
         CustomValidations.custom_error(
             type="existing",
@@ -96,18 +86,10 @@ def create_organization(data: schema.CreateOrganization, db: Session, authToken:
             ctx={"registration_type": "valid"}
         )
 
+    # Create an instance of OAuth 2.0 credentials using the dictionary
+    creds = Credentials.from_authorized_user_info(data.gtoken)
+
     # Check if the Google token provided is valid.
-    try:
-        # Create an instance of OAuth 2.0 credentials using the dictionary
-        creds = Credentials.from_authorized_user_info(data.gtoken)
-    except Exception as e:
-        CustomValidations.custom_error(
-            type="Invalid",
-            loc="gtoken",
-            msg="Not a valid Google token.",
-            inp=str(data.gtoken),
-            ctx={"gtoken": "valid"}
-        )
     if not creds or not creds.valid:
         CustomValidations.custom_error(
             type="Invalid",
@@ -120,42 +102,40 @@ def create_organization(data: schema.CreateOrganization, db: Session, authToken:
     organization = model.Organization(
         orguid=generate_uuid(data.org_name),
         org_name=data.org_name,
-        admin_id=authToken.user_id,
+        admin_id=auth_token.user_id,
         gtoken=json.dumps(data.gtoken),
         registration_type=data.registration_type
     )
 
-    db.add(organization)
-    db.commit()
-    db.refresh(organization)
+    sql.add(organization)
+    sql.commit()
+    sql.refresh(organization)
 
     # Create default role
-    org_role = model.OrganizationRoles(
+    org_role = model.OrganizationRole(
         ruid = generate_uuid(data.org_name+"Default"),
         role = 'Default',
-        created_by = authToken.user_id,
+        created_by = auth_token.user_id,
         org_id = organization.id
     )
-    db.add(org_role)
-    db.commit()
+    sql.add(org_role)
+    sql.commit()
 
     return organization
 
 
-def register_to_organization(data: schema.OrgUserRegister, db: Session, authToken: frontendModel.FrontendToken):
+def register_to_organization(
+    data: schema.OrgUserRegister,
+    sql: Session,
+    auth_token: frontendModel.FrontendToken
+):
     """
-    This function registers a user to an organization by creating a new entry in the OrganizationUser table in the database.
-
-    Args:
-        data (schema.OrgUserRegister): The data required to register a user to an organization.
-        db (Session): A SQLAlchemy Session object representing the database connection.
-        authToken (frontendModel.FrontendToken): An authentication token for the frontend user.
-
-    Returns:
-        model.OrganizationUser: The newly created OrganizationUser object.
+    Registers a user to an organization.
     """
-    user = authToken.user
-    organization = db.query(model.Organization).filter_by(orguid=data.org_uid).first()
+    user = auth_token.user
+    organization = sql.query(model.Organization).filter_by(
+        orguid=data.org_uid
+    ).first()
 
     if not organization:
         CustomValidations.custom_error(
@@ -177,13 +157,26 @@ def register_to_organization(data: schema.OrgUserRegister, db: Session, authToke
         )
 
     admin = organization.admin
-    feature = db.query(backendModel.Feature).filter_by(feature_code="add_member").first()
+    feature = sql.query(backendModel.Feature).filter_by(
+        feature_code="add_member"
+    ).first()
 
-    subscription_feature = db.query(backendModel.SubscriptionFeature).filter_by(subscription_id=admin.active_plan, feature_id=feature.id).first()
+    subscription_feature = sql.query(
+        backendModel.SubscriptionFeature
+    ).filter_by(
+        subscription_id=admin.active_plan,
+        feature_id=feature.id
+    ).first()
 
     user_quantity = subscription_feature.quantity
 
-    total_users = db.query(func.count(model.OrganizationUser.id)).filter_by(org_id=organization.id, is_deleted=False, is_active=True).scalar()
+    total_users = sql.query(
+        model.OrganizationUser.id
+    ).filter_by(
+        org_id=organization.id,
+        is_deleted=False,
+        is_active=True
+    ).count()
 
     if total_users >= user_quantity:
         CustomValidations.custom_error(
@@ -194,13 +187,18 @@ def register_to_organization(data: schema.OrgUserRegister, db: Session, authToke
             ctx={"organization": "limited_creation"}
         )
 
-    org_user = db.query(model.OrganizationUser).filter_by(org_id=organization.id, user_id=user.id).first()
+    org_user = sql.query(
+        model.OrganizationUser
+    ).filter_by(
+        org_id=organization.id,
+        user_id=user.id
+    ).first()
 
     if org_user:
         CustomValidations.custom_error(
             type="already_exist",
             loc="organization",
-            msg=f"User already registered.",
+            msg="User already registered.",
             inp=data.org_uid,
             ctx={"organization": "new_registration"}
         )
@@ -215,30 +213,28 @@ def register_to_organization(data: schema.OrgUserRegister, db: Session, authToke
     if organization.registration_type == "approval_required":
         org_user.is_active = False
 
-    db.add(org_user)
-    db.commit()
-    db.refresh(org_user)
+    sql.add(org_user)
+    sql.commit()
+    sql.refresh(org_user)
     return org_user
 
 
-def get_all_users(limit: int, offset: int, organization: model.Organization, db: Session):
+def get_all_users(
+    limit: int,
+    offset: int,
+    organization: model.Organization,
+    sql: Session
+):
     """
-    Retrieves a specified number of users belonging to a specific organization from the database, 
+    Retrieves a specified number of users belonging to a specific organization, 
     along with the total count of users.
-
-    Args:
-        limit (int): The maximum number of users to retrieve.
-        offset (int): The number of users to skip before retrieving.
-        organization (model.Organization): The organization object for which to retrieve the users.
-        db (Session): A SQLAlchemy Session object representing the database connection.
-
-    Returns:
-        dict: A dictionary containing the total count of users and the retrieved users.
-            - "total": The total count of users belonging to the organization in the database.
-            - "users": A list of user objects retrieved from the database.
     """
-    users = db.query(model.OrganizationUser).filter_by(org_id=organization.id).limit(limit).offset(offset).all()
-    count = db.query(func.count(model.OrganizationUser.id)).filter_by(org_id=organization.id).scalar()
+    users = sql.query(model.OrganizationUser).filter_by(
+        org_id=organization.id
+    ).limit(limit).offset(offset).all()
+    count = sql.query(model.OrganizationUser.id).filter_by(
+        org_id=organization.id
+    ).count()
 
     return {
         "total": count,
@@ -246,19 +242,15 @@ def get_all_users(limit: int, offset: int, organization: model.Organization, db:
     }
 
 
-def get_user_details(uuid: str, organization: model.Organization, db: Session) -> model.OrganizationUser:
+def get_user_details(
+    uuid: str,
+    organization: model.Organization,
+    sql: Session
+):
     """
     Retrieves the details of a user in an organization based on the user's UUID.
-
-    Args:
-        uuid (str): The UUID of the user to retrieve.
-        organization (model.Organization): The organization object for which to retrieve the user details.
-        db (Session): A SQLAlchemy Session object representing the database connection.
-
-    Returns:
-        model.OrganizationUser: The retrieved organization user object.
     """
-    user = db.query(frontendModel.FrontendUser).filter_by(uuid=uuid).first()
+    user = sql.query(frontendModel.FrontendUser).filter_by(uuid=uuid).first()
     if not user:
         CustomValidations.custom_error(
             type="not_exist",
@@ -267,7 +259,9 @@ def get_user_details(uuid: str, organization: model.Organization, db: Session) -
             inp=uuid,
             ctx={"user": "exist"}
         )
-    org_user = db.query(model.OrganizationUser).filter_by(user_id=user.id, org_id=organization.id).first()
+    org_user = sql.query(model.OrganizationUser).filter_by(
+        user_id=user.id, org_id=organization.id
+    ).first()
     if not org_user:
         CustomValidations.custom_error(
             type="not_exist",
@@ -280,22 +274,22 @@ def get_user_details(uuid: str, organization: model.Organization, db: Session) -
     return org_user
 
 
-def get_all_roles(limit: int, offset: int, organization: model.Organization, db: Session):
+def get_all_roles(
+    limit: int,
+    offset: int,
+    organization: model.Organization,
+    sql: Session
+):
     """
-    Retrieves a specified number of roles belonging to a specific organization from the database,
+    Retrieves a specified number of roles belonging to a specific organization,
     along with the total count of roles.
-
-    Args:
-        limit (int): The maximum number of roles to retrieve.
-        offset (int): The number of roles to skip before retrieving.
-        organization (model.Organization): The organization object for which to retrieve the roles.
-        db (Session): A SQLAlchemy Session object representing the database connection.
-
-    Returns:
-        dict: A dictionary containing the total count of roles and the retrieved roles.
     """
-    roles = db.query(model.OrganizationRole).filter_by(org_id=organization.id).limit(limit).offset(offset).all()
-    count = db.query(func.count(model.OrganizationRole.id)).filter_by(org_id=organization.id).scalar()
+    roles = sql.query(model.OrganizationRole).filter_by(
+        org_id=organization.id
+    ).limit(limit).offset(offset).all()
+    count = sql.query(model.OrganizationRole).filter_by(
+        org_id=organization.id
+    ).count()
 
     return {
         "total": count,
@@ -303,22 +297,17 @@ def get_all_roles(limit: int, offset: int, organization: model.Organization, db:
     }
 
 
-def get_role_details(uuid: str, organization: model.Organization, db: Session):
+def get_role_details(
+    uuid: str,
+    organization: model.Organization,
+    sql: Session
+):
     """
     Retrieves the details of a role in an organization based on the role's UUID.
-
-    Args:
-        uuid (str): The UUID of the role to retrieve.
-        organization (model.Organization): The organization object for which to retrieve the role details.
-        db (Session): A SQLAlchemy Session object representing the database connection.
-
-    Returns:
-        model.OrganizationRoles: The retrieved role object.
-        
-    Raises:
-        custom_error: If the role does not exist.
     """
-    role = db.query(model.OrganizationRoles).filter_by(ruid=uuid, org_id=organization.id).first()
+    role = sql.query(model.OrganizationRole).filter_by(
+        ruid=uuid, org_id=organization.id
+    ).first()
     if not role:
         CustomValidations.custom_error(
             type="not_exist",
@@ -331,34 +320,29 @@ def get_role_details(uuid: str, organization: model.Organization, db: Session):
     return role
 
 
-def get_all_permissions(db: Session):
+def get_all_permissions(
+    sql: Session
+):
     """
     Retrieves all the organization permissions from the database.
-
-    Args:
-        db (Session): A SQLAlchemy Session object representing the database connection.
-
-    Returns:
-        List[OrganizationPermission]: The retrieved organization permissions from the database.
     """
-    return db.query(model.OrganizationPermission).all()
+    return sql.query(model.OrganizationPermission).all()
 
 
-def create_role(data: schema.CreateRole, organization: model.Organization, authtoken: frontendModel.FrontendToken, db:Session):
+def create_role(
+    data: schema.CreateRole,
+    organization: model.Organization,
+    authtoken: frontendModel.FrontendToken,
+    sql:Session
+):
     """
-    This function creates a new role for an organization in the database, performing validations to ensure the role does not already exist.
-
-    Args:
-        data (schema.CreateRole): The data required to create a new role.
-        organization (model.Organization): The organization object for which to create the role.
-        authtoken (frontendModel.FrontendToken): An authentication token for the frontend user.
-        db (Session): A SQLAlchemy Session object representing the database connection.
-
-    Returns:
-        model.OrganizationRole: The newly created role object.
+    Creates a new role for an organization in the database, 
+    performing validations to ensure the role does not already exist.
     """
     # Check if a role with the same name already exists in the organization
-    role = db.query(model.OrganizationRole).filter_by(role=data.role, org_id=organization.id).first()
+    role = sql.query(model.OrganizationRole).filter_by(
+        role=data.role, org_id=organization.id
+    ).first()
     if role:
         CustomValidations.custom_error(
             type="already_exist",
@@ -375,36 +359,41 @@ def create_role(data: schema.CreateRole, organization: model.Organization, autht
         org_id=organization.id,
         created_by=authtoken.user_id
     )
-    db.add(new_role)
-    db.commit()
-    db.refresh(new_role)
+    sql.add(new_role)
+    sql.commit()
+    sql.refresh(new_role)
 
     # Retrieve the permissions associated with the role from the input data
     codenames = data.permissions
-    permissions = db.query(model.OrganizationPermission).filter(model.OrganizationPermission.codename.in_(codenames)).all()
+    permissions = sql.query(model.OrganizationPermission).filter(
+        model.OrganizationPermission.codename.in_(codenames)
+    ).all()
 
     # Create role_permission objects and add them to the database
-    role_permissions = [model.OrganizationRolePermission(role_id=new_role.id, permission_id=permission.id) for permission in permissions]
-    db.add_all(role_permissions)
-    db.commit()
+    role_permissions = [
+        model.OrganizationRolePermission(
+            role_id=new_role.id,
+            permission_id=permission.id
+        )
+        for permission in permissions
+    ]
+    sql.add_all(role_permissions)
+    sql.commit()
 
     return new_role
 
 
-def update_role(data: schema.UpdateRole, organization: model.Organization, db:Session):
+def update_role(
+    data: schema.UpdateRole,
+    organization: model.Organization,
+    sql:Session
+):
     """
-    Updates the role of an organization by creating a new role entry in the OrganizationRole table in the database.
-
-    Args:
-        data (schema.UpdateRole): The data required to update the role.
-        organization (model.Organization): The organization object for which to update the role.
-        db (Session): A SQLAlchemy Session object representing the database connection.
-
-    Returns:
-        model.OrganizationRole: The newly created role object.
+    Updates the role of an organization.
     """
-    # Retrieve the existing role from the database based on the provided role UUID and organization ID
-    role = db.query(model.OrganizationRole).filter_by(ruid=data.ruid, org_id=organization.id).first()
+    role = sql.query(model.OrganizationRole).filter_by(
+        ruid=data.ruid, org_id=organization.id
+    ).first()
 
     # If the role does not exist, raise a custom error
     if not role:
@@ -416,8 +405,10 @@ def update_role(data: schema.UpdateRole, organization: model.Organization, db:Se
             ctx={"ruid": "exist"}
         )
 
-    # Check if there is already a role with the same name in the organization. If so, raise a custom error
-    exit_role = db.query(model.OrganizationRole).filter_by(role=data.role, org_id=organization.id).first()
+    # Check if there is already a role with the same name in the organization.
+    exit_role = sql.query(model.OrganizationRole).filter_by(
+        role=data.role, org_id=organization.id
+    ).first()
     if exit_role:
         CustomValidations.custom_error(
             type="already_exist",
@@ -431,37 +422,46 @@ def update_role(data: schema.UpdateRole, organization: model.Organization, db:Se
         role.role = data.role
 
     if data.permissions:
-        # Delete all existing role permissions for the role from the database
-        db.query(model.OrganizationRolePermission).filter_by(role_id=role.id).delete()
+        # Delete existing permissions for the role from the database
+        sql.query(model.OrganizationRolePermission).filter_by(
+            role_id=role.id
+        ).delete()
 
         # Retrieve the permissions associated with the provided permission codenames
         codenames = data.permissions
-        permissions = db.query(model.OrganizationPermission).filter(model.OrganizationPermission.codename.in_(codenames)).all()
+        permissions = sql.query(model.OrganizationPermission).filter(
+            model.OrganizationPermission.codename.in_(codenames)
+        ).all()
 
-        # Create new role permission objects for each permission and add them to the database
-        role_permissions = [model.OrganizationRolePermission(role_id=role.id, permission_id=permission.id) for permission in permissions]
-        db.add_all(role_permissions)
-    db.commit()
-    db.refresh(role)
+        # Assign new permissions to the role
+        role_permissions = [
+            model.OrganizationRolePermission(
+                role_id=role.id,
+                permission_id=permission.id
+            )
+            for permission in permissions
+        ]
+        sql.add_all(role_permissions)
+    sql.commit()
+    sql.refresh(role)
 
     return role
 
 
-def assign_role(data: schema.AssignRole, organization: model.Organization, db:Session):
+def assign_role(
+    data: schema.AssignRole,
+    organization: model.Organization,
+    sql:Session
+):
     """
     Assigns a role to a user in an organization.
-
-    Args:
-        data (schema.AssignRole): An instance of the AssignRole schema class containing the role ID and user ID.
-        organization (model.Organization): An instance of the Organization model class representing the organization.
-        db (Session): An instance of the SQLAlchemy Session class representing the database session.
-
-    Returns:
-        model.OrganizationUser: An instance of the OrganizationUser model class representing the updated organization user entry.
     """
 
-    # Find the role with the specified role ID and belonging to the given organization
-    role = db.query(model.OrganizationRole).filter_by(ruid=data.role_id, org_id=organization.id).first()
+    # Get role with the specified role ID which belong to the given organization
+    role = sql.query(model.OrganizationRole).filter_by(
+        ruid=data.role_id,
+        org_id=organization.id
+    ).first()
     if not role:
         CustomValidations.custom_error(
             type="not_exist",
@@ -472,7 +472,9 @@ def assign_role(data: schema.AssignRole, organization: model.Organization, db:Se
         )
 
     # Find the user with the specified user ID
-    user = db.query(frontendModel.FrontendUser).filter_by(uuid=data.user_id).first()
+    user = sql.query(frontendModel.FrontendUser).filter_by(
+        uuid=data.user_id
+    ).first()
     if not user:
         CustomValidations.custom_error(
             type="not_exist",
@@ -483,7 +485,9 @@ def assign_role(data: schema.AssignRole, organization: model.Organization, db:Se
         )
 
     # Find the organization user entry for the user and organization
-    org_user = db.query(model.OrganizationUser).filter_by(user_id=user.id, org_id=organization.id).first()
+    org_user = sql.query(model.OrganizationUser).filter_by(
+        user_id=user.id, org_id=organization.id
+    ).first()
     if not org_user:
         CustomValidations.custom_error(
             type="not_exist",
@@ -496,30 +500,28 @@ def assign_role(data: schema.AssignRole, organization: model.Organization, db:Se
     # Update the role ID of the organization user entry
     org_user.role_id = role.id
 
-    # Commit the changes to the database and refresh the organization user entry
-    db.commit()
-    db.refresh(org_user)
+    # Commit the changes to the database
+    sql.commit()
+    # Refresh the organization user entry
+    sql.refresh(org_user)
 
     return org_user
 
 
 
-def assign_user_permission(data: schema.UpdateUserPermission, organization: model.Organization, db: Session):
+def assign_user_permission(
+    data: schema.UpdateUserPermission,
+    organization: model.Organization,
+    sql: Session
+):
     """
     Assigns permissions to a user in an organization.
-
-    Args:
-        data (schema.UpdateUserPermission): The user's data including the UUID and the permissions to assign.
-        organization (model.Organization): The organization object to which the user belongs.
-        db (Session): The database session object.
-
-    Returns:
-        frontenduser.model.OrganizationUser: The updated organization user object with the assigned permissions.
     """
-    # Retrieve the user object from the database based on the provided UUID
-    user = db.query(frontendModel.FrontendUser).filter_by(uuid=data.uuid).first()
+    # Retrieve the user object based on the provided UUID
+    user = sql.query(frontendModel.FrontendUser).filter_by(
+        uuid=data.uuid
+    ).first()
     if not user:
-        # If the user does not exist, raise a custom error indicating that the user does not exist
         CustomValidations.custom_error(
             type="not_exist",
             loc="uuid",
@@ -527,11 +529,13 @@ def assign_user_permission(data: schema.UpdateUserPermission, organization: mode
             inp=data.uuid,
             ctx={"uuid": "exist"}
         )
-    
-    # Retrieve the organization user object from the database based on the user ID and organization ID
-    org_user = db.query(model.OrganizationUser).filter_by(user_id=user.id, org_id=organization.id).first()
+
+    # Get organization user object based on the user ID and organization ID
+    org_user = sql.query(model.OrganizationUser).filter_by(
+        user_id=user.id,
+        org_id=organization.id
+    ).first()
     if not org_user:
-        # If the organization user does not exist, raise a custom error indicating that the user does not exist in the organization
         CustomValidations.custom_error(
             type="not_exist",
             loc="uuid",
@@ -541,20 +545,28 @@ def assign_user_permission(data: schema.UpdateUserPermission, organization: mode
         )
 
     # Delete any existing role permissions for the organization user
-    db.query(model.OrganizationRolePermission).filter_by(user_id=org_user.id).delete()
+    sql.query(model.OrganizationRolePermission).filter_by(
+        user_id=org_user.id
+    ).delete()
 
     # Retrieve the requested permissions from the database
     codenames = data.permissions
-    permissions = db.query(model.OrganizationPermission).filter(model.OrganizationPermission.codename.in_(codenames)).all()
+    permissions = sql.query(model.OrganizationPermission).filter(
+        model.OrganizationPermission.codename.in_(codenames)
+    ).all()
 
-    # Create new role permissions for the organization user based on the retrieved permissions
-    role_permissions = [model.OrganizationRolePermission(user_id=org_user.id, permission_id=permission.id) for permission in permissions]
+    # Assign new permissions for the organization user
+    role_permissions = [
+        model.OrganizationRolePermission(
+            user_id=org_user.id,
+            permission_id=permission.id
+        )
+        for permission in permissions
+    ]
 
     # Add the new role permissions to the database
-    db.add_all(role_permissions)
-    db.commit()
-    db.refresh(org_user)
+    sql.add_all(role_permissions)
+    sql.commit()
+    sql.refresh(org_user)
 
     return org_user
-
-

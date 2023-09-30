@@ -1,128 +1,270 @@
-from fastapi import APIRouter, status, Query, Depends, UploadFile, File, Path
-from fastapi.responses import FileResponse
-from typing import List, Optional, Annotated
+"""
+model.py
+Author: Gourav Sahu
+Date: 23/09/2023
+"""
+
+from fastapi import APIRouter, Depends, Path, Query, status
 from sqlalchemy.orm import Session
-from database import get_db
-from dependencies import ALLOWED_EXTENSIONS, TEMPLATES
-import os
-from . import model, controller, schema
-from frontenduser import model as frontendModel
+
 from backenduser import model as backendModel
-from .middleware import check_feature, organization_exist, check_permission
+from database import get_db
+from frontenduser import model as frontendModel
 from frontenduser.middleware import authenticate_token
+
+from . import controller, model, schema
+from .middleware import check_feature, check_permission, organization_exist
 
 organizationRoutes = APIRouter()
 
-@organizationRoutes.get('/get-organizations', response_model=schema.BasicOrganizationList)
+@organizationRoutes.get(
+    path='/get-organizations',
+    response_model=schema.BasicOrganizationList,
+    dependencies=[Depends(authenticate_token)],
+    status_code=status,
+    description="Get list of all organizations.",
+    name="List organizations"
+)
 def get_all_organizations(
-    limit: int = Query(10, ge=1, le=100, description="number of results to retrieve"), 
-    offset : int = Query(0, ge=0, description="Number of results to skip."), 
-    db : Session = Depends(get_db),
-    authToken: frontendModel.FrontendToken = Depends(authenticate_token),
-): return controller.all_organizations(limit, offset, db)
+    limit: int = Query(10, ge=1, le=100, description="number of results to retrieve"),
+    offset : int = Query(0, ge=0, description="Number of results to skip."),
+    sql : Session = Depends(get_db),
+):
+    """
+    Retrieves a specified number of organizations from the database, 
+    along with the total count of organizations.
+    """
+    return controller.all_organizations(limit, offset, sql)
 
 
-@organizationRoutes.post('/create-organization', response_model=schema.ShowOrganization)
+@organizationRoutes.post(
+    path='/create-organization',
+    response_model=schema.ShowOrganization,
+    status_code=status.HTTP_201_CREATED,
+    description="Create a new organization.",
+    name="Create organization"
+)
 def create_organization(
     data: schema.CreateOrganization,
-    db : Session = Depends(get_db), 
-    authToken: frontendModel.FrontendToken = Depends(authenticate_token),
+    sql : Session = Depends(get_db),
+    auth_token: frontendModel.FrontendToken = Depends(authenticate_token),
     feature: backendModel.SubscriptionFeature = Depends(check_feature("create_organization")),
-): return controller.create_organization(data, db, authToken, feature)
+):
+    """
+    Retrieves a specified number of organizations from the database, 
+    along with the total count of organizations.
+    """
+    return controller.create_organization(data, sql, auth_token, feature)
 
 
-@organizationRoutes.post('/register', response_model=schema.ShowOrgUser)
+@organizationRoutes.post(
+    path='/register',
+    response_model=schema.ShowOrgUser,
+    status_code=status.HTTP_201_CREATED,
+    description="Apply registration in a organization.",
+    name="Register in organization"
+)
 def register_to_organization(
     data: schema.OrgUserRegister,
-    db : Session = Depends(get_db), 
-    authToken: frontendModel.FrontendToken = Depends(authenticate_token),
-): return controller.register_to_organization(data, db, authToken)
+    sql : Session = Depends(get_db),
+    auth_token: frontendModel.FrontendToken = Depends(authenticate_token),
+):
+    """
+    Registers a user to an organization.
+    """
+    return controller.register_to_organization(data, sql, auth_token)
 
 
-@organizationRoutes.get('/users', response_model=schema.ShowOrgUserList)
+@organizationRoutes.get(
+    path='/users',
+    response_model=schema.ShowOrgUserList,
+    dependencies=[
+        Depends(authenticate_token),
+        Depends(check_permission(["read_user"]))
+    ],
+    status_code=status.HTTP_200_OK,
+    description="Fetch all the users in the organization.",
+    name="List users"
+)
 def get_all_users(
-    limit: int = Query(10, ge=1, le=100, description="number of results to retrieve"), 
-    offset : int = Query(0, ge=0, description="Number of results to skip."), 
-    db : Session = Depends(get_db), 
-    authToken: frontendModel.FrontendToken = Depends(authenticate_token),
+    limit: int = Query(10, ge=1, le=100, description="number of results to retrieve"),
+    offset : int = Query(0, ge=0, description="Number of results to skip."),
+    sql : Session = Depends(get_db),
     organization: backendModel.SubscriptionFeature = Depends(organization_exist),
-    have_permission: list[str] = Depends(check_permission(["read_user"])),
-): return controller.get_all_users(limit, offset, organization, db)
+):
+    """
+    Retrieves a specified number of users belonging to a specific organization, 
+    along with the total count of users.
+    """
+    return controller.get_all_users(limit, offset, organization, sql)
 
 
-@organizationRoutes.get('/users/{user_id}', response_model=schema.ShowOrgUser)
+@organizationRoutes.get(
+    path='/users/{user_id}',
+    response_model=schema.ShowOrgUser,
+    dependencies=[
+        Depends(authenticate_token),
+        Depends(check_permission(["read_user"]))
+    ],
+    status_code=status.HTTP_200_OK,
+    description="Get all the details of a user.",
+    name="User details"
+)
 def get_user_details(
-    user_id : str = Path(description="UUID of the frontend user to retrieve."), 
-    db : Session = Depends(get_db), 
-    authToken: frontendModel.FrontendToken = Depends(authenticate_token),
+    user_id : str = Path(description="UUID of the frontend user to retrieve."),
+    sql : Session = Depends(get_db),
     organization: backendModel.SubscriptionFeature = Depends(organization_exist),
-    have_permission: list[str] = Depends(check_permission(["read_user"])),
-): return controller.get_user_details(user_id, organization, db)
+):
+    """
+    Retrieves the details of a user in an organization based on the user's UUID.
+    """
+    return controller.get_user_details(user_id, organization, sql)
 
 
-@organizationRoutes.get('/roles', response_model=schema.ShowOrgRoleList)
+@organizationRoutes.get(
+    path='/roles',
+    response_model=schema.ShowOrgRoleList,
+    dependencies=[
+        Depends(authenticate_token),
+        Depends(check_permission(["read_role"]))
+    ],
+    status_code=status.HTTP_200_OK,
+    description="Fetch all the roles in an organization.",
+    name="List roles"
+)
 def get_all_roles(
-    limit: int = Query(10, ge=1, le=100, description="number of results to retrieve"), 
-    offset : int = Query(0, ge=0, description="Number of results to skip."), 
-    db : Session = Depends(get_db), 
-    authToken: frontendModel.FrontendToken = Depends(authenticate_token),
+    limit: int = Query(10, ge=1, le=100, description="number of results to retrieve"),
+    offset : int = Query(0, ge=0, description="Number of results to skip."),
+    sql : Session = Depends(get_db),
     organization: backendModel.SubscriptionFeature = Depends(organization_exist),
-    have_permission: list[str] = Depends(check_permission(["read_role"])),
-): return controller.get_all_roles(limit, offset, organization, db)
+):
+    """
+    Retrieves a specified number of roles belonging to a specific organization,
+    along with the total count of roles.
+    """
+    return controller.get_all_roles(limit, offset, organization, sql)
 
 
-@organizationRoutes.get('/roles/{role_id}', response_model=schema.ShowOrgRole)
+@organizationRoutes.get(
+    path='/roles/{role_id}',
+    response_model=schema.ShowOrgRole,
+    dependencies=[
+        Depends(authenticate_token),
+        Depends(check_permission(["read_role"]))
+    ],
+    status_code=status.HTTP_200_OK,
+    description="Get all the details of a role.",
+    name="Role details"
+)
 def get_role_details(
-    role_id : str = Path(description="UUID of the role to retrieve."), 
-    db : Session = Depends(get_db), 
-    authToken: frontendModel.FrontendToken = Depends(authenticate_token),
+    role_id : str = Path(description="UUID of the role to retrieve."),
+    sql : Session = Depends(get_db),
     organization: backendModel.SubscriptionFeature = Depends(organization_exist),
-    have_permission: list[str] = Depends(check_permission(["read_role"])),
-): return controller.get_role_details(role_id, organization, db)
+):
+    """
+    Retrieves the details of a role in an organization based on the role's UUID.
+    """
+    return controller.get_role_details(role_id, organization, sql)
 
 
-@organizationRoutes.get('/permissions', response_model=schema.BasicOrgPermission, status_code=status.HTTP_200_OK)
+@organizationRoutes.get(
+    path='/permissions',
+    response_model=schema.BasicOrgPermission,
+    status_code=status.HTTP_200_OK,
+    description="Fetch all the permissions avilable for organization.",
+    name="List permissions"
+)
 def get_all_permissions(
-    db : Session = Depends(get_db), 
-): return controller.get_all_permissions(db)
+    sql : Session = Depends(get_db),
+):
+    """
+    Retrieves all the organization permissions from the database.
+    """
+    return controller.get_all_permissions(sql)
 
 
-@organizationRoutes.post('/create-role', response_model=schema.ShowOrgRole, status_code=status.HTTP_201_CREATED)
+@organizationRoutes.post(
+    path='/create-role',
+    response_model=schema.ShowOrgRole,
+    dependencies=[Depends(check_permission(["create_role"]))],
+    status_code=status.HTTP_201_CREATED,
+    description="Create a new role in an organization.",
+    name="Create role"
+)
 def create_role(
-    data : schema.CreateRole, 
-    db : Session = Depends(get_db), 
-    authToken: frontendModel.FrontendToken = Depends(authenticate_token),
+    data : schema.CreateRole,
+    sql : Session = Depends(get_db),
+    auth_token: frontendModel.FrontendToken = Depends(authenticate_token),
     organization: backendModel.SubscriptionFeature = Depends(organization_exist),
-    have_permission: list[str] = Depends(check_permission(["create_role"])),
-): return controller.create_role(data, organization, authToken, db)
+):
+    """
+    Creates a new role for an organization in the database, 
+    performing validations to ensure the role does not already exist.
+    """
+    return controller.create_role(data, organization, auth_token, sql)
 
 
-@organizationRoutes.post('/update-role', response_model=schema.ShowOrgRole, status_code=status.HTTP_200_OK)
+@organizationRoutes.post(
+    path='/update-role',
+    response_model=schema.ShowOrgRole,
+    dependencies=[
+        Depends(authenticate_token),
+        Depends(check_permission(["update_role"]))
+    ],
+    status_code=status.HTTP_200_OK,
+    description="Update the details of a role in organization.",
+    name="Update role"
+)
 def update_role(
-    data : schema.UpdateRole, 
-    db : Session = Depends(get_db), 
-    authToken: frontendModel.FrontendToken = Depends(authenticate_token),
+    data : schema.UpdateRole,
+    sql : Session = Depends(get_db),
     organization: backendModel.SubscriptionFeature = Depends(organization_exist),
-    have_permission: list[str] = Depends(check_permission(["update_role"])),
-): return controller.update_role(data, organization, db)
+):
+    """
+    Updates the role of an organization.
+    """
+    return controller.update_role(data, organization, sql)
 
 
-@organizationRoutes.post('/assign-role', response_model=schema.ShowOrgUser, status_code=status.HTTP_200_OK)
+@organizationRoutes.post(
+    path='/assign-role',
+    response_model=schema.ShowOrgUser,
+    dependencies=[
+        Depends(authenticate_token),
+        Depends(check_permission(["update_role"]))
+    ],
+    status_code=status.HTTP_200_OK,
+    description="Assign a role to an organization user.",
+    name="Assign role"
+)
 def assign_role(
-    data : schema.AssignRole, 
-    db : Session = Depends(get_db), 
-    authToken: frontendModel.FrontendToken = Depends(authenticate_token),
+    data : schema.AssignRole,
+    sql : Session = Depends(get_db),
     organization: backendModel.SubscriptionFeature = Depends(organization_exist),
-    have_permission: list[str] = Depends(check_permission(["update_role"])),
-): return controller.assign_role(data, organization, db)
+):
+    """
+    Assigns a role to a user in an organization.
+    """
+    return controller.assign_role(data, organization, sql)
 
 
-@organizationRoutes.post('/assign-user-permission', response_model=schema.ShowOrgUser, status_code=status.HTTP_200_OK)
+@organizationRoutes.post(
+    path='/assign-user-permission',
+    response_model=schema.ShowOrgUser,
+    dependencies=[
+        Depends(authenticate_token),
+        Depends(check_permission(["update_role"]))
+    ],
+    status_code=status.HTTP_200_OK,
+    description="Assign individual permissions to an organization user.",
+    name="Assign permission - user"
+)
 def assign_user_permission(
-    data : schema.UpdateUserPermission, 
-    db : Session = Depends(get_db), 
-    authToken: frontendModel.FrontendToken = Depends(authenticate_token),
+    data : schema.UpdateUserPermission,
+    sql : Session = Depends(get_db),
     organization: model.Organization = Depends(organization_exist),
-    have_permission: list[str] = Depends(check_permission(["update_role"])),
-): return controller.assign_user_permission(data, organization, db)
-
+):
+    """
+    Assigns permissions to a user in an organization.
+    """
+    return controller.assign_user_permission(data, organization, sql)
