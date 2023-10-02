@@ -169,9 +169,9 @@ class CustomValidations():
     Contains static methods for performing custom validations on user input.
     """
     @staticmethod
-    def custom_error(
+    def raize_custom_error(
         status_code: int = status.HTTP_422_UNPROCESSABLE_ENTITY,
-        type: str = "",
+        error_type: str = "",
         loc: str = "",
         msg: str = "",
         inp: str = "",
@@ -183,7 +183,7 @@ class CustomValidations():
         detail = {
             "detail": [
                 {
-                    "type": type,
+                    "type": error_type,
                     "loc": ["body", loc],
                     "msg": msg,
                     "input": inp,
@@ -369,8 +369,8 @@ def generate_paypal_access_token():
 
     except requests.exceptions.HTTPError as http_error:
         # Handle HTTP-related errors (e.g., 404, 500)
-        CustomValidations.custom_error(
-            type="paypal_http_error",
+        CustomValidations.raize_custom_error(
+            error_type="paypal_http_error",
             loc="paypal",
             msg=str(http_error),
             inp="paypal",
@@ -379,8 +379,8 @@ def generate_paypal_access_token():
 
     except requests.exceptions.RequestException as req_error:
         # Handle network-related errors (e.g., connection timeout, DNS resolution error)
-        CustomValidations.custom_error(
-            type="paypal_network_error",
+        CustomValidations.raize_custom_error(
+            error_type="paypal_network_error",
             loc="paypal",
             msg=str(req_error),
             inp="paypal",
@@ -404,8 +404,8 @@ def convert_currency(currency: str):
     )
     conversion_json = conversion.json()
     if conversion.status_code == status.HTTP_404_NOT_FOUND or conversion_json["result"] == "error":
-        CustomValidations.custom_error(
-            type=conversion_json["error-type"],
+        CustomValidations.raize_custom_error(
+            error_type=conversion_json["error-type"],
             loc="currency",
             msg="Currency does not exist.",
             inp=currency,

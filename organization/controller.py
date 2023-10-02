@@ -55,8 +55,8 @@ def create_organization(
     ).count()
 
     if total_organizations >= org_quantity:
-        CustomValidations.custom_error(
-            type="limit_exceed",
+        CustomValidations.raize_custom_error(
+            error_type="limit_exceed",
             loc="organization",
             msg=f"Can not create more than '{org_quantity}' organizations.",
             inp=data.org_name,
@@ -68,8 +68,8 @@ def create_organization(
         org_name=data.org_name
     ).first()
     if existing_name:
-        CustomValidations.custom_error(
-            type="existing",
+        CustomValidations.raize_custom_error(
+            error_type="existing",
             loc="org_name",
             msg="Organization name already exists.",
             inp=data.org_name,
@@ -78,8 +78,8 @@ def create_organization(
 
     # Check if the registration type provided is allowed.
     if data.registration_type not in model.Organization.allowed_registration:
-        CustomValidations.custom_error(
-            type="invalid",
+        CustomValidations.raize_custom_error(
+            error_type="invalid",
             loc="registration_type",
             msg=f"Allowed values are {model.Organization.allowed_registration}",
             inp=data.registration_type,
@@ -91,8 +91,8 @@ def create_organization(
 
     # Check if the Google token provided is valid.
     if not creds or not creds.valid:
-        CustomValidations.custom_error(
-            type="Invalid",
+        CustomValidations.raize_custom_error(
+            error_type="Invalid",
             loc="gtoken",
             msg="Not a valid Google token.",
             inp=str(data.gtoken),
@@ -138,8 +138,8 @@ def register_to_organization(
     ).first()
 
     if not organization:
-        CustomValidations.custom_error(
-            type="not_exist",
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
             loc="org_uid",
             msg="Organization does not exist.",
             inp=str(data.org_uid),
@@ -147,9 +147,9 @@ def register_to_organization(
         )
 
     if organization.registration_type == "admin_only":
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            type="not_allowed",
+            error_type="not_allowed",
             loc="org_uid",
             msg="Organization does allow new registration.",
             inp=str(data.org_uid),
@@ -179,8 +179,8 @@ def register_to_organization(
     ).count()
 
     if total_users >= user_quantity:
-        CustomValidations.custom_error(
-            type="limit_exceed",
+        CustomValidations.raize_custom_error(
+            error_type="limit_exceed",
             loc="organization",
             msg=f"Can not add more than '{user_quantity}' users.",
             inp=data.org_uid,
@@ -195,8 +195,8 @@ def register_to_organization(
     ).first()
 
     if org_user:
-        CustomValidations.custom_error(
-            type="already_exist",
+        CustomValidations.raize_custom_error(
+            error_type="already_exist",
             loc="organization",
             msg="User already registered.",
             inp=data.org_uid,
@@ -252,8 +252,8 @@ def get_user_details(
     """
     user = sql.query(frontendModel.FrontendUser).filter_by(uuid=uuid).first()
     if not user:
-        CustomValidations.custom_error(
-            type="not_exist",
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
             loc="user_id",
             msg="User does not exist",
             inp=uuid,
@@ -263,8 +263,8 @@ def get_user_details(
         user_id=user.id, org_id=organization.id
     ).first()
     if not org_user:
-        CustomValidations.custom_error(
-            type="not_exist",
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
             loc="user_id",
             msg="User does not exist in organization",
             inp=uuid,
@@ -309,8 +309,8 @@ def get_role_details(
         ruid=role_id, org_id=organization.id
     ).first()
     if not role:
-        CustomValidations.custom_error(
-            type="not_exist",
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
             loc="role_id",
             msg="User does not exist",
             inp=role_id,
@@ -344,8 +344,8 @@ def create_role(
         role=data.role, org_id=organization.id
     ).first()
     if role:
-        CustomValidations.custom_error(
-            type="already_exist",
+        CustomValidations.raize_custom_error(
+            error_type="already_exist",
             loc="role",
             msg="Role already exists",
             inp=data.role,
@@ -397,8 +397,8 @@ def update_role(
 
     # If the role does not exist, raise a custom error
     if not role:
-        CustomValidations.custom_error(
-            type="not_exist",
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
             loc="role",
             msg="Role does not exist",
             inp=data.ruid,
@@ -410,8 +410,8 @@ def update_role(
         role=data.role, org_id=organization.id
     ).first()
     if exit_role:
-        CustomValidations.custom_error(
-            type="already_exist",
+        CustomValidations.raize_custom_error(
+            error_type="already_exist",
             loc="role",
             msg="Role already exists",
             inp=data.role,
@@ -463,8 +463,8 @@ def assign_role(
         org_id=organization.id
     ).first()
     if not role:
-        CustomValidations.custom_error(
-            type="not_exist",
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
             loc="role",
             msg="Role does not exist",
             inp=data.user_id,
@@ -476,8 +476,8 @@ def assign_role(
         uuid=data.user_id
     ).first()
     if not user:
-        CustomValidations.custom_error(
-            type="not_exist",
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
             loc="role",
             msg="Role does not exist",
             inp=data.user_id,
@@ -489,8 +489,8 @@ def assign_role(
         user_id=user.id, org_id=organization.id
     ).first()
     if not org_user:
-        CustomValidations.custom_error(
-            type="not_exist",
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
             loc="role",
             msg="Role does not exist",
             inp=data.role_id,
@@ -522,8 +522,8 @@ def assign_user_permission(
         uuid=data.uuid
     ).first()
     if not user:
-        CustomValidations.custom_error(
-            type="not_exist",
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
             loc="uuid",
             msg="user does not exist",
             inp=data.uuid,
@@ -536,8 +536,8 @@ def assign_user_permission(
         org_id=organization.id
     ).first()
     if not org_user:
-        CustomValidations.custom_error(
-            type="not_exist",
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
             loc="uuid",
             msg="user does not exist in the organization",
             inp=data.ruid,
@@ -608,8 +608,8 @@ def create_project(
     ).first()
 
     if exist_name:
-        CustomValidations.custom_error(
-            type="already_exist",
+        CustomValidations.raize_custom_error(
+            error_type="already_exist",
             loc="project_name",
             msg="Project name already exists",
             inp=data.project_name,
@@ -641,8 +641,8 @@ def update_project(data: schema.UpdateProject, organization: model.Organization,
     """
     project = sql.query(model.Project).filter_by(puid=data.project_id, org_id=organization.id).first()
     if not project:
-        CustomValidations.custom_error(
-            type="not_exist",
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
             loc="project_id",
             msg="Project does not exist",
             inp=data.project_id,

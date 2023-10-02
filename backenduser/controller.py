@@ -40,12 +40,12 @@ def user_details(user_id: str, sql: Session):
     Retrieves all details of a user based on the provided user_id.
 
     Raises:
-        custom_error: If the user does not exist in the database.
+        raize_custom_error: If the user does not exist in the database.
     """
     user = sql.query(model.BackendUser).filter_by(uuid=user_id).first()
     if not user:
-        CustomValidations.custom_error(
-            type="not_exist",
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
             loc="user_id",
             msg="User does not exist",
             inp=user_id,
@@ -66,8 +66,8 @@ def create_user(user: schema.RegisterUser, sql: Session):
     if existing_user:
         # If a user with the same username exists, raise an error
         if user.username == existing_user.username :
-            CustomValidations.custom_error(
-                type="exist",
+            CustomValidations.raize_custom_error(
+                error_type="exist",
                 loc="username",
                 msg="Username already in use",
                 inp=user.username,
@@ -76,8 +76,8 @@ def create_user(user: schema.RegisterUser, sql: Session):
 
         # If a user with the same email exists, raise an error
         if user.email == existing_user.email :
-            CustomValidations.custom_error(
-                type="exist",
+            CustomValidations.raize_custom_error(
+                error_type="exist",
                 loc="email",
                 msg="Email already in use",
                 inp=user.email,
@@ -90,8 +90,8 @@ def create_user(user: schema.RegisterUser, sql: Session):
         is_deleted=False
     ).first()
     if not role:
-        CustomValidations.custom_error(
-            type="not_exist",
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
             loc="role",
             msg="Role does not exist",
             inp=user.role_id,
@@ -116,9 +116,9 @@ def create_user(user: schema.RegisterUser, sql: Session):
     sql.refresh(new_user)
 
     if not BackendEmail.send_email_verification_token(new_user):
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_417_EXPECTATION_FAILED,
-            type="Internal",
+            error_type="Internal",
             loc="email",
             msg="Cannot send email.",
             inp=user.email,
@@ -188,9 +188,9 @@ def update_user_role(
     Updates the role and status of a user in the database based on the provided data.
     """
     if auth_token.user.uuid==data.user_id:
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_403_FORBIDDEN,
-            type="self_update",
+            error_type="self_update",
             loc="user_id",
             msg="Can not update self.",
             inp=data.user_id,
@@ -199,8 +199,8 @@ def update_user_role(
 
     user = sql.query(model.BackendUser).filter_by(uuid=data.user_id).first()
     if not user:
-        CustomValidations.custom_error(
-            type="not_exist",
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
             loc="user_id",
             msg="No user found.",
             inp=data.user_id,
@@ -210,8 +210,8 @@ def update_user_role(
     if data.role_id:
         role = sql.query(model.BackendRole).filter_by(ruid=data.role_id).first()
         if not role:
-            CustomValidations.custom_error(
-                type="not_exist",
+            CustomValidations.raize_custom_error(
+                error_type="not_exist",
                 loc="role_id",
                 msg="Role not found",
                 inp=data.role_id,
@@ -240,9 +240,9 @@ def verify_email(token: str, sql: Session):
     ).first()
 
     if not user:
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_403_FORBIDDEN,
-            type="not_exist",
+            error_type="not_exist",
             loc="token",
             msg="Invalid verification token",
             inp=token,
@@ -250,9 +250,9 @@ def verify_email(token: str, sql: Session):
         )
 
     if not user.is_active:
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_403_FORBIDDEN,
-            type="deactive",
+            error_type="deactive",
             loc="account",
             msg="Your account is deactivated!",
             inp=token,
@@ -278,9 +278,9 @@ def create_auth_token(request: schema.LoginUser, sql: Session):
 
     # If the user does not exist, raise an HTTPException
     if not user:
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_403_FORBIDDEN,
-            type="verification_failed",
+            error_type="verification_failed",
             loc="username_or_email",
             msg="Email/Username is wrong!",
             inp=request.username_or_email,
@@ -289,9 +289,9 @@ def create_auth_token(request: schema.LoginUser, sql: Session):
 
     # If it does not match the stored password, raise an HTTPException
     if not Hash.verify(user.password, request.password):
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_403_FORBIDDEN,
-            type="verification_failed",
+            error_type="verification_failed",
             loc="password",
             msg="Password is wrong!",
             inp=request.password,
@@ -300,17 +300,17 @@ def create_auth_token(request: schema.LoginUser, sql: Session):
 
     # Check if user's email is not verified, raise an HTTPException
     if not user.email_verified_at:
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_403_FORBIDDEN,
-            type="verification_required",
+            error_type="verification_required",
             msg="Verify your email first!",
         )
 
     # Check if the user's account is not active, raise an HTTPException
     if not user.is_active:
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_403_FORBIDDEN,
-            type="suspended",
+            error_type="suspended",
             msg="Your account is suspended!",
         )
 
@@ -325,9 +325,9 @@ def create_auth_token(request: schema.LoginUser, sql: Session):
     ).count()
 
     if tokens_count >= TOKEN_LIMIT:
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_403_FORBIDDEN,
-            type="limit_exceed",
+            error_type="limit_exceed",
             msg=f"Login limit exceed (${TOKEN_LIMIT}).",
         )
 
@@ -356,9 +356,9 @@ def send_verification_mail(email: str, sql: Session):
 
     # If the user does not exist, raise an exception indicating that no account was found
     if not user:
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_403_FORBIDDEN,
-            type="not_exist",
+            error_type="not_exist",
             loc="email",
             msg="No account found.",
             inp=email,
@@ -367,9 +367,9 @@ def send_verification_mail(email: str, sql: Session):
 
     # If the user is not active, raise an exception indicating that the account is suspended
     if not user.is_active:
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_403_FORBIDDEN,
-            type="suspended",
+            error_type="suspended",
             msg="Your account is suspended!"
         )
 
@@ -381,9 +381,9 @@ def send_verification_mail(email: str, sql: Session):
     # Send an email with the verification token
     if not BackendEmail.send_forget_password_token(user):
         # If the email cannot be sent, raise an exception
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_417_EXPECTATION_FAILED,
-            type="mail_sent_error",
+            error_type="mail_sent_error",
             msg="Cannot send email."
         )
     return True
@@ -399,9 +399,9 @@ def create_new_password(request: schema.ForgotPassword, sql: Session):
     ).first()
 
     if not user:
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_403_FORBIDDEN,
-            type="expired",
+            error_type="expired",
             loc="token",
             msg="Token is expired!",
             inp=request.token,
@@ -409,16 +409,16 @@ def create_new_password(request: schema.ForgotPassword, sql: Session):
         )
 
     if not user.email_verified_at:
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_403_FORBIDDEN,
-            type="verification_required",
+            error_type="verification_required",
             msg="Verify your email first!",
         )
 
     if not user.is_active:
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_403_FORBIDDEN,
-            type="suspended",
+            error_type="suspended",
             msg="Your account is suspended!",
         )
 
@@ -437,8 +437,8 @@ def create_permission(request: schema.BasePermission, sql: Session):
         codename=request.codename
     ).first()
     if existing_permission:
-        CustomValidations.custom_error(
-            type="exist",
+        CustomValidations.raize_custom_error(
+            error_type="exist",
             loc="codename",
             msg="Permission already exists!",
             inp=request.codename,
@@ -468,8 +468,8 @@ def add_role(request: schema.CreateRole, user: model.BackendToken, sql: Session)
     """
     role = sql.query(model.BackendRole).filter_by(role=request.role).first()
     if role:
-        CustomValidations.custom_error(
-            type="already_exist",
+        CustomValidations.raize_custom_error(
+            error_type="already_exist",
             loc="role",
             msg="Role already exists",
             inp=request.role,
@@ -496,9 +496,9 @@ def assign_permissions(
     Assigns permissions to a role in the database.
     """
     if auth_token.user.role.ruid==request.ruid:
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_403_FORBIDDEN,
-            type="self_update",
+            error_type="self_update",
             loc="role_id",
             msg="Can not update self.",
             inp=request.ruid,
@@ -508,8 +508,8 @@ def assign_permissions(
     role = sql.query(model.BackendRole).filter_by(ruid=request.ruid, is_deleted=False).first()
 
     if not role:
-        CustomValidations.custom_error(
-            type="not_exist",
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
             loc="ruid",
             msg="Role not found!",
             inp=request.ruid,
@@ -565,8 +565,8 @@ def subscription_plan_details(suid: str, sql: Session):
     """
     subscription = sql.query(model.Subscription).filter_by(suid=suid).first()
     if not subscription:
-        CustomValidations.custom_error(
-            type="not_exist",
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
             loc="suid",
             msg="Subscription does not exist",
             inp=suid,
@@ -585,8 +585,8 @@ def add_subscription(
     """
     # Check if a subscription plan with the same name already exists in the database
     if sql.query(model.Subscription).filter_by(name=data.name).first():
-        CustomValidations.custom_error(
-            type="exist",
+        CustomValidations.raize_custom_error(
+            error_type="exist",
             loc="name",
             msg="Name already exists!",
             inp=data.name,
@@ -639,9 +639,9 @@ def update_subscription_plan(data: schema.UpdateSubscription, sql: Session):
 
     # If the subscription does not exist, raise a custom error
     if not subscription:
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_403_FORBIDDEN,
-            type="not_exist",
+            error_type="not_exist",
             loc="suid",
             msg="Subscription does not exist!",
             inp=data.suid,
@@ -708,9 +708,9 @@ def delete_subscription_plan(suid: str, is_deleted: bool, sql: Session):
 
     # If the subscription does not exist, raise a custom error
     if not subscription:
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_403_FORBIDDEN,
-            type="not_exist",
+            error_type="not_exist",
             loc="suid",
             msg="Subscription does not exist!",
             inp=suid,
@@ -756,13 +756,13 @@ def coupon_details(coupon_code: str, sql: Session):
     Retrieves details of a coupon based on the provided coupon code.
 
     Raises:
-        CustomValidations.custom_error: If no coupon is found with the provided coupon code.
+        CustomValidations.raize_custom_error: If no coupon is found with the provided coupon code.
     """
     coupon = sql.query(model.Coupon).filter_by(coupon_code=coupon_code, is_active=True).first()
 
     if not coupon:
-        CustomValidations.custom_error(
-            type="not_exist",
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
             loc="coupon_code",
             msg="Coupon does not exist",
             inp=coupon_code,

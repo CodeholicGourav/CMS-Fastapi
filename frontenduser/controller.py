@@ -38,8 +38,8 @@ def register_user(data: schema.RegisterUser, sql: Session):
     if existing_user:
         # raise a custom error indicating that the username is already in use
         if data.username == existing_user.username:
-            CustomValidations.custom_error(
-                type="exist",
+            CustomValidations.raize_custom_error(
+                error_type="exist",
                 loc="username",
                 msg="Username already in use",
                 inp=data.username,
@@ -48,8 +48,8 @@ def register_user(data: schema.RegisterUser, sql: Session):
 
         # raise a custom error indicating that the email is already in use
         if data.email == existing_user.email:
-            CustomValidations.custom_error(
-                type="exist",
+            CustomValidations.raize_custom_error(
+                error_type="exist",
                 loc="email",
                 msg="Email already in use",
                 inp=data.email,
@@ -81,8 +81,8 @@ def register_user(data: schema.RegisterUser, sql: Session):
             code=data.timezone
         ).first()
         if not exist_timezone:
-            CustomValidations.custom_error(
-                type="not_exist",
+            CustomValidations.raize_custom_error(
+                error_type="not_exist",
                 loc="timezone",
                 msg="Timezone does not exist.",
                 inp=data.timezone,
@@ -98,9 +98,9 @@ def register_user(data: schema.RegisterUser, sql: Session):
     # Send an email verification token to the new user
     if not FrontendEmail.send_email_verification_token(new_user):
         # If the email fails to send, raise a error
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_417_EXPECTATION_FAILED,
-            type="Internal",
+            error_type="Internal",
             loc="email",
             msg="Cannot send email.",
             inp=data.email,
@@ -126,12 +126,12 @@ def user_details(user_id: str, sql: Session):
     Retrieves the details of a frontend user based on the provided user ID.
         
     Raises:
-        custom_error: If the user does not exist.
+        raize_custom_error: If the user does not exist.
     """
     user = sql.query(model.FrontendUser).filter_by(uuid=user_id).first()
     if not user:
-        CustomValidations.custom_error(
-            type="not_exist",
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
             loc="user_id",
             msg="User does not exist",
             inp=user_id,
@@ -147,8 +147,8 @@ def update_profile_photo(file: UploadFile, auth_token: model.FrontendToken, sql:
     user = auth_token.user
     # Check if the file is an allowed image type
     if not allowed_file(file.filename):
-        CustomValidations.custom_error(
-            type="invalid",
+        CustomValidations.raize_custom_error(
+            error_type="invalid",
             loc= "image",
             msg= f"Allowed extensions are {ALLOWED_EXTENSIONS}",
             inp= file.filename,
@@ -157,8 +157,8 @@ def update_profile_photo(file: UploadFile, auth_token: model.FrontendToken, sql:
 
     # Check file size
     if file.size > MAX_FILE_SIZE_BYTES:
-        CustomValidations.custom_error(
-            type="invalid",
+        CustomValidations.raize_custom_error(
+            error_type="invalid",
             loc= "image",
             msg= f"Maximum image size should be {MAX_FILE_SIZE_BYTES} bytes" ,
             inp= f"{file.size} bytes",
@@ -187,8 +187,8 @@ def update_user(data: schema.UpdateUser, sql: Session):
     """
     user = sql.query(model.FrontendUser).filter_by(uuid=data.user_id).first()
     if not user:
-        CustomValidations.custom_error(
-            type="not_exist",
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
             loc="user_id",
             msg="No user found.",
             inp=data.user_id,
@@ -214,9 +214,9 @@ def verify_email(token: str, sql: Session):
     ).first()
 
     if not user:
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_403_FORBIDDEN,
-            type="not_exist",
+            error_type="not_exist",
             loc= "token",
             msg= "Invalid verification token",
             inp= token,
@@ -224,9 +224,9 @@ def verify_email(token: str, sql: Session):
         )
 
     if not user.is_active:
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_403_FORBIDDEN,
-            type="deactive",
+            error_type="deactive",
             loc= "account",
             msg= "Your account is deactivated!",
             inp= token,
@@ -249,9 +249,9 @@ def create_auth_token(request: schema.LoginUser, sql: Session):
     ).filter_by(is_deleted=False).first()
 
     if not user:
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_403_FORBIDDEN,
-            type="verification_failed",
+            error_type="verification_failed",
             loc="username_or_email",
             msg="Email/Username is wrong!",
             inp=request.username_or_email,
@@ -259,9 +259,9 @@ def create_auth_token(request: schema.LoginUser, sql: Session):
         )
 
     if not Hash.verify(user.password, request.password):
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_403_FORBIDDEN,
-            type="verification_failed",
+            error_type="verification_failed",
             loc="password",
             msg="Password is wrong!",
             inp=request.password,
@@ -269,16 +269,16 @@ def create_auth_token(request: schema.LoginUser, sql: Session):
         )
 
     if not user.email_verified_at:
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_403_FORBIDDEN,
-            type="verification_required",
+            error_type="verification_required",
             msg="Verify your email first!",
         )
 
     if not user.is_active:
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_403_FORBIDDEN,
-            type="suspended",
+            error_type="suspended",
             msg="Your account is suspended!",
         )
 
@@ -290,9 +290,9 @@ def create_auth_token(request: schema.LoginUser, sql: Session):
     # Count the number of active tokens for the user.
     tokens_count = sql.query(model.FrontendToken).filter_by(user_id=user.id).count()
     if tokens_count >= TOKEN_LIMIT:
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_403_FORBIDDEN,
-            type="limit_exceed",
+            error_type="limit_exceed",
             msg=f"Login limit exceed (${TOKEN_LIMIT}).",
         )
 
@@ -335,8 +335,8 @@ def send_verification_mail(email: str, sql: Session):
     Sends a verification token in an email for the forget password feature.
 
     Raises:
-        custom_error: If no account is found or the account is suspended.
-        custom_error: If the email fails to send.
+        raize_custom_error: If no account is found or the account is suspended.
+        raize_custom_error: If the email fails to send.
     """
     user = sql.query(model.FrontendUser).filter_by(
         email=email,
@@ -344,9 +344,9 @@ def send_verification_mail(email: str, sql: Session):
     ).first()
 
     if not user:
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_403_FORBIDDEN,
-            type="not_exist",
+            error_type="not_exist",
             loc="email",
             msg="No account found.",
             inp=email,
@@ -354,9 +354,9 @@ def send_verification_mail(email: str, sql: Session):
         )
 
     if not user.is_active:
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_403_FORBIDDEN,
-            type="suspended",
+            error_type="suspended",
             msg="Your account is suspended!"
         )
 
@@ -365,9 +365,9 @@ def send_verification_mail(email: str, sql: Session):
     sql.refresh(user)
 
     if not FrontendEmail.send_forget_password_token(user):
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_417_EXPECTATION_FAILED,
-            type="mail_sent_error",
+            error_type="mail_sent_error",
             msg="Cannot send email."
         )
     return {"message": "Email sent successfully"}
@@ -385,9 +385,9 @@ def create_new_password(request: schema.ForgotPassword, sql: Session):
 
     # If the user is not found, raise a custom error
     if not user:
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_403_FORBIDDEN,
-            type="expired",
+            error_type="expired",
             loc="token",
             msg="Token is expired!",
             inp=request.token,
@@ -396,17 +396,17 @@ def create_new_password(request: schema.ForgotPassword, sql: Session):
 
     # If the user's email is not verified, raise a custom error
     if not user.email_verified_at:
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_403_FORBIDDEN,
-            type="verification_required",
+            error_type="verification_required",
             msg="Verify your email first!",
         )
 
     # If the user's account is not active, raise a custom error
     if not user.is_active:
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_403_FORBIDDEN,
-            type="suspended",
+            error_type="suspended",
             msg="Your account is suspended!",
         )
 
@@ -436,8 +436,8 @@ def update_profile(request: schema.UpdateProfile, auth_token: model.FrontendToke
             username=request.username
         ).first()
         if existing_user:
-            CustomValidations.custom_error(
-                type="exist",
+            CustomValidations.raize_custom_error(
+                error_type="exist",
                 loc="username",
                 msg="Username already in use",
                 inp=request.username,
@@ -450,8 +450,8 @@ def update_profile(request: schema.UpdateProfile, auth_token: model.FrontendToke
             code=request.timezone
         ).first()
         if not exist_timezone:
-            CustomValidations.custom_error(
-                type="not_exist",
+            CustomValidations.raize_custom_error(
+                error_type="not_exist",
                 loc="timezone",
                 msg="Timezone does not exist.",
                 inp=request.timezone,
@@ -503,8 +503,8 @@ def stripe_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, 
     subscription = backendusercontroller.subscription_plan_details(request.suid, sql)
 
     if not subscription or subscription.is_deleted:
-        CustomValidations.custom_error(
-            type="not_exist",
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
             loc="suid",
             msg="Subscription does not exist.",
             inp=request.suid,
@@ -535,8 +535,8 @@ def stripe_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, 
             sql
         )
         if not coupon or not coupon.is_active:
-            CustomValidations.custom_error(
-                type="not_exist",
+            CustomValidations.raize_custom_error(
+                error_type="not_exist",
                 loc="coupon",
                 msg="Coupon does not exist.",
                 inp=request.coupon_code,
@@ -568,8 +568,8 @@ def stripe_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, 
             }
         )
     except Exception as error:
-        CustomValidations.custom_error(
-            type="stripe_error",
+        CustomValidations.raize_custom_error(
+            error_type="stripe_error",
             loc="currency",
             msg=str(error),
             inp=request.currency,
@@ -664,8 +664,8 @@ def paypal_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, 
     subscription = backendusercontroller.subscription_plan_details(request.suid, sql)
 
     if not subscription or subscription.is_deleted:
-        CustomValidations.custom_error(
-            type="not_exist",
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
             loc="suid",
             msg="Subscription does not exist.",
             inp=request.suid,
@@ -696,8 +696,8 @@ def paypal_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, 
             sql
         )
         if not coupon or not coupon.is_active:
-            CustomValidations.custom_error(
-                type="not_exist",
+            CustomValidations.raize_custom_error(
+                error_type="not_exist",
                 loc="coupon",
                 msg="Coupon does not exist.",
                 inp=request.coupon_code,
@@ -738,8 +738,8 @@ def paypal_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, 
         paypal = response.json()
 
     except requests.exceptions.RequestException as error:
-        CustomValidations.custom_error(
-            type="paypal_error",
+        CustomValidations.raize_custom_error(
+            error_type="paypal_error",
             loc="payment gateway",
             msg=str(error),
             inp="paypal",
@@ -747,8 +747,8 @@ def paypal_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, 
         )
 
     if 'id' not in paypal:
-        CustomValidations.custom_error(
-            type=paypal['name'],
+        CustomValidations.raize_custom_error(
+            error_type=paypal['name'],
             loc="paypal",
             msg=paypal['message'],
             inp='paypal',
@@ -836,8 +836,8 @@ def razorpay_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken
     subscription = backendusercontroller.subscription_plan_details(request.suid, sql)
 
     if not subscription or subscription.is_deleted:
-        CustomValidations.custom_error(
-            type="not_exist",
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
             loc="suid",
             msg="Subscription does not exist.",
             inp=request.suid,
@@ -864,8 +864,8 @@ def razorpay_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken
     if request.coupon_code:
         coupon = backendusercontroller.coupon_details(request.coupon_code, sql)
         if not coupon or not coupon.is_active:
-            CustomValidations.custom_error(
-                type="not_exist",
+            CustomValidations.raize_custom_error(
+                error_type="not_exist",
                 loc="coupon",
                 msg="Coupon does not exist.",
                 inp=request.coupon_code,
@@ -898,8 +898,8 @@ def razorpay_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken
             }
         )
     except Exception as error:
-        CustomValidations.custom_error(
-            type="stripe_error",
+        CustomValidations.raize_custom_error(
+            error_type="stripe_error",
             loc="currency",
             msg=str(error),
             inp=request.currency,

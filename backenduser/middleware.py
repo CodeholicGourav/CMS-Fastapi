@@ -27,9 +27,9 @@ async def authenticate_token(
     user_token = sql.query(BackendToken).filter_by(token = authtoken).first()
 
     if not user_token:
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            type="Invalid",
+            error_type="Invalid",
             loc="authtoken",
             msg="Invalid auth token",
             inp=authtoken,
@@ -37,9 +37,9 @@ async def authenticate_token(
         )
 
     if not user_token.user or not user_token.user.is_active or user_token.user.is_deleted:
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            type="Invalid",
+            error_type="Invalid",
             loc="authtoken",
             msg="Invalid auth token",
             inp=authtoken,
@@ -47,9 +47,9 @@ async def authenticate_token(
         )
 
     if datetime.utcnow() > user_token.expire_at:
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            type="expired",
+            error_type="expired",
             loc="authtoken",
             msg="Token is expired, try login again.",
             inp=authtoken,
@@ -76,9 +76,9 @@ def check_permission(codenames: list[str]):
         user_token = sql.query(BackendToken).filter_by(token=authtoken).first()
 
         if not user_token or not user_token.user:
-            CustomValidations.custom_error(
+            CustomValidations.raize_custom_error(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                type="expired",
+                error_type="expired",
                 loc="authtoken",
                 msg="Token is expired, try login again.",
                 inp=authtoken,
@@ -92,9 +92,9 @@ def check_permission(codenames: list[str]):
         user_permission_codenames = [item.permission.codename for item in user_permissions]
 
         if not all(codename in user_permission_codenames for codename in codenames):
-            CustomValidations.custom_error(
+            CustomValidations.raize_custom_error(
                 status_code=status.HTTP_403_FORBIDDEN,
-                type="unauthenticated",
+                error_type="unauthenticated",
                 loc="permission",
                 msg="Permission not granted.",
                 inp=", ".join(codenames),

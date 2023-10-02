@@ -408,7 +408,7 @@ class Project(Base):
         default=datetime.utcnow,
         onupdate=datetime.utcnow
     )
-    
+
     creator = relationship(
         "FrontendUser",
         foreign_keys=created_by
@@ -463,6 +463,26 @@ class Task(Base):
         Integer,
         ForeignKey("projects.id")
     )
+    event_id = Column(
+        String(100),
+        nullable=True
+    )
+    estimate_hours = Column(
+        Integer,
+        comment="in hours"
+    )
+    deadline = Column(
+        DateTime,
+        nullable=True
+    )
+    start_date = Column(
+        DateTime,
+        nullable=True
+    )
+    end_date = Column(
+        DateTime,
+        nullable=True
+    )
     is_active = Column(
         Boolean,
         default=True
@@ -490,9 +510,9 @@ class Task(Base):
         return (
             "<Project("
                 f"id={self.id}, "
-                f"project_name='{self.project_name}'"
+                f"project_name='{self.task_name}'"
                 f"created_by='{self.created_by}'"
-                f"org_id='{self.org_id}'"
+                f"org_id='{self.project_id}'"
                 f"is_active='{self.is_active}'"
                 f"is_deleted='{self.is_deleted}'"
                 f"created_at='{self.created_at}'"
@@ -500,4 +520,4 @@ class Task(Base):
             ")>")
 
     def __str__(self):
-        return self.project_name
+        return self.task_name

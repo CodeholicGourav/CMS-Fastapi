@@ -38,9 +38,9 @@ def check_feature(feature_code: str):
         ).first()
 
         if not user_token or not user_token.user:
-            CustomValidations.custom_error(
+            CustomValidations.raize_custom_error(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                type="expired",
+                error_type="expired",
                 loc="authtoken",
                 msg="Token is expired, try login again.",
                 inp=authtoken,
@@ -48,9 +48,9 @@ def check_feature(feature_code: str):
             )
 
         if not user_token.user.active_plan:
-            CustomValidations.custom_error(
+            CustomValidations.raize_custom_error(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                type="unauthenticated",
+                error_type="unauthenticated",
                 loc="subscription",
                 msg="No active subscription.",
                 inp=authtoken,
@@ -63,9 +63,9 @@ def check_feature(feature_code: str):
         ).first()
 
         if not subscription_user or subscription_user.expiry<=datetime.utcnow():
-            CustomValidations.custom_error(
+            CustomValidations.raize_custom_error(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                type="unauthenticated",
+                error_type="unauthenticated",
                 loc="subscription",
                 msg="No active subscription.",
                 inp=authtoken,
@@ -80,9 +80,9 @@ def check_feature(feature_code: str):
             if feature.feature.feature_code == feature_code:
                 return feature
 
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            type="unauthenticated",
+            error_type="unauthenticated",
             loc="feature",
             msg="feature not available.",
             inp=authtoken,
@@ -109,8 +109,8 @@ def organization_exist(
     ).first()
 
     if not organization:
-        CustomValidations.custom_error(
-            type="not_exist",
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
             loc="org_uid",
             msg="Organization does not exist.",
             inp=str(orguid),
@@ -125,9 +125,9 @@ def organization_exist(
     ).first()
 
     if not subscription_user or subscription_user.expiry<=datetime.utcnow():
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_403_FORBIDDEN,
-            type="unauthenticated",
+            error_type="unauthenticated",
             loc="subscription",
             msg="No active subscription.",
             inp=str(),
@@ -161,8 +161,8 @@ def check_permission(codenames: list[str]):
         organization = sql.query(model.Organization).filter_by(orguid=orguid).first()
 
         if not organization:
-            CustomValidations.custom_error(
-                type="not_exist",
+            CustomValidations.raize_custom_error(
+                error_type="not_exist",
                 loc="org_uid",
                 msg="Organization does not exist.",
                 inp=str(orguid),
@@ -174,9 +174,9 @@ def check_permission(codenames: list[str]):
         ).first()
 
         if not user_token or not user_token.user:
-            CustomValidations.custom_error(
+            CustomValidations.raize_custom_error(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                type="expired",
+                error_type="expired",
                 loc="authtoken",
                 msg="Token is expired, try login again.",
                 inp=authtoken,
@@ -200,9 +200,9 @@ def check_permission(codenames: list[str]):
             user_permission_codenames.append(item.permission.codename)
 
         if not all(codename in user_permission_codenames for codename in codenames):
-            CustomValidations.custom_error(
+            CustomValidations.raize_custom_error(
                 status_code=status.HTTP_403_FORBIDDEN,
-                type="unauthenticated",
+                error_type="unauthenticated",
                 loc="permission",
                 msg="Permission not granted.",
                 inp=", ".join(codenames),

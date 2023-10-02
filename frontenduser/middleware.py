@@ -45,9 +45,9 @@ async def authenticate_token(
         not user_token.user.is_active or
         user_token.user.is_deleted
     ):
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            type="Invalid",
+            error_type="Invalid",
             loc="authtoken",
             msg="Invalid auth token",
             inp=authtoken,
@@ -55,9 +55,9 @@ async def authenticate_token(
         )
 
     if datetime.now() > user_token.expire_at:
-        CustomValidations.custom_error(
+        CustomValidations.raize_custom_error(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            type="expired",
+            error_type="expired",
             loc="authtoken",
             msg="Token is expired, try login again.",
             inp=authtoken,
