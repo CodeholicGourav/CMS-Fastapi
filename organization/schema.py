@@ -4,7 +4,7 @@ Author: Gourav Sahu
 Date: 23/09/2023
 """
 from datetime import datetime
-from typing import Annotated, List
+from typing import Annotated, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -184,6 +184,9 @@ class AssignRole(BaseModel):
 
 
 class ShowProject(BaseModel):
+    """
+    A pydantic model
+    """
     puid: str
     project_name: str
     description: str
@@ -195,11 +198,17 @@ class ShowProject(BaseModel):
 
 
 class ProjectList(BaseModel):
+    """
+    A pydantic model
+    """
     total: int
     projects: List[ShowProject]
 
 
 class CreateProject(BaseModel):
+    """
+    A pydantic model
+    """
     project_name: Annotated[str, Field(
         ...,
         min_length=3,
@@ -207,3 +216,23 @@ class CreateProject(BaseModel):
         title="Project name"
     )]
     description: str
+
+
+class UpdateProject(BaseModel):
+    """
+    A pydantic model
+    """
+    project_id: Annotated[str, Field(
+        ...,
+        title="Project ID",
+        description="puid of project"
+    )]
+    project_name: Annotated[str, Field(
+        None,
+        min_length=3,
+        max_length=50,
+        title="Project name"
+    )]
+    description: Optional[str] = None
+    is_active: Optional[bool] = None
+    is_deleted: Optional[bool] = None

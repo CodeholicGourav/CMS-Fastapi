@@ -633,3 +633,31 @@ def create_project(
     sql.refresh(project)
 
     return project
+
+
+def update_project(data: schema.UpdateProject, organization: model.Organization, sql: Session):
+    """
+    Updates the details of a project in the database.
+    """
+    project = sql.query(model.Project).filter_by(puid=data.project_id, org_id=organization.id).first()
+    if not project:
+        CustomValidations.custom_error(
+            type="not_exist",
+            loc="project_id",
+            msg="Project does not exist",
+            inp=data.project_id,
+            ctx={"project_id": "exist"}
+        )
+
+    if data.project_name:
+        project.project_name = data.project_name
+    if data.description:
+        project.description = data.description
+    if data.is_active is not None:
+        project.is_active = data.is_active
+    if data.is_deleted is not None:
+        project.is_deleted = data.is_deleted
+
+    sql.commit()
+    sql.refresh(project)
+    return project

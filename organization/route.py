@@ -315,3 +315,25 @@ def get_projects(
     along with the total count of projects.
     """
     return controller.get_projects(limit, offset, organization, sql)
+
+
+@organizationRoutes.post(
+    path='/update-project',
+    response_model=schema.ShowProject,
+    dependencies=[
+        Depends(authenticate_token),
+        Depends(check_permission(["update_project"]))
+    ],
+    status_code=status.HTTP_201_CREATED,
+    description="Update an existing project.",
+    name="Update project"
+)
+def update_project(
+    data : schema.UpdateProject,
+    organization: model.Organization = Depends(organization_exist),
+    sql : Session = Depends(get_db),
+):
+    """
+    Updates the details of a project in the database.
+    """
+    return controller.update_project(data, organization, sql)

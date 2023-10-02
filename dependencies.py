@@ -58,28 +58,15 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 
-SETTINGS = Settings()
-
-TEMPLATES = os.path.join(os.path.dirname(__file__), 'templates')
-
-PAYPAL_BASE_URL = "https://api-m.sandbox.paypal.com"
-
-def generate_token(length: int) -> str:
+class ShowUser(BaseModel):
     """
-    Generates a URL-safe token of a specified length.
+    Represents a user with specific fields such as UUID, username, email, and verification token.
     """
-    return secrets.token_urlsafe(length)
+    uuid: str
+    username: str
+    email: str
+    verification_token: str
 
-
-def generate_uuid(unique_str: str) -> str:
-    """
-    Generates a unique identifier (UUID).
-    """
-    encoded_str = base64.urlsafe_b64encode(unique_str.encode('utf-8')).decode('utf-8')
-    random_num = random.randint(1111, 9999)
-    timestamp = math.floor(time.time())
-    uuid = f"{encoded_str}{random_num}{timestamp}"
-    return uuid
 
 class Hash:
     """
@@ -115,41 +102,6 @@ class Hash:
         """
         return Hash.pwd_cxt.verify(plain_password, hashed_password)
 
-
-def send_mail(recipient_email: str, subject: str, message: str):
-    """
-    Sends an email to the specified recipient with the given subject and message.
-    """
-    sender_email = SETTINGS.MAIL_USERNAME
-    sender_password = SETTINGS.MAIL_PASSWORD
-
-    msg = EmailMessage()
-    msg["From"] = sender_email
-    msg["To"] = recipient_email
-    msg["Subject"] = subject
-    msg.set_content(message)
-
-    try:
-        with smtplib.SMTP(SETTINGS.MAIL_HOST, SETTINGS.MAIL_PORT) as server:
-            server.starttls()
-            server.login(sender_email, sender_password)
-            server.send_message(msg)
-        print("Email sent successfully.")
-        return True
-    except smtplib.SMTPException as smtp_error:
-        # Handle SMTP-related errors (e.g., authentication failure, connection issues)
-        print(f"Failed to send email: {str(smtp_error)}")
-        return False
-
-
-class ShowUser(BaseModel):
-    """
-    Represents a user with specific fields such as UUID, username, email, and verification token.
-    """
-    uuid: str
-    username: str
-    email: str
-    verification_token: str
 
 class FrontendEmail():
     """
@@ -336,72 +288,55 @@ class CustomValidations():
         return value
 
 
-# Maximum hours for token validation
-TOKEN_VALIDITY = 72
+def generate_token(length: int) -> str:
+    """
+    Generates a URL-safe token of a specified length.
+    """
+    return secrets.token_urlsafe(length)
 
-# Maximum number of tokens for single user
-TOKEN_LIMIT = 5
 
-# Conversion api endpoint
-CONVERSION_URL = "https://v6.exchangerate-api.com/v6/3a1bbc03599e950fa56cda33"
+def generate_uuid(unique_str: str) -> str:
+    """
+    Generates a unique identifier (UUID).
+    """
+    encoded_str = base64.urlsafe_b64encode(unique_str.encode('utf-8')).decode('utf-8')
+    random_num = random.randint(1111, 9999)
+    timestamp = math.floor(time.time())
+    uuid = f"{encoded_str}{random_num}{timestamp}"
+    return uuid
 
-# Define allowed image file extensions and size limit
-ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "gif"}
-MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024  # 5 MB
+
+def send_mail(recipient_email: str, subject: str, message: str):
+    """
+    Sends an email to the specified recipient with the given subject and message.
+    """
+    sender_email = SETTINGS.MAIL_USERNAME
+    sender_password = SETTINGS.MAIL_PASSWORD
+
+    msg = EmailMessage()
+    msg["From"] = sender_email
+    msg["To"] = recipient_email
+    msg["Subject"] = subject
+    msg.set_content(message)
+
+    try:
+        with smtplib.SMTP(SETTINGS.MAIL_HOST, SETTINGS.MAIL_PORT) as server:
+            server.starttls()
+            server.login(sender_email, sender_password)
+            server.send_message(msg)
+        print("Email sent successfully.")
+        return True
+    except smtplib.SMTPException as smtp_error:
+        # Handle SMTP-related errors (e.g., authentication failure, connection issues)
+        print(f"Failed to send email: {str(smtp_error)}")
+        return False
+
 
 def allowed_file(filename: str):
     """
     Checks if a given filename has an allowed extension.
     """
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
-predefined_backend_permissions = [
-    {"permission": "Can create user", "type": 1, "codename": "create_user"},
-    {"permission": "Can read user", "type": 1, "codename": "read_user"},
-    {"permission": "Can update user", "type": 1, "codename": "update_user"},
-    {"permission": "Can delete user", "type": 1, "codename": "delete_user"},
-    {"permission": "Can create role", "type": 2, "codename": "create_role"},
-    {"permission": "Can read role", "type": 2, "codename": "read_role"},
-    {"permission": "Can update role", "type": 2, "codename": "update_role"},
-    {"permission": "Can delete role", "type": 2, "codename": "delete_role"},
-    {"permission": "Can create permission", "type": 3, "codename": "create_permission"},
-    {"permission": "Can read permission", "type": 3, "codename": "read_permission"},
-    {"permission": "Can update permission", "type": 3, "codename": "update_permission"},
-    {"permission": "Can delete permission", "type": 3, "codename": "delete_permission"},
-    {"permission": "Can create subscription", "type": 4, "codename": "create_subscription"},
-    {"permission": "Can read subscription", "type": 4, "codename": "read_subscription"},
-    {"permission": "Can Update subscription", "type": 4, "codename": "update_subscription"},
-    {"permission": "Can delete subscription", "type": 4, "codename": "delete_subscription"}
-]
-
-
-predefined_organization_permissions = [
-    {"permission": "Can create user", "type": 1, "codename": "create_user"},
-    {"permission": "Can read user", "type": 1, "codename": "read_user"},
-    {"permission": "Can update user", "type": 1, "codename": "update_user"},
-    {"permission": "Can delete user", "type": 1, "codename": "delete_user"},
-    {"permission": "Can create role", "type": 2, "codename": "create_role"},
-    {"permission": "Can read role", "type": 2, "codename": "read_role"},
-    {"permission": "Can update role", "type": 2, "codename": "update_role"},
-    {"permission": "Can delete role", "type": 2, "codename": "delete_role"},
-    {"permission": "Can create permission", "type": 3, "codename": "create_permission"},
-    {"permission": "Can read permission", "type": 3, "codename": "read_permission"},
-    {"permission": "Can update permission", "type": 3, "codename": "update_permission"},
-    {"permission": "Can delete permission", "type": 3, "codename": "delete_permission"},
-    {"permission": "Can create project", "type": 4, "codename": "create_project"},
-    {"permission": "Can read project", "type": 4, "codename": "read_project"},
-    {"permission": "Can update project", "type": 4, "codename": "update_project"},
-    {"permission": "Can delete project", "type": 4, "codename": "delete_project"}
-]
-
-
-predefined_feature = [
-    {"feature_type": "Can create organization", "feature_code": "create_organization"},
-    {"feature_type": "Can add member", "feature_code": "add_member"},
-    {"feature_type": "Can add task", "feature_code": "add_task"},
-    {"feature_type": "Can create chat", "feature_code": "add_chat"},
-]
 
 
 def generate_paypal_access_token():
@@ -478,3 +413,69 @@ def convert_currency(currency: str):
         )
 
     return conversion_json
+
+
+SETTINGS = Settings()
+
+TEMPLATES = os.path.join(os.path.dirname(__file__), 'templates')
+
+PAYPAL_BASE_URL = "https://api-m.sandbox.paypal.com"
+
+# Maximum hours for token validation
+TOKEN_VALIDITY = 72
+
+# Maximum number of tokens for single user
+TOKEN_LIMIT = 5
+
+# Conversion api endpoint
+CONVERSION_URL = "https://v6.exchangerate-api.com/v6/3a1bbc03599e950fa56cda33"
+
+# Define allowed image file extensions and size limit
+ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "gif"}
+
+MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024  # 5 MB
+
+predefined_backend_permissions = [
+    {"permission": "Can create user", "type": 1, "codename": "create_user"},
+    {"permission": "Can read user", "type": 1, "codename": "read_user"},
+    {"permission": "Can update user", "type": 1, "codename": "update_user"},
+    {"permission": "Can delete user", "type": 1, "codename": "delete_user"},
+    {"permission": "Can create role", "type": 2, "codename": "create_role"},
+    {"permission": "Can read role", "type": 2, "codename": "read_role"},
+    {"permission": "Can update role", "type": 2, "codename": "update_role"},
+    {"permission": "Can delete role", "type": 2, "codename": "delete_role"},
+    {"permission": "Can create permission", "type": 3, "codename": "create_permission"},
+    {"permission": "Can read permission", "type": 3, "codename": "read_permission"},
+    {"permission": "Can update permission", "type": 3, "codename": "update_permission"},
+    {"permission": "Can delete permission", "type": 3, "codename": "delete_permission"},
+    {"permission": "Can create subscription", "type": 4, "codename": "create_subscription"},
+    {"permission": "Can read subscription", "type": 4, "codename": "read_subscription"},
+    {"permission": "Can Update subscription", "type": 4, "codename": "update_subscription"},
+    {"permission": "Can delete subscription", "type": 4, "codename": "delete_subscription"}
+]
+
+predefined_organization_permissions = [
+    {"permission": "Can create user", "type": 1, "codename": "create_user"},
+    {"permission": "Can read user", "type": 1, "codename": "read_user"},
+    {"permission": "Can update user", "type": 1, "codename": "update_user"},
+    {"permission": "Can delete user", "type": 1, "codename": "delete_user"},
+    {"permission": "Can create role", "type": 2, "codename": "create_role"},
+    {"permission": "Can read role", "type": 2, "codename": "read_role"},
+    {"permission": "Can update role", "type": 2, "codename": "update_role"},
+    {"permission": "Can delete role", "type": 2, "codename": "delete_role"},
+    {"permission": "Can create permission", "type": 3, "codename": "create_permission"},
+    {"permission": "Can read permission", "type": 3, "codename": "read_permission"},
+    {"permission": "Can update permission", "type": 3, "codename": "update_permission"},
+    {"permission": "Can delete permission", "type": 3, "codename": "delete_permission"},
+    {"permission": "Can create project", "type": 4, "codename": "create_project"},
+    {"permission": "Can read project", "type": 4, "codename": "read_project"},
+    {"permission": "Can update project", "type": 4, "codename": "update_project"},
+    {"permission": "Can delete project", "type": 4, "codename": "delete_project"}
+]
+
+predefined_feature = [
+    {"feature_type": "Can create organization", "feature_code": "create_organization"},
+    {"feature_type": "Can add member", "feature_code": "add_member"},
+    {"feature_type": "Can add task", "feature_code": "add_task"},
+    {"feature_type": "Can create chat", "feature_code": "add_chat"},
+]
