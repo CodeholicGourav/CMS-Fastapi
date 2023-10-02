@@ -181,3 +181,29 @@ class AssignRole(BaseModel):
     """
     user_id: str
     role_id: str
+
+
+class ShowProject(BaseModel):
+    puid: str
+    project_name: str
+    description: str
+    is_active: bool
+    is_deleted: bool
+    created_at: datetime
+    updated_at: datetime
+    creator: ShowUser
+
+
+class ProjectList(BaseModel):
+    total: int
+    projects: List[ShowProject]
+
+
+class CreateProject(BaseModel):
+    project_name: Annotated[str, Field(
+        ...,
+        min_length=3,
+        max_length=50,
+        title="Project name"
+    )]
+    description: str

@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 
 from sqlalchemy import (
-    Boolean, Column, DateTime, Float,
+    Boolean, Column, DateTime, exc, Float,
     ForeignKey, Integer,String, Text
 )
 from sqlalchemy.orm import relationship
@@ -153,8 +153,9 @@ def create_timezones():
                     time_difference=time_difference
                 )
                 sql.add(timezone_entry)
-
         sql.commit()
+    except exc.IntegrityError:
+        sql.rollback()
     except csv.Error as error:
         sql.rollback()
         raise error

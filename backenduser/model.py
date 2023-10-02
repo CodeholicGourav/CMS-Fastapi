@@ -6,7 +6,7 @@ Date: 23/09/2023
 from datetime import datetime
 
 from sqlalchemy import (
-    Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Text
+    Boolean, Column, DateTime, exc, Float, ForeignKey, Integer, String, Text
 )
 from sqlalchemy.orm import relationship
 
@@ -111,13 +111,17 @@ def create_permissions():
     Create predefined permissions in the database.
     """
     print("Creating permissions data...")
-    sql = SessionLocal()
-    permissions = [
-        BackendPermission(**permission) for permission in predefined_backend_permissions
-    ]
-    sql.add_all(permissions)
-    sql.commit()
-    sql.close()
+    try:
+        sql = SessionLocal()
+        permissions = [
+            BackendPermission(**permission) for permission in predefined_backend_permissions
+        ]
+        sql.add_all(permissions)
+        sql.commit()
+    except exc.IntegrityError:
+        sql.rollback()
+    finally:
+        sql.close()
     return {"message": "Backend permissions created successfully"}
 
 
@@ -209,17 +213,53 @@ class SubscriptionUser(Base):
     """
     __tablename__ = 'subscription_users'
 
-    id = Column(Integer, primary_key=True, index=True)
-    subscription_id = Column(Integer, ForeignKey("subscriptions.id"))
-    user_id = Column(Integer, ForeignKey("frontendusers.id"))
-    transaction_id = Column(Integer, ForeignKey("transactions.id"))
-    expiry = Column(DateTime)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+    subscription_id = Column(
+        Integer,
+        ForeignKey("subscriptions.id")
+    )
+    user_id = Column(
+        Integer,
+        ForeignKey("frontendusers.id")
+    )
+    transaction_id = Column(
+        Integer,
+        ForeignKey("transactions.id"),
+        nullable=True
+    )
+    order_id = Column(
+        Integer,
+        ForeignKey("orders.id"),
+        nullable=True
+    )
+    expiry = Column(
+        DateTime
+    )
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow
+    )
 
-    # Relationships
-    subscription = relationship("Subscription", foreign_keys=subscription_id)
-    user = relationship("FrontendUser", foreign_keys=user_id)
-    transaction = relationship("Transaction", foreign_keys=transaction_id)
+    subscription = relationship(
+        "Subscription",
+        foreign_keys=subscription_id
+    )
+    user = relationship(
+        "FrontendUser",
+        foreign_keys=user_id
+    )
+    transaction = relationship(
+        "Transaction",
+        foreign_keys=transaction_id
+    )
+    order = relationship(
+        "Order",
+        foreign_keys=order_id
+    )
 
     def __repr__(self):
         """
@@ -283,14 +323,17 @@ def create_features():
     """
     Creates feature objects in the database using predefined data.
     """
-    print("Creating features data...")
-    sql = SessionLocal()
-    features = [Feature(**feature) for feature in predefined_feature]
-    sql.add_all(features)
-    sql.commit()
-    sql.close()
+    try:
+        print("Creating features data...")
+        sql = SessionLocal()
+        features = [Feature(**feature) for feature in predefined_feature]
+        sql.add_all(features)
+        sql.commit()
+    except exc.IntegrityError:
+        sql.rollback()
+    finally:
+        sql.close()
     return {"message": "features created successfully"}
-
 
 
 class SubscriptionFeature(Base):

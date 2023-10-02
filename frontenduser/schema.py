@@ -26,7 +26,7 @@ class BaseUser(BaseModel):
     email_verified_at: Optional[datetime] = None
     storage_token: Optional[str] = None
     storage_platform: Optional[str] = None
-    active_plan: Optional[str] = None
+    active_plan: Optional[int] = None
     social_token: Optional[str] = None
     social_platform: Optional[str] = None
     is_active: bool

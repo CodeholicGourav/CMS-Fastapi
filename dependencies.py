@@ -389,10 +389,10 @@ predefined_organization_permissions = [
     {"permission": "Can read permission", "type": 3, "codename": "read_permission"},
     {"permission": "Can update permission", "type": 3, "codename": "update_permission"},
     {"permission": "Can delete permission", "type": 3, "codename": "delete_permission"},
-    {"permission": "Can create Task", "type": 4, "codename": "create_task"},
-    {"permission": "Can read Task", "type": 4, "codename": "read_task"},
-    {"permission": "Can update Task", "type": 4, "codename": "update_task"},
-    {"permission": "Can delete Task", "type": 4, "codename": "delete_task"}
+    {"permission": "Can create project", "type": 4, "codename": "create_project"},
+    {"permission": "Can read project", "type": 4, "codename": "read_project"},
+    {"permission": "Can update project", "type": 4, "codename": "update_project"},
+    {"permission": "Can delete project", "type": 4, "codename": "delete_project"}
 ]
 
 

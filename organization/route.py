@@ -268,3 +268,50 @@ def assign_user_permission(
     Assigns permissions to a user in an organization.
     """
     return controller.assign_user_permission(data, organization, sql)
+
+
+@organizationRoutes.post(
+    path='/create-project',
+    response_model=schema.ShowProject,
+    dependencies=[
+        Depends(check_permission(["create_project"]))
+    ],
+    status_code=status.HTTP_201_CREATED,
+    description="Create a new project.",
+    name="Create project"
+)
+def create_project(
+    data : schema.CreateProject,
+    authtoken = Depends(authenticate_token),
+    organization: model.Organization = Depends(organization_exist),
+    sql : Session = Depends(get_db),
+):
+    """
+    Creates a new project for an organization in the database, 
+    ensure that the project name is unique within the organization.
+    """
+    return controller.create_project(data, authtoken, organization, sql)
+
+
+@organizationRoutes.get(
+    path='/projects',
+    response_model=schema.ProjectList,
+    dependencies=[
+        Depends(check_permission(["read_project"]))
+    ],
+    status_code=status.HTTP_200_OK,
+    description="List all the projects.",
+    name="List projects"
+)
+def get_projects(
+    limit: int = Query(10, ge=1, le=100, description="number of results to retrieve"),
+    offset : int = Query(0, ge=0, description="Number of results to skip."),
+    authtoken = Depends(authenticate_token),
+    organization: model.Organization = Depends(organization_exist),
+    sql : Session = Depends(get_db),
+):
+    """
+    Retrieves a specified number of projects belonging to a specific organization,
+    along with the total count of projects.
+    """
+    return controller.get_projects(limit, offset, organization, sql)

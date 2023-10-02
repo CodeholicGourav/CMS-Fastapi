@@ -298,7 +298,7 @@ def get_all_roles(
 
 
 def get_role_details(
-    uuid: str,
+    role_id: str,
     organization: model.Organization,
     sql: Session
 ):
@@ -306,14 +306,14 @@ def get_role_details(
     Retrieves the details of a role in an organization based on the role's UUID.
     """
     role = sql.query(model.OrganizationRole).filter_by(
-        ruid=uuid, org_id=organization.id
+        ruid=role_id, org_id=organization.id
     ).first()
     if not role:
         CustomValidations.custom_error(
             type="not_exist",
             loc="role_id",
             msg="User does not exist",
-            inp=uuid,
+            inp=role_id,
             ctx={"role": "exist"}
         )
 
@@ -570,3 +570,66 @@ def assign_user_permission(
     sql.refresh(org_user)
 
     return org_user
+
+
+def get_projects(
+    limit: int,
+    offset: int,
+    organization: model.Organization,
+    sql: Session
+):
+    """
+    Retrieves a specified number of projects belonging to a specific organization,
+    along with the total count of projects.
+    """
+    count = sql.query(model.Project).filter_by(org_id=organization.id).count()
+    projects = sql.query(model.Project).filter_by(org_id=organization.id).limit(limit).offset(offset).all()
+
+    return {
+        "total": count,
+        "projects": projects
+    }
+
+
+def create_project(
+    data: schema.CreateProject,
+    authtoken: frontendModel.FrontendToken,
+    organization: model.Organization,
+    sql: Session
+):
+    """
+    Creates a new project for an organization in the database, 
+    ensure that the project name is unique within the organization.
+    """
+    # Check if a project with the same name already exists in the organization.
+    exist_name = sql.query(model.Project).filter_by(
+        project_name=data.project_name,
+        org_id=organization.id
+    ).first()
+
+    if exist_name:
+        CustomValidations.custom_error(
+            type="already_exist",
+            loc="project_name",
+            msg="Project name already exists",
+            inp=data.project_name,
+            ctx={"project_name": "unique"}
+        )
+
+    # Create a new project object
+    project = model.Project(
+        puid=generate_uuid(data.project_name),
+        project_name=data.project_name,
+        description=data.description,
+        created_by=authtoken.user_id,
+        org_id=organization.id
+    )
+
+    # Add the new project to the session.
+    sql.add(project)
+    # Commit the session to save the changes to the database.
+    sql.commit()
+    # Refresh the project object to get the updated values from the database.
+    sql.refresh(project)
+
+    return project

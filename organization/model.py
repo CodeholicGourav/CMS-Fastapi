@@ -20,27 +20,60 @@ class Organization(Base):
     """
     __tablename__ = 'organizations'
 
-    id = Column(Integer, primary_key=True, index=True)
-    orguid = Column(String(50), index=True, unique=True)
-    org_name = Column(String(50), nullable=False)
-    admin_id = Column(Integer, ForeignKey("frontendusers.id"))
-    gtoken = Column(Text, nullable=True)
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+    orguid = Column(
+        String(50),
+        index=True,
+        unique=True
+    )
+    org_name = Column(
+        String(50),
+        nullable=False
+    )
+    admin_id = Column(
+        Integer,
+        ForeignKey("frontendusers.id")
+    )
+    gtoken = Column(
+        Text,
+        nullable=True
+    )
     registration_type = Column(
         String(20),
         default=1,
         comment="(e.g., 'open', 'approval_required', 'admin_only')"
     )
-    is_active = Column(Boolean, default=True)
-    is_deleted = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    is_active = Column(
+        Boolean,
+        default=True
+    )
+    is_deleted = Column(
+        Boolean,
+        default=False
+    )
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow
+    )
     updated_at = Column(
         DateTime,
         default=datetime.utcnow,
         onupdate=datetime.utcnow
     )
 
-    admin = relationship("FrontendUser", foreign_keys=admin_id)
-    allowed_registration = ['open', 'approval_required', 'admin_only']
+    admin = relationship(
+        "FrontendUser",
+        foreign_keys=admin_id
+    )
+    allowed_registration = [
+        'open',
+        'approval_required',
+        'admin_only'
+    ]
 
     def __repr__(self):
         return (
@@ -65,11 +98,6 @@ class OrganizationUser(Base):
         Integer,
         primary_key=True,
         index=True
-    )
-    uuid = Column(
-        String(50),
-        index=True,
-        unique=True
     )
     user_id = Column(
         Integer,
@@ -329,3 +357,76 @@ class OrganizationRolePermission(Base):
                 f"permission_id={self.permission_id}"
             ")>"
         )
+
+
+class Project(Base):
+    """
+    Represents a table in a database called 'projects'.
+    """
+    __tablename__ = 'projects'
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+    puid = Column(
+        String(50),
+        index=True,
+        unique=True
+    )
+    project_name = Column(
+        String(50),
+        nullable=False
+    )
+    description = Column(
+        Text,
+        nullable=True
+    )
+    created_by = Column(
+        Integer,
+        ForeignKey("frontendusers.id")
+    )
+    org_id = Column(
+        Integer,
+        ForeignKey("organizations.id")
+    )
+
+    is_active = Column(
+        Boolean,
+        default=True
+    )
+    is_deleted = Column(
+        Boolean,
+        default=False
+    )
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow
+    )
+    updated_at = Column(
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow
+    )
+
+    creator = relationship(
+        "FrontendUser",
+        foreign_keys=created_by
+    )
+
+    def __repr__(self):
+        return (
+            "<Project("
+                f"id={self.id}, "
+                f"project_name='{self.project_name}'"
+                f"created_by='{self.created_by}'"
+                f"org_id='{self.org_id}'"
+                f"is_active='{self.is_active}'"
+                f"is_deleted='{self.is_deleted}'"
+                f"created_at='{self.created_at}'"
+                f"updated_at='{self.updated_at}'"
+            ")>")
+
+    def __str__(self):
+        return self.project_name
