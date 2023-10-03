@@ -661,3 +661,56 @@ def update_project(data: schema.UpdateProject, organization: model.Organization,
     sql.commit()
     sql.refresh(project)
     return project
+
+
+def create_task(
+    data: schema.CreateTask,
+    authtoken: frontendModel.FrontendToken,
+    organization: model.Organization,
+    sql: Session
+):
+    exist_name = sql.query(model.Task).filter_by(
+        task_name=data.task_name
+    )
+    if exist_name:
+        CustomValidations.raize_custom_error(
+            error_type="already_exist",
+            loc="task_name",
+            msg="Task name already exists",
+            inp=data.task_name,
+            ctx={"task_name": "unique"}
+        )
+
+    exist_project = sql.query(model.Project).filter_by(
+        puid=data.project_id,
+        org_id=organization.id
+    )
+    if exist_project:
+        CustomValidations.raize_custom_error(
+            error_type="not_xist",
+            loc="project_id",
+            msg="project does not exist",
+            inp=data.project_id,
+            ctx={"project_id": "exist"}
+        )
+
+    # Create a new task object
+    task = model.Task(
+        tuid=generate_uuid(data.task_name),
+        task_name=data.task_name,
+        description=data.description,
+        created_by=authtoken.user_id,
+        project_id = data.project_id,
+        event_id = data.event_id,
+        estimate_hours = data.estimate_hours,
+        deadline = data.deadline_date,
+        start_date = data.start_date,
+        end_date = data.end_date
+    )
+
+    # Add the new project to the session.
+    sql.add(task)
+    # Commit the session to save the changes to the database.
+    sql.commit()
+    # Refresh the project object to get the updated values from the database.
+    sql.refresh(task)

@@ -236,3 +236,69 @@ class UpdateProject(BaseModel):
     description: Optional[str] = None
     is_active: Optional[bool] = None
     is_deleted: Optional[bool] = None
+
+
+class ShowTask(BaseModel):
+    """
+    A pydantic model
+    """
+    puid: str
+    task_name: str
+    description: str
+    is_active: bool
+    is_deleted: bool
+    created_at: datetime
+    updated_at: datetime
+    creator: ShowUser
+
+
+class TaskList(BaseModel):
+    """
+    A pydantic model
+    """
+    total: int
+    tasks: List[ShowTask]
+
+
+class CreateTask(BaseModel):
+    """
+    A pydantic model
+    """
+    task_name: Annotated[str, Field(
+        min_length=3,
+        max_length=50,
+        title="Task name"
+    )]
+    description: Annotated[str, Field(
+        title="Task description",
+        description="Description for task."
+    )]
+    project_id: Annotated[str, Field(
+        title="Project ID",
+        description="puid of a project to create task under this project."
+    )]
+    event_id: Annotated[str, Field(
+        None,
+        title="Event ID",
+        description="Google calendar event ID"
+    )]
+    estimate_hours: Annotated[int, Field(
+        None,
+        title="Estimate hours",
+        description="Estimate number of hours to complete the task."
+    )]
+    deadline_date: Annotated[datetime, Field(
+        None,
+        title="Deadline date",
+        description="Estimate date to complete the task."
+    )]
+    start_date: Annotated[datetime, Field(
+        None,
+        title="Start-date",
+        description="Start date for this task."
+    )]
+    end_date: Annotated[datetime, Field(
+        None,
+        title="End-date",
+        description="End date for this task"
+    )]

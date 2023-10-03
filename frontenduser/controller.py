@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 from backenduser import controller as backendusercontroller
 from dependencies import (
     ALLOWED_EXTENSIONS, MAX_FILE_SIZE_BYTES, PAYPAL_BASE_URL,
-    SETTINGS, TOKEN_LIMIT, TOKEN_VALIDITY,
+    SETTINGS, TOKEN_LIMIT, TOKEN_VALIDITY, UPLOAD_FOLDER,
     CustomValidations, FrontendEmail, Hash,
     allowed_file, convert_currency, generate_paypal_access_token,
     generate_token, generate_uuid
@@ -172,7 +172,7 @@ def update_profile_photo(file: UploadFile, auth_token: model.FrontendToken, sql:
     else:
         unique_filename = f"{math.floor(time.time())}_{user.username}.{file_extension}"
 
-    with open(f"uploads/{unique_filename}", "wb") as image_file:
+    with open(UPLOAD_FOLDER+'/'+unique_filename, "wb") as image_file:
         image_file.write(file.file.read())
 
     user.profile_photo = unique_filename

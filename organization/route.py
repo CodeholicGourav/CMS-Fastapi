@@ -337,3 +337,72 @@ def update_project(
     Updates the details of a project in the database.
     """
     return controller.update_project(data, organization, sql)
+
+
+@organizationRoutes.post(
+    path='/create-task',
+    response_model=schema.ShowTask,
+    dependencies=[
+        # Depends(check_permission(["create_project"]))
+    ],
+    status_code=status.HTTP_201_CREATED,
+    description="Create a new task.",
+    name="Create task"
+)
+def create_task(
+    data : schema.CreateTask,
+    authtoken = Depends(authenticate_token),
+    organization: model.Organization = Depends(organization_exist),
+    sql : Session = Depends(get_db),
+):
+    """
+    Creates a new project for an organization in the database, 
+    ensure that the project name is unique within the organization.
+    """
+    return controller.create_task(data, authtoken, organization, sql)
+
+
+# @organizationRoutes.get(
+#     path='/projects',
+#     response_model=schema.ProjectList,
+#     dependencies=[
+#         Depends(check_permission(["read_project"]))
+#     ],
+#     status_code=status.HTTP_200_OK,
+#     description="List all the projects.",
+#     name="List projects"
+# )
+# def get_projects(
+#     limit: int = Query(10, ge=1, le=100, description="number of results to retrieve"),
+#     offset : int = Query(0, ge=0, description="Number of results to skip."),
+#     authtoken = Depends(authenticate_token),
+#     organization: model.Organization = Depends(organization_exist),
+#     sql : Session = Depends(get_db),
+# ):
+#     """
+#     Retrieves a specified number of projects belonging to a specific organization,
+#     along with the total count of projects.
+#     """
+#     return controller.get_projects(limit, offset, organization, sql)
+
+
+# @organizationRoutes.post(
+#     path='/update-project',
+#     response_model=schema.ShowProject,
+#     dependencies=[
+#         Depends(authenticate_token),
+#         Depends(check_permission(["update_project"]))
+#     ],
+#     status_code=status.HTTP_201_CREATED,
+#     description="Update an existing project.",
+#     name="Update project"
+# )
+# def update_project(
+#     data : schema.UpdateProject,
+#     organization: model.Organization = Depends(organization_exist),
+#     sql : Session = Depends(get_db),
+# ):
+#     """
+#     Updates the details of a project in the database.
+#     """
+#     return controller.update_project(data, organization, sql)

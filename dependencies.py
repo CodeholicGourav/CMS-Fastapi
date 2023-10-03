@@ -419,6 +419,10 @@ SETTINGS = Settings()
 
 TEMPLATES = os.path.join(os.path.dirname(__file__), 'templates')
 
+STATIC_FOLDER = 'static'
+
+UPLOAD_FOLDER = STATIC_FOLDER+'/uploads'
+
 PAYPAL_BASE_URL = "https://api-m.sandbox.paypal.com"
 
 # Maximum hours for token validation
