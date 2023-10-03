@@ -582,8 +582,12 @@ def get_projects(
     Retrieves a specified number of projects belonging to a specific organization,
     along with the total count of projects.
     """
-    count = sql.query(model.Project).filter_by(org_id=organization.id).count()
-    projects = sql.query(model.Project).filter_by(org_id=organization.id).limit(limit).offset(offset).all()
+    count = sql.query(model.Project).filter_by(
+        org_id=organization.id
+    ).count()
+    projects = sql.query(model.Project).filter_by(
+        org_id=organization.id
+    ).limit(limit).offset(offset).all()
 
     return {
         "total": count,
@@ -639,7 +643,10 @@ def update_project(data: schema.UpdateProject, organization: model.Organization,
     """
     Updates the details of a project in the database.
     """
-    project = sql.query(model.Project).filter_by(puid=data.project_id, org_id=organization.id).first()
+    project = sql.query(model.Project).filter_by(
+        puid=data.project_id,
+        org_id=organization.id
+    ).first()
     if not project:
         CustomValidations.raize_custom_error(
             error_type="not_exist",
@@ -650,11 +657,27 @@ def update_project(data: schema.UpdateProject, organization: model.Organization,
         )
 
     if data.project_name:
+        exist_name = sql.query(model.Project).filter_by(
+            project_name=data.project_name,
+            org_id=organization.id
+        ).first()
+
+        if exist_name:
+            CustomValidations.raize_custom_error(
+                error_type="already_exist",
+                loc="project_name",
+                msg="Project name already exists",
+                inp=data.project_name,
+                ctx={"project_name": "unique"}
+            )
         project.project_name = data.project_name
+
     if data.description:
         project.description = data.description
+
     if data.is_active is not None:
         project.is_active = data.is_active
+
     if data.is_deleted is not None:
         project.is_deleted = data.is_deleted
 
@@ -669,9 +692,30 @@ def create_task(
     organization: model.Organization,
     sql: Session
 ):
+    """
+    Creates a new task for an organization in the database,
+    performing validations to ensure 
+    project exist in organization and 
+    the task name should be unique in project.
+    """
+    # Check if the project specified by the project ID exists in the organization
+    exist_project = sql.query(model.Project).filter_by(
+        puid=data.project_id, org_id=organization.id
+    ).first()
+    if not exist_project:
+        CustomValidations.raize_custom_error(
+            error_type="not_xist",
+            loc="project_id",
+            msg="project does not exist",
+            inp=data.project_id,
+            ctx={"project_id": "exist"}
+        )
+
+    # Check if a task with the same name already exists in the project
     exist_name = sql.query(model.Task).filter_by(
-        task_name=data.task_name
-    )
+        task_name=data.task_name,
+        project_id=exist_project.id
+    ).first()
     if exist_name:
         CustomValidations.raize_custom_error(
             error_type="already_exist",
@@ -681,36 +725,137 @@ def create_task(
             ctx={"task_name": "unique"}
         )
 
-    exist_project = sql.query(model.Project).filter_by(
-        puid=data.project_id,
-        org_id=organization.id
-    )
-    if exist_project:
-        CustomValidations.raize_custom_error(
-            error_type="not_xist",
-            loc="project_id",
-            msg="project does not exist",
-            inp=data.project_id,
-            ctx={"project_id": "exist"}
-        )
-
     # Create a new task object
     task = model.Task(
         tuid=generate_uuid(data.task_name),
         task_name=data.task_name,
         description=data.description,
         created_by=authtoken.user_id,
-        project_id = data.project_id,
-        event_id = data.event_id,
-        estimate_hours = data.estimate_hours,
-        deadline = data.deadline_date,
-        start_date = data.start_date,
-        end_date = data.end_date
+        project_id = exist_project.id,
     )
 
-    # Add the new project to the session.
+    if data.event_id is not None:
+        task.event_id = data.event_id
+    if data.estimate_hours is not None:
+        task.estimate_hours = data.estimate_hours
+    if data.deadline_date is not None:
+        task.deadline = data.deadline_date
+    if data.start_date is not None:
+        task.start_date = data.start_date
+    if data.end_date is not None:
+        task.end_date = data.end_date
+
+    # Add the new task to the session
     sql.add(task)
-    # Commit the session to save the changes to the database.
+    # Commit the session to save the changes to the database
     sql.commit()
-    # Refresh the project object to get the updated values from the database.
+    # Refresh the task object to get the updated values from the database
     sql.refresh(task)
+
+    return task
+
+
+def get_tasks(
+    limit: int,
+    offset: int,
+    organization: model.Organization,
+    project_id: str | None,
+    sql: Session
+):
+    """
+    Retrieves a specified number of tasks from the database, 
+    either for a specific project within an organization or 
+    for all tasks in the organization.
+    """
+    if project_id is not None:
+        # Check if the project specified by the project ID exists in the organization
+        exist_project = sql.query(model.Project).filter_by(
+            puid=project_id,
+            org_id=organization.id
+        ).first()
+
+        if not exist_project:
+            CustomValidations.raize_custom_error(
+                error_type="not_xist",
+                loc="project_id",
+                msg="project does not exist",
+                inp=project_id,
+                ctx={"project_id": "exist"}
+            )
+
+        count = sql.query(model.Task).filter_by(
+            project_id=exist_project.id
+        ).count()
+
+        tasks = sql.query(model.Task).filter_by(
+            project_id=exist_project.id
+        ).order_by(model.Task.id).limit(limit).offset(offset).all()
+
+    else:
+        count = sql.query(model.Task).count()
+        tasks = sql.query(model.Task).limit(limit).order_by(model.Task.id).offset(offset).all()
+
+    return {
+        "total": count,
+        "tasks": tasks
+    }
+
+
+def update_task(
+    data: schema.UpdateTask,
+    organization: model.Organization,
+    sql: Session
+):
+    """
+    Updates the details of a task in the database based on the provided input data.
+    """
+    task = sql.query(
+        model.Task
+    ).join(
+        model.Project,
+        model.Task.project_id == model.Project.id
+    ).filter(
+        model.Task.tuid==data.task_id,
+        model.Project.org_id==organization.id
+    ).first()
+
+    if not task:
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
+            loc="task_id",
+            msg="Task does not exist",
+            inp=data.task_id,
+            ctx={"task_id": "exist"}
+        )
+
+    if data.task_name is not None:
+        task.task_name = data.task_name
+
+    if data.description is not None:
+        task.description = data.description
+
+    if data.event_id is not None:
+        task.event_id = data.event_id
+
+    if data.estimate_hours is not None:
+        task.estimate_hours = data.estimate_hours
+
+    if data.deadline_date is not None:
+        task.deadline = data.deadline_date
+
+    if data.start_date is not None:
+        task.start_date = data.start_date
+
+    if data.end_date is not None:
+        task.end_date = data.end_date
+
+    if data.is_active is not None:
+        task.is_active = data.is_active
+
+    if data.is_deleted is not None:
+        task.is_deleted = data.is_deleted
+
+    sql.commit()
+    sql.refresh(task)
+
+    return task

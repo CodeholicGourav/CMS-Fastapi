@@ -3,7 +3,6 @@ model.py
 Author: Gourav Sahu
 Date: 23/09/2023
 """
-
 from fastapi import APIRouter, Depends, Path, Query, status
 from sqlalchemy.orm import Session
 
@@ -17,8 +16,7 @@ from .middleware import check_feature, check_permission, organization_exist
 
 organizationRoutes = APIRouter()
 
-@organizationRoutes.get(
-    path='/get-organizations',
+@organizationRoutes.get('/get-organizations',
     response_model=schema.BasicOrganizationList,
     dependencies=[Depends(authenticate_token)],
     status_code=status.HTTP_200_OK,
@@ -37,8 +35,7 @@ def get_all_organizations(
     return controller.all_organizations(limit, offset, sql)
 
 
-@organizationRoutes.post(
-    path='/create-organization',
+@organizationRoutes.post('/create-organization',
     response_model=schema.ShowOrganization,
     status_code=status.HTTP_201_CREATED,
     description="Create a new organization.",
@@ -57,8 +54,7 @@ def create_organization(
     return controller.create_organization(data, sql, auth_token, feature)
 
 
-@organizationRoutes.post(
-    path='/register',
+@organizationRoutes.post('/register',
     response_model=schema.ShowOrgUser,
     status_code=status.HTTP_201_CREATED,
     description="Apply registration in a organization.",
@@ -75,8 +71,7 @@ def register_to_organization(
     return controller.register_to_organization(data, sql, auth_token)
 
 
-@organizationRoutes.get(
-    path='/users',
+@organizationRoutes.get('/users',
     response_model=schema.ShowOrgUserList,
     dependencies=[
         Depends(authenticate_token),
@@ -99,8 +94,7 @@ def get_all_users(
     return controller.get_all_users(limit, offset, organization, sql)
 
 
-@organizationRoutes.get(
-    path='/users/{user_id}',
+@organizationRoutes.get('/users/{user_id}',
     response_model=schema.ShowOrgUser,
     dependencies=[
         Depends(authenticate_token),
@@ -121,8 +115,7 @@ def get_user_details(
     return controller.get_user_details(user_id, organization, sql)
 
 
-@organizationRoutes.get(
-    path='/roles',
+@organizationRoutes.get('/roles',
     response_model=schema.ShowOrgRoleList,
     dependencies=[
         Depends(authenticate_token),
@@ -145,8 +138,7 @@ def get_all_roles(
     return controller.get_all_roles(limit, offset, organization, sql)
 
 
-@organizationRoutes.get(
-    path='/roles/{role_id}',
+@organizationRoutes.get('/roles/{role_id}',
     response_model=schema.ShowOrgRole,
     dependencies=[
         Depends(authenticate_token),
@@ -167,8 +159,7 @@ def get_role_details(
     return controller.get_role_details(role_id, organization, sql)
 
 
-@organizationRoutes.get(
-    path='/permissions',
+@organizationRoutes.get('/permissions',
     response_model=schema.BasicOrgPermission,
     status_code=status.HTTP_200_OK,
     description="Fetch all the permissions avilable for organization.",
@@ -183,8 +174,7 @@ def get_all_permissions(
     return controller.get_all_permissions(sql)
 
 
-@organizationRoutes.post(
-    path='/create-role',
+@organizationRoutes.post('/create-role',
     response_model=schema.ShowOrgRole,
     dependencies=[Depends(check_permission(["create_role"]))],
     status_code=status.HTTP_201_CREATED,
@@ -204,8 +194,7 @@ def create_role(
     return controller.create_role(data, organization, auth_token, sql)
 
 
-@organizationRoutes.post(
-    path='/update-role',
+@organizationRoutes.post('/update-role',
     response_model=schema.ShowOrgRole,
     dependencies=[
         Depends(authenticate_token),
@@ -226,8 +215,7 @@ def update_role(
     return controller.update_role(data, organization, sql)
 
 
-@organizationRoutes.post(
-    path='/assign-role',
+@organizationRoutes.post('/assign-role',
     response_model=schema.ShowOrgUser,
     dependencies=[
         Depends(authenticate_token),
@@ -248,8 +236,7 @@ def assign_role(
     return controller.assign_role(data, organization, sql)
 
 
-@organizationRoutes.post(
-    path='/assign-user-permission',
+@organizationRoutes.post('/assign-user-permission',
     response_model=schema.ShowOrgUser,
     dependencies=[
         Depends(authenticate_token),
@@ -270,8 +257,7 @@ def assign_user_permission(
     return controller.assign_user_permission(data, organization, sql)
 
 
-@organizationRoutes.post(
-    path='/create-project',
+@organizationRoutes.post('/create-project',
     response_model=schema.ShowProject,
     dependencies=[
         Depends(check_permission(["create_project"]))
@@ -293,10 +279,10 @@ def create_project(
     return controller.create_project(data, authtoken, organization, sql)
 
 
-@organizationRoutes.get(
-    path='/projects',
+@organizationRoutes.get('/projects',
     response_model=schema.ProjectList,
     dependencies=[
+        Depends(authenticate_token),
         Depends(check_permission(["read_project"]))
     ],
     status_code=status.HTTP_200_OK,
@@ -306,7 +292,6 @@ def create_project(
 def get_projects(
     limit: int = Query(10, ge=1, le=100, description="number of results to retrieve"),
     offset : int = Query(0, ge=0, description="Number of results to skip."),
-    authtoken = Depends(authenticate_token),
     organization: model.Organization = Depends(organization_exist),
     sql : Session = Depends(get_db),
 ):
@@ -317,8 +302,7 @@ def get_projects(
     return controller.get_projects(limit, offset, organization, sql)
 
 
-@organizationRoutes.post(
-    path='/update-project',
+@organizationRoutes.post('/update-project',
     response_model=schema.ShowProject,
     dependencies=[
         Depends(authenticate_token),
@@ -339,12 +323,8 @@ def update_project(
     return controller.update_project(data, organization, sql)
 
 
-@organizationRoutes.post(
-    path='/create-task',
+@organizationRoutes.post('/create-task',
     response_model=schema.ShowTask,
-    dependencies=[
-        # Depends(check_permission(["create_project"]))
-    ],
     status_code=status.HTTP_201_CREATED,
     description="Create a new task.",
     name="Create task"
@@ -362,47 +342,49 @@ def create_task(
     return controller.create_task(data, authtoken, organization, sql)
 
 
-# @organizationRoutes.get(
-#     path='/projects',
-#     response_model=schema.ProjectList,
-#     dependencies=[
-#         Depends(check_permission(["read_project"]))
-#     ],
-#     status_code=status.HTTP_200_OK,
-#     description="List all the projects.",
-#     name="List projects"
-# )
-# def get_projects(
-#     limit: int = Query(10, ge=1, le=100, description="number of results to retrieve"),
-#     offset : int = Query(0, ge=0, description="Number of results to skip."),
-#     authtoken = Depends(authenticate_token),
-#     organization: model.Organization = Depends(organization_exist),
-#     sql : Session = Depends(get_db),
-# ):
-#     """
-#     Retrieves a specified number of projects belonging to a specific organization,
-#     along with the total count of projects.
-#     """
-#     return controller.get_projects(limit, offset, organization, sql)
+@organizationRoutes.get('/tasks',
+    response_model=schema.TaskList,
+    dependencies=[
+        Depends(authenticate_token),
+    ],
+    status_code=status.HTTP_200_OK,
+    description="List all the tasks.",
+    name="List tasks"
+)
+def get_tasks(
+    limit: int = Query(10, ge=1, le=100, description="number of results to retrieve"),
+    offset : int = Query(0, ge=0, description="Number of results to skip."),
+    project_id: str = Query(
+        None,
+        title="project ID",
+        description="puid of a project"
+    ),
+    organization: model.Organization = Depends(organization_exist),
+    sql : Session = Depends(get_db),
+):
+    """
+    Retrieves a specified number of tasks from the database, 
+    either for a specific project within an organization or 
+    for all tasks in the organization.
+    """
+    return controller.get_tasks(limit, offset, organization, project_id, sql)
 
 
-# @organizationRoutes.post(
-#     path='/update-project',
-#     response_model=schema.ShowProject,
-#     dependencies=[
-#         Depends(authenticate_token),
-#         Depends(check_permission(["update_project"]))
-#     ],
-#     status_code=status.HTTP_201_CREATED,
-#     description="Update an existing project.",
-#     name="Update project"
-# )
-# def update_project(
-#     data : schema.UpdateProject,
-#     organization: model.Organization = Depends(organization_exist),
-#     sql : Session = Depends(get_db),
-# ):
-#     """
-#     Updates the details of a project in the database.
-#     """
-#     return controller.update_project(data, organization, sql)
+@organizationRoutes.post('/update-task',
+    response_model=schema.ShowTask,
+    dependencies=[
+        Depends(authenticate_token)
+    ],
+    status_code=status.HTTP_201_CREATED,
+    description="Update an existing task.",
+    name="Update task"
+)
+def update_task(
+    data : schema.UpdateTask,
+    organization: model.Organization = Depends(organization_exist),
+    sql : Session = Depends(get_db),
+):
+    """
+    Updates the details of a task in the project.
+    """
+    return controller.update_task(data, organization, sql)

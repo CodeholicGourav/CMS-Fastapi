@@ -155,7 +155,9 @@ class CreateRole(BaseModel):
     A pydantic model
     """
     role: str = Field(title="Name of the role")
-    permissions: List[str] = Field(title="permission code")
+    permissions: List[str] = Field(
+        title="permission code"
+    )
 
 
 class UpdateRole(BaseModel):
@@ -163,8 +165,14 @@ class UpdateRole(BaseModel):
     A pydantic model
     """
     ruid: str
-    role: Annotated[str, Field(None, title="Name of the role")]
-    permissions: Annotated[List[str], Field(None, title="permission code")]
+    role: Annotated[
+        str,
+        Field(None, title="Name of the role")
+    ]
+    permissions: Annotated[
+        List[str],
+        Field(None, title="permission code")
+    ]
 
 
 class UpdateUserPermission(BaseModel):
@@ -181,6 +189,11 @@ class AssignRole(BaseModel):
     """
     user_id: str
     role_id: str
+
+
+class BaseProject(BaseModel):
+    puid: str
+    project_name: str
 
 
 class ShowProject(BaseModel):
@@ -242,14 +255,20 @@ class ShowTask(BaseModel):
     """
     A pydantic model
     """
-    puid: str
+    tuid: str
     task_name: str
     description: str
+    event_id: Optional[str]
+    estimate_hours: Optional[int]
+    deadline: Optional[datetime]
+    start_date: Optional[datetime]
+    end_date: Optional[datetime]
     is_active: bool
     is_deleted: bool
     created_at: datetime
     updated_at: datetime
     creator: ShowUser
+    project: BaseProject
 
 
 class TaskList(BaseModel):
@@ -301,4 +320,60 @@ class CreateTask(BaseModel):
         None,
         title="End-date",
         description="End date for this task"
+    )]
+
+
+class UpdateTask(BaseModel):
+    """
+    A pydantic model
+    """
+    task_name: Annotated[str, Field(
+        None,
+        min_length=3,
+        max_length=50,
+        title="Task name"
+    )]
+    description: Annotated[str, Field(
+        None,
+        title="Task description",
+        description="Description for task."
+    )]
+    task_id: Annotated[str, Field(
+        title="Task ID",
+        description="tuid of a task to update."
+    )]
+    event_id: Annotated[str, Field(
+        None,
+        title="Event ID",
+        description="Google calendar event ID"
+    )]
+    estimate_hours: Annotated[int, Field(
+        None,
+        title="Estimate hours",
+        description="Estimate number of hours to complete the task."
+    )]
+    deadline_date: Annotated[datetime, Field(
+        None,
+        title="Deadline date",
+        description="Estimate date to complete the task."
+    )]
+    start_date: Annotated[datetime, Field(
+        None,
+        title="Start-date",
+        description="Start date for this task."
+    )]
+    end_date: Annotated[datetime, Field(
+        None,
+        title="End-date",
+        description="End date for this task"
+    )]
+    is_active: Annotated[bool, Field(
+        None,
+        title="Deactivate",
+        description="De-activate the task"
+    )]
+    is_deleted: Annotated[bool, Field(
+        None,
+        title="Delete",
+        description="Delete the task?"
     )]
