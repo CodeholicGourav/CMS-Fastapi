@@ -20,6 +20,7 @@ from fastapi import HTTPException, status
 from passlib.context import CryptContext
 from pydantic import BaseModel, EmailStr, HttpUrl
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing import Optional
 
 
 class Settings(BaseSettings):
@@ -65,7 +66,8 @@ class ShowUser(BaseModel):
     uuid: str
     username: str
     email: str
-    verification_token: str
+    profile_photo: Optional[str]=None
+    verification_token: Optional[str]=None
 
 
 class Hash:
@@ -475,6 +477,13 @@ predefined_organization_permissions = [
     {"permission": "Can read project", "type": 4, "codename": "read_project"},
     {"permission": "Can update project", "type": 4, "codename": "update_project"},
     {"permission": "Can delete project", "type": 4, "codename": "delete_project"}
+]
+
+predefined_project_permissions = [
+    {"permission": "Can create task", "type": 1, "codename": "create_task"},
+    {"permission": "Can update task", "type": 1, "codename": "update_task"},
+    {"permission": "Can assign task", "type": 2, "codename": "assign_task"},
+    {"permission": "Can create column", "type": 3, "codename": "create_column"},
 ]
 
 predefined_feature = [

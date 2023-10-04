@@ -323,6 +323,24 @@ def update_project(
     return controller.update_project(data, organization, sql)
 
 
+@organizationRoutes.post('/assign-project-permission',
+    response_model=schema.ShowProject,
+    dependencies=[
+        Depends(authenticate_token),
+        Depends(check_permission(["update_project"]))
+    ],
+    status_code=status.HTTP_201_CREATED,
+    description="Assign permission inside a project.",
+    name="Assign project permission"
+)
+def assign_project_permission(
+    data : schema.assignPerojectPermission,
+    organization: model.Organization = Depends(organization_exist),
+    sql : Session = Depends(get_db),
+):
+    return controller.assign_project_permission(data, organization, sql)
+
+
 @organizationRoutes.post('/create-task',
     response_model=schema.ShowTask,
     status_code=status.HTTP_201_CREATED,

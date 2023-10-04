@@ -27,15 +27,9 @@ def run():
     uvicorn.run(app, host=host, port=port, log_level="info")
 
 
-def migrate_tables() -> None:
+def migrate_tables():
     """
     Migrates all tables in the database and populates them with initial data.
-
-    Args:
-        engine: The database engine to use. Defaults to None.
-
-    Returns:
-        None
     """
     print("Migrating all tables...")
     backendModel.Base.metadata.create_all(bind=engine)
@@ -43,7 +37,8 @@ def migrate_tables() -> None:
     organizationdModel.Base.metadata.create_all(bind=engine)
     backendModel.create_permissions()
     backendModel.create_features()
-    organizationdModel.create_permissions()
+    organizationdModel.create_org_permissions()
+    organizationdModel.create_proj_permissions()
     frontendModel.create_timezones()
 
 

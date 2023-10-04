@@ -235,6 +235,8 @@ def get_all_users(
     count = sql.query(model.OrganizationUser.id).filter_by(
         org_id=organization.id
     ).count()
+    print(count)
+    print(users)
 
     return {
         "total": count,
@@ -859,3 +861,68 @@ def update_task(
     sql.refresh(task)
 
     return task
+
+
+def assign_project_permission(
+    data: schema.assignPerojectPermission,
+    organization: model.Organization,
+    sql: Session
+):
+    project = sql.query(
+        model.Project
+    ).filter_by(
+        puid=data.project_id,
+        org_id=organization.id
+    ).first()
+    if not project:
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
+            loc="project_id",
+            msg="Project does not exist",
+            inp=data.project_id,
+            ctx={"project_id": "exist"}
+        )
+
+    user = sql.query(
+        model.OrganizationUser
+    ).join(
+        frontendModel.FrontendUser,
+        model.OrganizationUser.user_id==frontendModel.FrontendUser.id
+    ).filter(
+        frontendModel.FrontendUser.uuid==data.user_id,
+    ).first()
+    if not user:
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
+            loc="user_id",
+            msg="User does not exist",
+            inp=data.user_id,
+            ctx={"user_id": "exist"}
+        )
+
+    # Retrieve the requested permissions from the database
+    codenames = data.permissions
+    permissions = sql.query(model.ProjectPermission).filter(
+        model.ProjectPermission.codename.in_(codenames)
+    ).all()
+
+    # Delete any existing project permissions for the user
+    sql.query(model.ProjectUserPermission).filter_by(
+        user_id=user.id,
+        project_id=project.id,
+    ).delete()
+
+    # Assign new project permissions for the user
+    proj_permissions = [
+        model.ProjectUserPermission(
+            user_id=user.id,
+            project_id=project.id,
+            permission_id=permission.id
+        )
+        for permission in permissions
+    ]
+
+    # Add the new project permissions to the database
+    sql.add_all(proj_permissions)
+    sql.commit()
+    return project

@@ -3,6 +3,7 @@ schema.py
 Author: Gourav Sahu
 Date: 23/09/2023
 """
+from dependencies import ShowUser
 from datetime import datetime
 from typing import Annotated, List, Optional
 
@@ -22,15 +23,6 @@ class BasicOrganization(BaseModel):
     is_deleted: bool
     created_at: datetime
     updated_at: datetime
-
-
-class ShowUser(BaseModel):
-    """
-    A pydantic model
-    """
-    uuid: str
-    username: str
-    email: str
 
 
 class ShowOrganization(BaseModel):
@@ -111,7 +103,6 @@ class ShowOrgUser(BaseModel):
     """
     A pydantic model
     """
-    uuid: str
     user: ShowUser
     is_active: bool
     is_deleted: bool
@@ -377,3 +368,12 @@ class UpdateTask(BaseModel):
         title="Delete",
         description="Delete the task?"
     )]
+
+
+class assignPerojectPermission(BaseModel):
+    """
+    A pydantic model
+    """
+    project_id: str
+    user_id: str
+    permissions: List[str]

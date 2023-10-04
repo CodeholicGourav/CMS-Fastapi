@@ -11,7 +11,10 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 
 from database import Base, SessionLocal
-from dependencies import predefined_organization_permissions
+from dependencies import (
+    predefined_organization_permissions,
+    predefined_project_permissions
+)
 
 
 class Organization(Base):
@@ -150,7 +153,6 @@ class OrganizationUser(Base):
         return (
             "OrganizationUser("
                 f"id={self.id}, "
-                f"uuid={self.uuid}, "
                 f"user_id={self.user_id}, "
                 f"org_id={self.org_id}, "
                 f"role_id={self.role_id}, "
@@ -163,7 +165,6 @@ class OrganizationUser(Base):
         return (
             "OrganizationUser("
                 f"id={self.id}, "
-                f"uuid={self.uuid}, "
                 f"user_id={self.user_id}, "
                 f"org_id={self.org_id}, "
                 f"role_id={self.role_id}, "
@@ -272,12 +273,12 @@ class OrganizationPermission(Base):
         return f"Organization Permission: {self.permission}"
 
 
-def create_permissions():
+def create_org_permissions():
     """
-    Create predefined permissions in the database.
+    Create predefined organization permissions in the database.
     """
     try:
-        print("Creating permissions data...")
+        print("Creating organization permissions data...")
         sql = SessionLocal()
         permissions = [
             OrganizationPermission(**permission)
@@ -527,3 +528,131 @@ class Task(Base):
 
     def __str__(self):
         return self.task_name
+
+
+class ProjectPermission(Base):
+    """
+    Represents a table in a database called 'project_permissions'.
+    """
+    __tablename__ = "project_permissions"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+    permission = Column(
+        String(255),
+        nullable=False
+    )
+    type = Column(
+        Integer,
+        nullable=False
+    )
+    codename = Column(
+        String(50),
+        index=True,
+        unique=True,
+        nullable=False
+    )
+
+
+    def __repr__(self):
+        return (
+            "<ProjectPermission("
+                f"id={self.id}, "
+                f"permission='{self.permission}'"
+                f"type='{self.type}'"
+                f"codename='{self.codename}'"
+            ")>"
+        )
+
+    def __str__(self):
+        return f"Project Permission: {self.permission}"
+
+
+def create_proj_permissions():
+    """
+    Create predefined project permissions in the database.
+    """
+    try:
+        print("Creating project permissions data...")
+        sql = SessionLocal()
+        permissions = [
+            ProjectPermission(**permission)
+            for permission in predefined_project_permissions
+        ]
+        sql.add_all(permissions)
+        sql.commit()
+        return {
+            "message": "Project Permissions created successfully"
+        }
+    except exc.IntegrityError as error:
+        sql.rollback()
+        return {"error": str(error)}
+    except exc.SQLAlchemyError as error:
+        sql.rollback()
+        return {"error": str(error)}
+    finally:
+        sql.close()
+
+
+class ProjectUserPermission(Base):
+    """
+    Represents a table in a database called 'project_user_permissions'.
+    """
+    __tablename__ = 'project_user_permissions'
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+    user_id = Column(
+        Integer,
+        ForeignKey("frontendusers.id"),
+        nullable=True
+    )
+    project_id = Column(
+        Integer,
+        ForeignKey("projects.id"),
+        nullable=True
+    )
+    permission_id = Column(
+        Integer,
+        ForeignKey("project_permissions.id"),
+        nullable=False
+    )
+
+    user = relationship(
+        "FrontendUser",
+        foreign_keys=user_id
+    )
+    project = relationship(
+        "Project",
+        foreign_keys=project_id
+    )
+    permission = relationship(
+        "ProjectPermission",
+        foreign_keys=permission_id
+    )
+
+    def __repr__(self):
+        return (
+            "ProjectUserPermission("
+                f"id={self.id}, "
+                f"user_id={self.user_id}, "
+                f"project_id={self.project_id}, "
+                f"permission_id={self.permission_id}"
+            ")"
+        )
+
+    def __str__(self):
+        return (
+            "ProjectUserPermission("
+                f"id={self.id}, "
+                f"user_id={self.user_id}, "
+                f"project_id={self.project_id}, "
+                f"permission_id={self.permission_id}"
+            ")"
+        )
