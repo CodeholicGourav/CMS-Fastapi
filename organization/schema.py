@@ -3,11 +3,12 @@ schema.py
 Author: Gourav Sahu
 Date: 23/09/2023
 """
-from dependencies import ShowUser
 from datetime import datetime
 from typing import Annotated, List, Optional
 
 from pydantic import BaseModel, Field
+
+from dependencies import ShowUser
 
 
 class BasicOrganization(BaseModel):
@@ -183,6 +184,9 @@ class AssignRole(BaseModel):
 
 
 class BaseProject(BaseModel):
+    """
+    A pydantic model
+    """
     puid: str
     project_name: str
 
@@ -242,6 +246,16 @@ class UpdateProject(BaseModel):
     is_deleted: Optional[bool] = None
 
 
+class TaskAssigned(BaseModel):
+    """
+    A pydantic model
+    """
+    user: ShowUser
+    assigned_by: ShowUser
+    created_at: datetime
+    updated_at: datetime
+
+
 class ShowTask(BaseModel):
     """
     A pydantic model
@@ -259,6 +273,7 @@ class ShowTask(BaseModel):
     created_at: datetime
     updated_at: datetime
     creator: ShowUser
+    assigned_to: Optional[list[TaskAssigned]] = []
     project: BaseProject
 
 
@@ -370,10 +385,24 @@ class UpdateTask(BaseModel):
     )]
 
 
-class assignPerojectPermission(BaseModel):
+class AssignPerojectPermission(BaseModel):
     """
     A pydantic model
     """
     project_id: str
     user_id: str
     permissions: List[str]
+
+
+class AssignTask(BaseModel):
+    """
+    A pydantic model
+    """
+    task_id: str = Field(
+        title="Task ID",
+        description="tuid of the task to assign"
+    )
+    user_id: str = Field(
+        title="User ID",
+        description="UUID of frontend user."
+    )

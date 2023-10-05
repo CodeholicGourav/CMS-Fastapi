@@ -204,7 +204,6 @@ def register_to_organization(
         )
 
     org_user = model.OrganizationUser(
-        uuid=generate_uuid(organization.org_name + user.username),
         user_id=user.id,
         org_id=organization.id,
         role_id=1  # Assign default role
@@ -864,15 +863,17 @@ def update_task(
 
 
 def assign_project_permission(
-    data: schema.assignPerojectPermission,
+    data: schema.AssignPerojectPermission,
     organization: model.Organization,
     sql: Session
 ):
-    project = sql.query(
-        model.Project
-    ).filter_by(
-        puid=data.project_id,
-        org_id=organization.id
+    """
+    This function assigns project permissions to a user in an organization 
+    by creating new entries in the `ProjectUserPermission` table.
+    """
+    # Retrieve the project object from the database
+    project = sql.query(model.Project).filter_by(
+        puid=data.project_id, org_id=organization.id
     ).first()
     if not project:
         CustomValidations.raize_custom_error(
@@ -883,13 +884,13 @@ def assign_project_permission(
             ctx={"project_id": "exist"}
         )
 
-    user = sql.query(
-        model.OrganizationUser
-    ).join(
+    # Check user exist in this organization
+    user = sql.query(model.OrganizationUser).join(
         frontendModel.FrontendUser,
         model.OrganizationUser.user_id==frontendModel.FrontendUser.id
     ).filter(
-        frontendModel.FrontendUser.uuid==data.user_id,
+        model.OrganizationUser.org_id==organization.id,
+        frontendModel.FrontendUser.uuid==data.user_id
     ).first()
     if not user:
         CustomValidations.raize_custom_error(
@@ -901,15 +902,14 @@ def assign_project_permission(
         )
 
     # Retrieve the requested permissions from the database
-    codenames = data.permissions
     permissions = sql.query(model.ProjectPermission).filter(
-        model.ProjectPermission.codename.in_(codenames)
+        model.ProjectPermission.codename.in_(data.permissions)
     ).all()
 
     # Delete any existing project permissions for the user
     sql.query(model.ProjectUserPermission).filter_by(
         user_id=user.id,
-        project_id=project.id,
+        project_id=project.id
     ).delete()
 
     # Assign new project permissions for the user
@@ -918,11 +918,112 @@ def assign_project_permission(
             user_id=user.id,
             project_id=project.id,
             permission_id=permission.id
-        )
-        for permission in permissions
+        ) for permission in permissions
     ]
 
     # Add the new project permissions to the database
     sql.add_all(proj_permissions)
     sql.commit()
     return project
+
+
+def assign_task(
+    data: schema.AssignTask,
+    auth_token: frontendModel.FrontendToken,
+    organization: model.Organization,
+    sql: Session
+):
+    """
+    Assigns a task to multiple users in an organization.
+    """
+    task = sql.query(model.Task).filter_by(
+        tuid=data.task_id
+    ).first()
+    if not task:
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
+            loc="task_id",
+            msg="Task does not exist",
+            inp=data.task_id,
+            ctx={"task_id": "exist"}
+        )
+
+    # Check user exist in this organization
+    user = sql.query(model.OrganizationUser).join(
+        frontendModel.FrontendUser,
+        model.OrganizationUser.user_id==frontendModel.FrontendUser.id
+    ).filter(
+        model.OrganizationUser.org_id==organization.id,
+        frontendModel.FrontendUser.uuid==data.user_id
+    ).first()
+
+    if not user:
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
+            loc="user_id",
+            msg="User does not exist",
+            inp=data.user_id,
+            ctx={"user_id": "exist"}
+        )
+
+    user_task = sql.query(model.UserTask).filter_by(
+        task_id=task.id,
+        user_id=user.id,
+    ).first()
+    if not user_task:
+        user_task = model.UserTask(
+            task_id=task.id,
+            user_id=user.id,
+            created_by=auth_token.user_id
+        )
+    sql.add(user_task)
+    sql.commit()
+
+    return task
+
+
+def withdraw_task(
+    data: schema.AssignTask,
+    organization: model.Organization,
+    sql: Session
+):
+    """
+    Withdraws a task assigned to a user in an organization.
+    """
+    task = sql.query(model.Task).filter_by(
+        tuid=data.task_id
+    ).first()
+    if not task:
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
+            loc="task_id",
+            msg="Task does not exist",
+            inp=data.task_id,
+            ctx={"task_id": "exist"}
+        )
+
+    user = sql.query(model.OrganizationUser).join(
+        frontendModel.FrontendUser,
+        model.OrganizationUser.user_id == frontendModel.FrontendUser.id
+    ).filter(
+        model.OrganizationUser.org_id == organization.id,
+        frontendModel.FrontendUser.uuid == data.user_id
+    ).first()
+
+    if not user:
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
+            loc="user_id",
+            msg="User does not exist",
+            inp=data.user_id,
+            ctx={"user_id": "exist"}
+        )
+
+    sql.query(model.UserTask).filter_by(
+        task_id=task.id,
+        user_id=user.id,
+    ).delete()
+    sql.commit()
+    sql.refresh(task)
+
+    return task

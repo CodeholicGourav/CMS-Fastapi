@@ -511,6 +511,10 @@ class Task(Base):
         "Project",
         foreign_keys=project_id
     )
+    assigned_to = relationship(
+        "UserTask",
+        back_populates="task"
+    )
 
     def __repr__(self):
         return (
@@ -654,5 +658,72 @@ class ProjectUserPermission(Base):
                 f"user_id={self.user_id}, "
                 f"project_id={self.project_id}, "
                 f"permission_id={self.permission_id}"
+            ")"
+        )
+
+
+class UserTask(Base):
+    """
+    Represents a table in a database called 'user_tasks'.
+    """
+    __tablename__ = 'user_tasks'
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+    task_id = Column(
+        Integer,
+        ForeignKey("tasks.id")
+    )
+    user_id = Column(
+        Integer,
+        ForeignKey("frontendusers.id")
+    )
+    created_by = Column(
+        Integer,
+        ForeignKey("frontendusers.id")
+    )
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow
+    )
+    updated_at = Column(
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow
+    )
+
+    task = relationship(
+        "Task",
+        foreign_keys=task_id
+    )
+    user = relationship(
+        "FrontendUser",
+        foreign_keys=user_id
+    )
+    assigned_by = relationship(
+        "FrontendUser",
+        foreign_keys=created_by
+    )
+
+    def __repr__(self):
+        return (
+            "ProjectUserPermission("
+                f"id={self.id}, "
+                f"user_id={self.user_id}, "
+                f"project_id={self.task_id}, "
+                f"permission_id={self.created_by}"
+            ")"
+        )
+
+    def __str__(self):
+        return (
+            "ProjectUserPermission("
+                f"id={self.id}, "
+                f"user_id={self.user_id}, "
+                f"project_id={self.task_id}, "
+                f"permission_id={self.created_by}"
             ")"
         )

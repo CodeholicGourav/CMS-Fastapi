@@ -1,5 +1,5 @@
 """
-model.py
+route.py
 Author: Gourav Sahu
 Date: 23/09/2023
 """
@@ -334,10 +334,14 @@ def update_project(
     name="Assign project permission"
 )
 def assign_project_permission(
-    data : schema.assignPerojectPermission,
+    data : schema.AssignPerojectPermission,
     organization: model.Organization = Depends(organization_exist),
     sql : Session = Depends(get_db),
 ):
+    """
+    This function assigns project permissions to a user in an organization 
+    by creating new entries in the `ProjectUserPermission` table.
+    """
     return controller.assign_project_permission(data, organization, sql)
 
 
@@ -406,3 +410,39 @@ def update_task(
     Updates the details of a task in the project.
     """
     return controller.update_task(data, organization, sql)
+
+
+@organizationRoutes.post('/assign-task',
+    response_model=schema.ShowTask,
+    status_code=status.HTTP_201_CREATED,
+    description="Assign a task to a user.",
+    name="Assign task"
+)
+def assign_task(
+    data : schema.AssignTask,
+    auth_token: frontendModel.FrontendToken = Depends(authenticate_token),
+    organization: model.Organization = Depends(organization_exist),
+    sql : Session = Depends(get_db),
+):
+    """
+    Assigns a task to multiple users in an organization.
+    """
+    return controller.assign_task(data, auth_token, organization, sql)
+
+
+@organizationRoutes.post('/withdraw-task',
+    response_model=schema.ShowTask,
+    dependencies=[Depends(authenticate_token)],
+    status_code=status.HTTP_200_OK,
+    description="Withdraw a task from a user.",
+    name="Withdreaw task"
+)
+def withdraw_task(
+    data : schema.AssignTask,
+    organization: model.Organization = Depends(organization_exist),
+    sql : Session = Depends(get_db),
+):
+    """
+    Withdraws a task assigned to a user in an organization.
+    """
+    return controller.withdraw_task(data, organization, sql)
