@@ -68,6 +68,19 @@ def login(
     return controller.create_auth_token(request, sql)
 
 
+@frontendUserRoutes.get(
+    path="/profile",
+    response_model= schema.BaseUser,
+    status_code=status.HTTP_200_OK,
+    description="Returns the profile details of user.",
+    name="Profile details"
+)
+def profile(
+    auth_token: model.FrontendToken = Depends(authenticate_token),
+):
+    return auth_token.user
+
+
 @frontendUserRoutes.delete(
     path="/logout",
     status_code=status.HTTP_204_NO_CONTENT,
