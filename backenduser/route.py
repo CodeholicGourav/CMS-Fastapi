@@ -16,8 +16,7 @@ from . import controller, model, schema
 backendUserRoutes = APIRouter()
 
 
-@backendUserRoutes.post(
-    path="/register",
+@backendUserRoutes.post("/register",
     response_model=schema.BaseUser,
     dependencies=[Depends(authenticate_token), Depends(check_permission(["create_user"]))],
     status_code=status.HTTP_201_CREATED,
@@ -34,8 +33,7 @@ def register(
     return controller.create_user(data, sql)
 
 
-@backendUserRoutes.get(
-    path="/get-all",
+@backendUserRoutes.get("/get-all",
     response_model=schema.ListUsers,
     dependencies=[Depends(authenticate_token), Depends(check_permission(["read_user"]))],
     status_code=status.HTTP_200_OK,
@@ -55,8 +53,7 @@ async def get_users_list(
     return controller.all_backend_users(limit, offset, sql)
 
 
-@backendUserRoutes.get(
-    path="/get/{user_id}",
+@backendUserRoutes.get("/get/{user_id}",
     response_model=schema.User,
     dependencies=[Depends(authenticate_token), Depends(check_permission(["read_user"]))],
     status_code=status.HTTP_200_OK,
@@ -73,8 +70,7 @@ async def get_user_details(
     return controller.user_details(user_id, sql)
 
 
-@backendUserRoutes.post(
-    path="/update-user",
+@backendUserRoutes.post("/update-user",
     response_model=schema.BaseUser,
     dependencies=[Depends(check_permission(["update_user"]))],
     status_code=status.HTTP_200_OK,
@@ -93,8 +89,7 @@ async def update_user_details(
 
 
 
-@backendUserRoutes.get(
-    path="/verify-token",
+@backendUserRoutes.get("/verify-token",
     status_code=status.HTTP_202_ACCEPTED,
     description="Verify a email using token sent to that email address.",
     name="Verify Email"
@@ -109,8 +104,7 @@ def verify_email_token(
     return controller.verify_email(token, sql)
 
 
-@backendUserRoutes.post(
-    path="/login",
+@backendUserRoutes.post("/login",
     response_model= schema.ShowToken,
     status_code=status.HTTP_200_OK,
     description="Create and get authtoken for a user.",

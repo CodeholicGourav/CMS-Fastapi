@@ -160,7 +160,7 @@ def get_role_details(
 
 
 @organizationRoutes.get('/permissions',
-    response_model=schema.BasicOrgPermission,
+    response_model=list[schema.BasicOrgPermission],
     status_code=status.HTTP_200_OK,
     description="Fetch all the permissions avilable for organization.",
     name="List permissions"

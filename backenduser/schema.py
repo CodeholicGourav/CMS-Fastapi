@@ -6,7 +6,11 @@ Date: 23/09/2023
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, EmailStr, Field, constr, validator
+from pydantic import (
+    BaseModel,
+    EmailStr,
+    Field, validator
+)
 
 from dependencies import CustomValidations
 
@@ -117,10 +121,28 @@ class RegisterUser(BaseModel):
     """
     A pydantic model
     """
-    username: constr(min_length=6, max_length=30,)
+    username: str = Field(
+        min_length=5,
+        max_length=30,
+        description=(
+            "Must be 8 characters long. "
+            "Only lower case letters allowed. "
+            "Can use a underscore. "
+        )
+    )
     email: EmailStr
-    password: constr(min_length=8)
-    role_id: str = Field(..., description="ruid of a role.")
+    password: str = Field(
+        min_length=8,
+        description=(
+            "Must be 8 characters. "
+            "Atleast one upper-case letter. "
+            "Atleast One lower-case letter. "
+            "Atleast one special character. "
+        )
+    )
+    role_id: str = Field(
+        description="ruid of a role."
+    )
 
     @validator("username")
     def username_valid(cls, value):
@@ -142,17 +164,15 @@ class SystemDetails(BaseModel):
     A pydantic model
     """
     ip_address: str = Field(
-        ..., le=30,
+        max_length=30,
         description="IP address of you machine to link it with the login token."
     )
     browser: str = Field(
-        ...,
-        le=30,
+        max_length=30,
         description="Name of the browser to link it with the login token."
     )
     system: str = Field(
-        ...,
-        le=30,
+        max_length=30,
         description="Name of your machine to link it with the login token."
     )
 
@@ -160,7 +180,11 @@ class SystemDetails(BaseModel):
         """
         Returns string representation of the object of this class.
         """
-        return f"IP Address: {self.ip_address}, Browser: {self.browser}, System: {self.system}"
+        return (
+            f"IP Address: {self.ip_address}, "
+            f"Browser: {self.browser}, "
+            f"System: {self.system}"
+        )
 
 
 class LoginUser(BaseModel):
@@ -176,10 +200,18 @@ class UpdateUser(BaseModel):
     """
     A pydantic model
     """
-    user_id: str = Field(..., description="uuid of the user.")
-    role_id: Optional[str] = Field(..., description="ruid of the role to assign.")
-    is_deleted: Optional[bool] = Field(..., description="delete the user or not.")
-    is_active: Optional[bool] = Field(..., description="activate the user or not.")
+    user_id: str = Field(
+        description="uuid of the user."
+    )
+    role_id: Optional[str] = Field(
+        description="ruid of the role to assign."
+    )
+    is_deleted: Optional[bool] = Field(
+        description="delete the user or not."
+    )
+    is_active: Optional[bool] = Field(
+        description="activate the user or not."
+    )
 
 
 class RolePermission(BaseModel):
@@ -205,8 +237,18 @@ class ForgotPassword(BaseModel):
     """
     A pydantic model
     """
-    token : str = Field(..., description="Token sent to user's email")
-    password: constr(min_length=8)
+    token : str = Field(
+        description="Token sent to user's email"
+    )
+    password: str = Field(
+        min_length=8,
+        description=(
+            "Must be 8 characters. "
+            "Atleast one upper-case letter. "
+            "Atleast One lower-case letter. "
+            "Atleast one special character. "
+        )
+    )
 
     @validator("password")
     def _password(cls, value):
@@ -217,8 +259,12 @@ class FeatureQuantity(BaseModel):
     """
     A pydantic model
     """
-    feature_code: str = Field(..., description="feature_code from features list.")
-    quantity: int = Field(..., description="Number of items allowed.")
+    feature_code: str = Field(
+        description="feature_code from features list."
+    )
+    quantity: int = Field(
+        description="Number of items allowed."
+    )
 
 
 class CreateSubscription(BaseModel):
@@ -227,9 +273,15 @@ class CreateSubscription(BaseModel):
     """
     name : str
     description : Optional[str]
-    price : float = Field(..., description="Price to show.")
-    sale_price : float = Field(..., description="The actual price.")
-    validity : int = Field(..., description="Validity for user in days.")
+    price : float = Field(
+        description="Price to show."
+    )
+    sale_price : float = Field(
+        description="The actual price."
+    )
+    validity : int = Field(
+        description="Validity for user in days."
+    )
     features: list[FeatureQuantity]
 
 
@@ -244,15 +296,24 @@ class CreateRole(BaseModel):
     """
     A pydantic model
     """
-    role : str = Field(..., ge=3, le=20, description="Name of the role.")
+    role : str = Field(
+        ...,
+        min_length=3,
+        max_length=20,
+        description="Name of the role."
+    )
 
 
 class AssignPermissions(BaseModel):
     """
     A pydantic model
     """
-    ruid : str = Field(..., description="ruid of the role.")
-    permissions : List[str] = Field(..., description="codename of permissions")
+    ruid : str = Field(
+        description="ruid of the role."
+    )
+    permissions : List[str] = Field(
+        description="codename of permissions"
+    )
 
 
 class ListFeatures(BaseModel):
@@ -291,7 +352,9 @@ class UpdateSubscription(BaseModel):
     """
     A pydantic model
     """
-    suid : str = Field(..., description="suid of the subscription")
+    suid : str = Field(
+        description="suid of the subscription"
+    )
     name : Optional[str] = None
     description : Optional[str] = None
     price : Optional[float] = None
