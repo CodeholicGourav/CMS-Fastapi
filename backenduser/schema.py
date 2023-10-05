@@ -280,6 +280,7 @@ class CreateSubscription(BaseModel):
         description="The actual price."
     )
     validity : int = Field(
+        ge=1,
         description="Validity for user in days."
     )
     features: list[FeatureQuantity]
