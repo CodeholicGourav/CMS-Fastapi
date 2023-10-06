@@ -25,7 +25,7 @@ from dependencies import (
 from . import model, schema
 
 
-def register_user(data: schema.RegisterUser, sql: Session, backgrount_tasks: BackgroundTasks = BackgroundTasks()):
+def register_user(data: schema.RegisterUser, sql: Session, background_tasks: BackgroundTasks):
     """
     Creates a new Frontend user
     """
@@ -96,7 +96,7 @@ def register_user(data: schema.RegisterUser, sql: Session, backgrount_tasks: Bac
     sql.refresh(new_user)
 
     # Send an email verification token to the new user
-    backgrount_tasks.add_task(FrontendEmail.send_email_verification_token, new_user)
+    background_tasks.add_task(FrontendEmail.send_email_verification_token, new_user)
 
     return new_user
 

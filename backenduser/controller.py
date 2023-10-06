@@ -7,7 +7,7 @@ import getpass
 import secrets
 from datetime import datetime, timedelta
 
-from fastapi import status
+from fastapi import status, BackgroundTasks
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -54,7 +54,7 @@ def user_details(user_id: str, sql: Session):
     return user
 
 
-def create_user(user: schema.RegisterUser, sql: Session):
+def create_user(user: schema.RegisterUser, sql: Session, background_tasks: BackgroundTasks):
     """
     Creates a new backend user in the database.
     """
@@ -115,14 +115,7 @@ def create_user(user: schema.RegisterUser, sql: Session):
     # Refresh the new user object to get the updated values from the database
     sql.refresh(new_user)
 
-    if not BackendEmail.send_email_verification_token(new_user):
-        CustomValidations.raize_custom_error(
-            status_code=status.HTTP_417_EXPECTATION_FAILED,
-            error_type="Internal",
-            loc="email",
-            msg="Cannot send email.",
-            inp=user.email,
-        )
+    background_tasks.add_task(BackendEmail.send_email_verification_token(new_user))
 
     return new_user
 

@@ -6,7 +6,7 @@ Date: 23/09/2023
 import os
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, File, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, Query, UploadFile, status, BackgroundTasks
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
@@ -27,12 +27,13 @@ frontendUserRoutes = APIRouter()
 )
 def register(
     request: schema.RegisterUser,
-    sql: Session = Depends(get_db),
+    background_tasks: BackgroundTasks,
+    sql: Session = Depends(get_db)
 ):
     """
     Creates a new Frontend user
     """
-    return controller.register_user(request, sql)
+    return controller.register_user(request, sql, background_tasks)
 
 
 @frontendUserRoutes.get(

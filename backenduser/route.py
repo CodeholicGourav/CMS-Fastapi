@@ -5,7 +5,7 @@ Date: 23/09/2023
 """
 from typing import Annotated, List, Optional
 
-from fastapi import APIRouter, Depends, Path, Query, status
+from fastapi import APIRouter, Depends, Path, Query, status, BackgroundTasks
 from sqlalchemy.orm import Session
 
 from backenduser.middleware import authenticate_token, check_permission
@@ -25,12 +25,13 @@ backendUserRoutes = APIRouter()
 )
 def register(
     data: schema.RegisterUser,
+    background_tasks: BackgroundTasks,
     sql: Session = Depends(get_db),
 ):
     """
     Creates a new backend user in the database.
     """
-    return controller.create_user(data, sql)
+    return controller.create_user(data, sql, background_tasks)
 
 
 @backendUserRoutes.get("/get-all",
