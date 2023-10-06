@@ -13,6 +13,7 @@ from backenduser.controller import createsuperuser
 from database import SessionLocal, engine
 from frontenduser import model as frontendModel
 from organization import model as organizationdModel
+from taskmanagement import model as taskModel
 
 
 def run():
@@ -35,10 +36,11 @@ def migrate_tables():
     backendModel.Base.metadata.create_all(bind=engine)
     frontendModel.Base.metadata.create_all(bind=engine)
     organizationdModel.Base.metadata.create_all(bind=engine)
+    taskModel.Base.metadata.create_all(bind=engine)
     backendModel.create_permissions()
     backendModel.create_features()
     organizationdModel.create_org_permissions()
-    organizationdModel.create_proj_permissions()
+    taskModel.create_proj_permissions()
     frontendModel.create_timezones()
 
 

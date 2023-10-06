@@ -1,5 +1,5 @@
 """
-schema.py
+frontenduser/schema.py
 Author: Gourav Sahu
 Date: 23/09/2023
 """

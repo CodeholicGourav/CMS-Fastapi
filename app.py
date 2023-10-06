@@ -13,6 +13,7 @@ from backenduser.route import backendUserRoutes
 from dependencies import SETTINGS, TEMPLATES
 from frontenduser.route import frontendUserRoutes
 from organization.route import organizationRoutes
+from taskmanagement.route import taskmanagementRoutes
 
 
 # Create a FastAPI instance
@@ -80,4 +81,10 @@ app.include_router(
     organizationRoutes,
     prefix="/organization",
     tags=["Organization"],
+)
+
+app.include_router(
+    taskmanagementRoutes,
+    prefix="/task-management",
+    tags=["Task Management"],
 )
