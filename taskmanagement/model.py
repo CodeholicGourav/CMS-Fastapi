@@ -381,3 +381,63 @@ class UserTask(Base):
                 f"permission_id={self.created_by}"
             ")"
         )
+
+class ProjectCustomColumn(Base):
+    __tablename__ = 'projecttaskcustomcolumn'
+
+    id = Column(
+        Integer,
+        primary_key=True
+    )
+    
+    cuid = Column(
+        String(50),
+        index=True,
+        unique=True 
+    )
+    
+
+    project_id = Column(
+        Integer,
+        ForeignKey('projects.id')
+
+    )
+
+    column_name = Column(
+        String(50),
+        unique=True
+    )
+
+    type = Column(
+        String(50)
+    )
+
+    created_by = Column(
+        Integer,
+        ForeignKey('frontendusers.id')
+    )
+
+    is_deleted = Column(
+        Boolean,
+        default=False
+    )
+
+    deleted_by = Column(
+        Integer,
+        ForeignKey('frontendusers.id')
+    )
+
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow
+    )
+
+    updated_at = Column(
+        DateTime,
+        default=datetime.utcnow
+    )
+
+    creator = relationship("FrontendUser",foreign_keys=created_by)
+    project = relationship("Project",foreign_keys=project_id)
+
+

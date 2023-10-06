@@ -467,3 +467,45 @@ def withdraw_task(
     sql.refresh(task)
 
     return task
+
+
+def Projectcustomcolumn(
+        data:schema.ProjectCustomColumn,
+        authtoken:frontendModel.FrontendToken,
+        db:Session
+    ):
+    project_id = db.query(model.Project).filter_by(puid=data.project_id).first()
+    existing_column_name = db.query(model.ProjectCustomColumn).filter_by(
+        column_name = data.column_name
+    ).first()
+    if not project_id:
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
+            loc="project_id",
+            msg="project  does not exist",
+            inp=data.project_id
+        )
+    
+    if existing_column_name:
+        CustomValidations.raize_custom_error(
+            error_type="already_exist",
+            loc="column_name",
+            msg="column  already exists",
+            inp=data.column_name,
+        )
+
+    
+    
+    customcolumn = model.ProjectCustomColumn(
+        cuid = generate_uuid(data.column_name),
+        type = data.type,
+        column_name = data.column_name,
+        created_by = authtoken.user_id,
+        project_id = project_id.id,
+        is_deleted = data.is_deleted,
+
+    )
+    db.add(customcolumn)
+    db.commit()
+    db.refresh(customcolumn)
+    return customcolumn

@@ -58,6 +58,7 @@ class FrontendUser(Base):
 
     subscription = relationship("Subscription", foreign_keys=active_plan)
 
+
     def __repr__(self):
         """String representation of object"""
         return (
