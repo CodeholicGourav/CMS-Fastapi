@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 import razorpay
 import requests
 import stripe
-from fastapi import UploadFile, status
+from fastapi import UploadFile, status, BackgroundTasks
 from sqlalchemy.orm import Session
 
 from backenduser import controller as backendusercontroller
@@ -25,7 +25,7 @@ from dependencies import (
 from . import model, schema
 
 
-def register_user(data: schema.RegisterUser, sql: Session):
+def register_user(data: schema.RegisterUser, sql: Session, backgrount_tasks: BackgroundTasks = BackgroundTasks()):
     """
     Creates a new Frontend user
     """
@@ -96,15 +96,7 @@ def register_user(data: schema.RegisterUser, sql: Session):
     sql.refresh(new_user)
 
     # Send an email verification token to the new user
-    if not FrontendEmail.send_email_verification_token(new_user):
-        # If the email fails to send, raise a error
-        CustomValidations.raize_custom_error(
-            status_code=status.HTTP_417_EXPECTATION_FAILED,
-            error_type="Internal",
-            loc="email",
-            msg="Cannot send email.",
-            inp=data.email,
-        )
+    backgrount_tasks.add_task(FrontendEmail.send_email_verification_token, new_user)
 
     return new_user
 
@@ -432,8 +424,9 @@ def update_profile(request: schema.UpdateProfile, auth_token: model.FrontendToke
     """
     user = auth_token.user
     if request.username:
-        existing_user = sql.query(model.FrontendUser).filter_by(
-            username=request.username
+        existing_user = sql.query(model.FrontendUser).filter(
+            model.FrontendUser.username==request.username,
+            model.FrontendUser.id!=user.id
         ).first()
         if existing_user:
             CustomValidations.raize_custom_error(
