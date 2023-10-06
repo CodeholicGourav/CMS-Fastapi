@@ -327,11 +327,13 @@ def send_mail(recipient_email: str, subject: str, message: str):
             server.login(sender_email, sender_password)
             server.send_message(msg)
         print("Email sent successfully.")
-        return True
     except smtplib.SMTPException as smtp_error:
         # Handle SMTP-related errors (e.g., authentication failure, connection issues)
         print(f"Failed to send email: {str(smtp_error)}")
-        return False
+    finally:
+        server.quit()
+    
+    return True
 
 
 def allowed_file(filename: str):
