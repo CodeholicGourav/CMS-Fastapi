@@ -436,7 +436,7 @@ async def get_frontend_user_details(
     name="Update frontend user."
 )
 async def update_frontend_user_details(
-    data: schema.UpdateUser,
+    data: schema.UpdateFrontUser,
     sql : Session = Depends(get_db),
 ):
     """

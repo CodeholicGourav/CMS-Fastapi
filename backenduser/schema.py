@@ -214,6 +214,21 @@ class UpdateUser(BaseModel):
     )
 
 
+class UpdateFrontUser(BaseModel):
+    """
+    A pydantic model
+    """
+    user_id: str = Field(
+        description="uuid of the user."
+    )
+    is_deleted: Optional[bool] = Field(
+        description="delete the user or not."
+    )
+    is_active: Optional[bool] = Field(
+        description="activate the user or not."
+    )
+
+
 class RolePermission(BaseModel):
     """
     A pydantic model

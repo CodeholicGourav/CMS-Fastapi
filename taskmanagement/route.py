@@ -252,16 +252,14 @@ def delete_custom_column(
 
 @taskmanagementRoutes.post('/add-column-expected-values',
     response_model=schema.ResponseCustomColumn,
-    dependencies=[
-        Depends(authenticate_token),
-    ],
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(authenticate_token)],
     description="Withdraw a task from a user.",
-    name="Withdreaw task"
+    name="Withdraw task"
 )
 def create_column_expected_value(
     data:schema.CreateCustomColumnExpected,
-    organization: Depends(organization_exist),
+    organization: orgModel.Organization = Depends(organization_exist),
     sql:Session = Depends(get_db)
 ):
     """
