@@ -515,14 +515,15 @@ def project_custom_column(
     return customcolumn
 
 
-def create_column_expected_value(
+def update_column_expected_value(
     data: schema.CreateCustomColumnExpected,
     organization: orgModel.Organization,
     sql: Session
 ):
     """
     Creates new entries in the `CustomColumnExpected` table 
-    by adding expected values for a specific custom column.
+    by adding expected values for a specific custom column 
+    and removing the old values.
     """
     # Retrieve the custom column object from the database based on the provided column ID
     column = sql.query(
@@ -543,6 +544,13 @@ def create_column_expected_value(
             msg="Column does not exist",
             inp=data.column_id
         )
+
+    # Remove previous values for custom column 
+    sql.query(
+        model.CustomColumnExpected
+    ).filter_by(
+        column_id=column.id
+    ).delete()
 
     # Create a list of `CustomColumnExpected` objects
     # using the provided values and the ID of the column
@@ -575,16 +583,12 @@ def delete_custom_column(
     # Retrieve the custom column object from the database based on the provided column ID
     column = sql.query(
         model.ProjectCustomColumn
-    ).join(
-        model.Project,
-        model.Project.id == orgModel.Organization.id
-    ).filter(
-        model.ProjectCustomColumn.cuid==column_id,
-        orgModel.Organization.orguid==organization.orguid
+    ).filter_by(
+        cuid=column_id,
     ).first()
 
     # If the column does not exist, raise a custom error
-    if not column:
+    if not column or column.project.org_id != organization.id:
         CustomValidations.raize_custom_error(
             error_type="not_exist",
             loc="column_id",
@@ -596,3 +600,4 @@ def delete_custom_column(
     sql.commit()
     sql.refresh(column)
     return column
+

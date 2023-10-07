@@ -250,20 +250,21 @@ def delete_custom_column(
     return controller.delete_custom_column(column_id, organization, sql)
 
 
-@taskmanagementRoutes.post('/add-column-expected-values',
+@taskmanagementRoutes.post('/update-column-expected-values',
     response_model=schema.ResponseCustomColumn,
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(authenticate_token)],
-    description="Withdraw a task from a user.",
-    name="Withdraw task"
+    description="Update expected values for a custom column.",
+    name="Update custom column values"
 )
-def create_column_expected_value(
+def update_column_expected_value(
     data:schema.CreateCustomColumnExpected,
     organization: orgModel.Organization = Depends(organization_exist),
     sql:Session = Depends(get_db)
 ):
     """
     Creates new entries in the `CustomColumnExpected` table 
-    by adding expected values for a specific custom column.
+    by adding expected values for a specific custom column 
+    and delte previous values.
     """
-    return controller.create_column_expected_value(data, organization, sql)
+    return controller.update_column_expected_value(data, organization, sql)
