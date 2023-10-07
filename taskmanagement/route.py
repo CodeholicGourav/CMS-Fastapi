@@ -63,6 +63,29 @@ def get_projects(
     return controller.get_projects(limit, offset, organization, sql)
 
 
+# @taskmanagementRoutes.get('/project/{projectid}',
+#     response_model=schema.ShowProject,
+#     dependencies=[
+#         Depends(authenticate_token),
+#         Depends(check_permission(["read_project"]))
+#     ],
+#     status_code=status.HTTP_200_OK,
+#     description="Get details of a project.",
+#     name="Project details"
+# )
+# def project_details(
+#     limit: int = Query(10, ge=1, le=100, description="number of results to retrieve"),
+#     offset : int = Query(0, ge=0, description="Number of results to skip."),
+#     organization: orgModel.Organization = Depends(organization_exist),
+#     sql : Session = Depends(get_db),
+# ):
+#     """
+#     Retrieves a specified number of projects belonging to a specific organization,
+#     along with the total count of projects.
+#     """
+#     return controller.projec_details(limit, offset, organization, sql)
+
+
 @taskmanagementRoutes.post('/update-project',
     response_model=schema.ShowProject,
     dependencies=[

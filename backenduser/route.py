@@ -429,7 +429,7 @@ async def get_frontend_user_details(
 
 @backendUserRoutes.post(
     path="/update-frontend-user",
-    response_model=schema.BaseUser,
+    response_model=schema.FrontendBaseUser,
     dependencies=[Depends(authenticate_token), Depends(check_permission(["update_user"]))],
     status_code=status.HTTP_200_OK,
     description="Update fields of a frontend user.",
