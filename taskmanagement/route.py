@@ -3,7 +3,7 @@ taskmanagement/route.py
 Author: Gourav Sahu
 Date: 23/09/2023
 """
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Path, status
 from sqlalchemy.orm import Session
 
 from database import get_db
@@ -63,27 +63,25 @@ def get_projects(
     return controller.get_projects(limit, offset, organization, sql)
 
 
-# @taskmanagementRoutes.get('/project/{projectid}',
-#     response_model=schema.ShowProject,
-#     dependencies=[
-#         Depends(authenticate_token),
-#         Depends(check_permission(["read_project"]))
-#     ],
-#     status_code=status.HTTP_200_OK,
-#     description="Get details of a project.",
-#     name="Project details"
-# )
-# def project_details(
-#     limit: int = Query(10, ge=1, le=100, description="number of results to retrieve"),
-#     offset : int = Query(0, ge=0, description="Number of results to skip."),
-#     organization: orgModel.Organization = Depends(organization_exist),
-#     sql : Session = Depends(get_db),
-# ):
-#     """
-#     Retrieves a specified number of projects belonging to a specific organization,
-#     along with the total count of projects.
-#     """
-#     return controller.projec_details(limit, offset, organization, sql)
+@taskmanagementRoutes.get('/project/{project_id}',
+    response_model=schema.ShowProject,
+    dependencies=[
+        Depends(authenticate_token),
+        Depends(check_permission(["read_project"]))
+    ],
+    status_code=status.HTTP_200_OK,
+    description="Get details of a project.",
+    name="Project details"
+)
+def project_details(
+    project_id: str = Path(title="Project ID"),
+    organization: orgModel.Organization = Depends(organization_exist),
+    sql : Session = Depends(get_db),
+):
+    """
+    Retrieves the details of a project based on the provided project ID.
+    """
+    return controller.project_details(project_id, organization, sql)
 
 
 @taskmanagementRoutes.post('/update-project',

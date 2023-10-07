@@ -18,28 +18,6 @@ class BaseProject(BaseModel):
     project_name: str
 
 
-class ShowProject(BaseModel):
-    """
-    A pydantic model
-    """
-    puid: str
-    project_name: str
-    description: str
-    is_active: bool
-    is_deleted: bool
-    created_at: datetime
-    updated_at: datetime
-    creator: ShowUser
-
-
-class ProjectList(BaseModel):
-    """
-    A pydantic model
-    """
-    total: int
-    projects: List[ShowProject]
-
-
 class CreateProject(BaseModel):
     """
     A pydantic model
@@ -234,6 +212,7 @@ class AssignTask(BaseModel):
         description="UUID of frontend user."
     )
 
+
 class ProjectCustomColumn(BaseModel):
     """
     A pydantic model
@@ -259,6 +238,7 @@ class ExpectedValues(BaseModel):
     vuid: str
     value: str
 
+
 class ResponseCustomColumn(BaseModel):
     """
     A pydantic model
@@ -270,6 +250,30 @@ class ResponseCustomColumn(BaseModel):
     updated_at:datetime
     is_deleted:bool
     values: List[ExpectedValues]
+
+
+class ShowProject(BaseModel):
+    """
+    A pydantic model
+    """
+    puid: str
+    project_name: str
+    description: str
+    is_active: bool
+    is_deleted: bool
+    created_at: datetime
+    updated_at: datetime
+    creator: ShowUser
+    columns: List[ResponseCustomColumn]
+
+
+class ProjectList(BaseModel):
+    """
+    A pydantic model
+    """
+    total: int
+    projects: List[ShowProject]
+
 
 class CreateCustomColumnExpected(BaseModel):
     """

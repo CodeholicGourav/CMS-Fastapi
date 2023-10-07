@@ -68,6 +68,10 @@ class Project(Base):
         "FrontendUser",
         foreign_keys=created_by
     )
+    columns = relationship(
+        "ProjectCustomColumn",
+        back_populates="project"
+    )
 
     def __repr__(self):
         return (
@@ -382,6 +386,7 @@ class UserTask(Base):
             ")"
         )
 
+
 class ProjectCustomColumn(Base):
     """
     Represents a table in a database called 'projecttaskcustomcolumn'.
@@ -460,7 +465,6 @@ class ProjectCustomColumn(Base):
                 f"column_name='{self.column_name}'"
             ")"
         )
-
 
 
 class CustomColumnExpected(Base):

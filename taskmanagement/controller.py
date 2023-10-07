@@ -242,6 +242,29 @@ def get_tasks(
     }
 
 
+def project_details(
+    project_id: str,
+    organization: orgModel.Organization,
+    sql: Session
+):
+    """
+    Retrieves the details of a project based on the provided project ID.
+    """
+    project = sql.query(model.Project).filter_by(
+        puid=project_id,
+        org_id=organization.id
+    ).first()
+    if not project:
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
+            loc="project_id",
+            msg="Project does not exist",
+            inp=project_id,
+            ctx={"project_id": "exist"}
+        )
+    return project
+
+
 def update_task(
     data: schema.UpdateTask,
     organization: orgModel.Organization,
