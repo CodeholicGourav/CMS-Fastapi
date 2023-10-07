@@ -238,7 +238,6 @@ class ProjectCustomColumn(BaseModel):
     project_id:str
     column_name:str
     type:Optional[str]
-    is_deleted:Optional[bool]=False
 
 
 class BasicUser(BaseModel):
@@ -251,3 +250,4 @@ class ResponseCustomColumn(BaseModel):
     creator:BasicUser
     created_at:datetime
     updated_at:datetime
+    is_deleted:bool

@@ -269,3 +269,9 @@ class RazorpayReturn(BaseModel):
     currency: str
     ouid: str
     status: str
+
+class ResponseSearchproject(BaseModel):
+    project_name:str 
+    is_active:bool
+    is_deleted:bool 
+    created_at:BaseUser

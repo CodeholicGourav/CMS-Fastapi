@@ -211,7 +211,7 @@ def withdraw_task(
 def project_custom_column(
     data:schema.ProjectCustomColumn,
     authtoken:frontendModel.FrontendToken = Depends(authenticate_token),
-    db:Session = Depends(get_db)
+    sql:Session = Depends(get_db)
 ):
-    return controller.Projectcustomcolumn(data,authtoken,db)
+    return controller.project_custom_column(data,authtoken,sql)
 
