@@ -383,61 +383,189 @@ class UserTask(Base):
         )
 
 class ProjectCustomColumn(Base):
+    """
+    Represents a table in a database called 'projecttaskcustomcolumn'.
+    Used to store custom columns for projects and tasks.
+    """
     __tablename__ = 'projecttaskcustomcolumn'
 
     id = Column(
         Integer,
         primary_key=True
     )
-    
     cuid = Column(
         String(50),
         index=True,
-        unique=True 
+        unique=True
     )
-    
-
     project_id = Column(
         Integer,
         ForeignKey('projects.id')
-
     )
-
     column_name = Column(
         String(50),
         unique=True
     )
-
     type = Column(
         String(50)
     )
-
     created_by = Column(
         Integer,
         ForeignKey('frontendusers.id')
     )
-
     is_deleted = Column(
         Boolean,
         default=False
     )
-
     deleted_by = Column(
         Integer,
         ForeignKey('frontendusers.id')
     )
-
     created_at = Column(
         DateTime,
         default=datetime.utcnow
     )
-
     updated_at = Column(
         DateTime,
         default=datetime.utcnow
     )
 
-    creator = relationship("FrontendUser",foreign_keys=created_by)
-    project = relationship("Project",foreign_keys=project_id)
+    creator = relationship(
+        "FrontendUser",
+        foreign_keys=created_by
+    )
+    project = relationship(
+        "Project",
+        foreign_keys=project_id
+    )
+    values = relationship(
+        'CustomColumnExpected',
+        back_populates='column'
+    )
+
+    def __repr__(self):
+        return (
+            "ProjectCustomColumn("
+                f"id={self.id}, "
+                f"cuid='{self.cuid}', "
+                f"column_name='{self.column_name}'"
+            ")"
+        )
+
+    def __str__(self):
+        return (
+            "ProjectCustomColumn("
+                f"id={self.id}, "
+                f"cuid='{self.cuid}', "
+                f"column_name='{self.column_name}'"
+            ")"
+        )
 
 
+
+class CustomColumnExpected(Base):
+    """
+    Represents a table in a database called 'custom_column_expected_values'.
+    It is used to store the expected values for custom columns in projects and tasks.
+    """
+    __tablename__ = 'custom_column_expected_values'
+
+    id = Column(
+        Integer,
+        primary_key=True
+    )
+    vuid = Column(
+        String(50),
+        index=True,
+        unique=True
+    )
+    value = Column(
+        String(50),
+    )
+    column_id = Column(
+        Integer,
+        ForeignKey('projecttaskcustomcolumn.id')
+    )
+    is_deleted = Column(
+        Boolean,
+        default=False
+    )
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow
+    )
+    updated_at = Column(
+        DateTime,
+        default=datetime.utcnow
+    )
+
+    column = relationship(
+        "ProjectCustomColumn",
+        foreign_keys=column_id
+    )
+
+    def __repr__(self):
+        return f"CustomColumnExpected(id={self.id}, value='{self.value}')"
+
+    def __str__(self):
+        return self.value
+
+
+class CustomColumnAssigned(Base):
+    """
+    Represents a table in a database called 'custom_column_assigned_values'.
+    It is used to store the assigned values for custom columns in projects and tasks.
+    """
+    __tablename__ = 'custom_column_assigned_values'
+
+    id = Column(
+        Integer,
+        primary_key=True
+    )
+    value_id = Column(
+        Integer,
+        ForeignKey('custom_column_expected_values.id')
+    )
+    column_id = Column(
+        Integer,
+        ForeignKey('projecttaskcustomcolumn.id')
+    )
+    is_deleted = Column(
+        Boolean,
+        default=False
+    )
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow
+    )
+    updated_at = Column(
+        DateTime,
+        default=datetime.utcnow
+    )
+
+    column = relationship(
+        "ProjectCustomColumn",
+        foreign_keys=column_id
+    )
+    value = relationship(
+        "CustomColumnExpected",
+        foreign_keys=value_id
+    )
+
+    def __repr__(self):
+        return (
+            "<CustomColumnAssigned("
+                f"id={self.id}, "
+                f"value_id={self.value_id}, "
+                f"column_id={self.column_id})"
+            ">"
+        )
+
+    def __str__(self):
+        return (
+            "CustomColumnAssigned("
+                f"id={self.id}, "
+                f"value_id={self.value_id}, "
+                f"column_id={self.column_id}"
+            ")"
+        )

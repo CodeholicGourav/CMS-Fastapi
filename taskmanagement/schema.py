@@ -235,19 +235,45 @@ class AssignTask(BaseModel):
     )
 
 class ProjectCustomColumn(BaseModel):
+    """
+    A pydantic model
+    """
     project_id:str
     column_name:str
     type:Optional[str]
 
 
 class BasicUser(BaseModel):
+    """
+    A pydantic model
+    """
     uuid:str 
-    username:str 
-    email:str 
+    username:str
+    email:str
+
+
+class ExpectedValues(BaseModel):
+    """
+    A pydantic model
+    """
+    vuid: str
+    value: str
 
 class ResponseCustomColumn(BaseModel):
+    """
+    A pydantic model
+    """
     column_name:str
+    cuid: str
     creator:BasicUser
     created_at:datetime
     updated_at:datetime
     is_deleted:bool
+    values: List[ExpectedValues]
+
+class CreateCustomColumnExpected(BaseModel):
+    """
+    A pydantic model
+    """
+    column_id: str
+    values: List[str]

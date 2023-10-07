@@ -470,29 +470,35 @@ def withdraw_task(
 
 
 def project_custom_column(
-        data:schema.ProjectCustomColumn,
-        authtoken:frontendModel.FrontendToken,
-        sql:Session
-    ):
+    data:schema.ProjectCustomColumn,
+    organization: orgModel.Organization,
+    authtoken:frontendModel.FrontendToken,
+    sql:Session
+):
     """
     Create a custom column for a project based on the provided data.
     """
-    project_id = sql.query(model.Project).filter_by(puid=data.project_id).first()
-    existing_column_name = sql.query(model.ProjectCustomColumn).filter_by(
-        column_name = data.column_name
+    project = sql.query(model.Project).filter_by(
+        puid=data.project_id,
+        org_id=organization.id
     ).first()
-    if not project_id:
+    if not project:
         CustomValidations.raize_custom_error(
             error_type="not_exist",
             loc="project_id",
             msg="project  does not exist",
             inp=data.project_id
         )
+
+    existing_column_name = sql.query(model.ProjectCustomColumn).filter_by(
+        column_name=data.column_name,
+        project_id=project.id
+    ).first()
     if existing_column_name:
         CustomValidations.raize_custom_error(
             error_type="already_exist",
             loc="column_name",
-            msg="column  already exists",
+            msg="Column  already exists in this project.",
             inp=data.column_name,
         )
     customcolumn = model.ProjectCustomColumn(
@@ -500,10 +506,93 @@ def project_custom_column(
         type = data.type,
         column_name = data.column_name,
         created_by = authtoken.user_id,
-        project_id = project_id.id,
+        project_id = project.id,
         )
     sql.add(customcolumn)
     sql.commit()
     sql.refresh(customcolumn)
 
     return customcolumn
+
+
+def create_column_expected_value(
+    data: schema.CreateCustomColumnExpected,
+    organization: orgModel.Organization,
+    sql: Session
+):
+    """
+    Creates new entries in the `CustomColumnExpected` table 
+    by adding expected values for a specific custom column.
+    """
+    # Retrieve the custom column object from the database based on the provided column ID
+    column = sql.query(
+        model.ProjectCustomColumn
+    ).join(
+        model.Project,
+        model.Project.id == orgModel.Organization.id
+    ).filter(
+        model.ProjectCustomColumn.cuid==data.column_id,
+        orgModel.Organization.orguid==organization.orguid
+    ).first()
+
+    # If the column does not exist, raise a custom error
+    if not column:
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
+            loc="column_id",
+            msg="Column does not exist",
+            inp=data.column_id
+        )
+
+    # Create a list of `CustomColumnExpected` objects
+    # using the provided values and the ID of the column
+    values = [
+        model.CustomColumnExpected(
+            vuid=generate_uuid(value),
+            value=value,
+            column_id=column.id
+        ) for value in data.values
+    ]
+
+    # Add all the `CustomColumnExpected` objects to the session
+    sql.add_all(values)
+
+    # Commit the session to persist the changes
+    sql.commit()
+
+    # Refresh the custom column object to reflect the newly added expected values
+    sql.refresh(column)
+
+    # Return the updated custom column object
+    return column
+
+
+def delete_custom_column(
+    column_id: str,
+    organization: orgModel.Organization,
+    sql: Session
+):
+    # Retrieve the custom column object from the database based on the provided column ID
+    column = sql.query(
+        model.ProjectCustomColumn
+    ).join(
+        model.Project,
+        model.Project.id == orgModel.Organization.id
+    ).filter(
+        model.ProjectCustomColumn.cuid==column_id,
+        orgModel.Organization.orguid==organization.orguid
+    ).first()
+
+    # If the column does not exist, raise a custom error
+    if not column:
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
+            loc="column_id",
+            msg="Column does not exist",
+            inp=column_id
+        )
+
+    column.is_deleted=True
+    sql.commit()
+    sql.refresh(column)
+    return column

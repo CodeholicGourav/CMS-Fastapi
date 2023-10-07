@@ -10,10 +10,11 @@ from database import get_db
 from frontenduser import model as frontendModel
 from frontenduser.middleware import authenticate_token
 from organization import model as orgModel
-from . import model as proModel
 from organization.middleware import check_permission, organization_exist
 
-from . import controller, schema
+from . import controller
+from . import model as proModel
+from . import schema
 
 taskmanagementRoutes = APIRouter()
 
@@ -207,11 +208,64 @@ def withdraw_task(
     """
     return controller.withdraw_task(data, organization, sql)
 
-@taskmanagementRoutes.post('/add-custom-column',response_model=schema.ResponseCustomColumn,status_code=status.HTTP_201_CREATED)
+
+@taskmanagementRoutes.post('/add-custom-column',
+    response_model=schema.ResponseCustomColumn,
+    status_code=status.HTTP_201_CREATED,
+    description="Create a new custom column for a project.",
+    name="Create custo column"
+)
 def project_custom_column(
     data:schema.ProjectCustomColumn,
+    organization: orgModel.Organization = Depends(organization_exist),
     authtoken:frontendModel.FrontendToken = Depends(authenticate_token),
     sql:Session = Depends(get_db)
 ):
-    return controller.project_custom_column(data,authtoken,sql)
+    """
+    Create a custom column for a project based on the provided data.
+    """
+    return controller.project_custom_column(data, organization, authtoken, sql)
 
+
+@taskmanagementRoutes.delete('/delete-custom-column',
+    response_model=schema.ResponseCustomColumn,
+    status_code=status.HTTP_200_OK,
+    dependencies=[
+        Depends(authenticate_token)
+    ],
+    description="Delete a custom column from a project.",
+    name="Delete custom column"
+)
+def delete_custom_column(
+    column_id:str = Query(
+        title="Column ID",
+        description="cuid of a custom column to delete."
+    ),
+    organization:orgModel.Organization = Depends(organization_exist),
+    sql:Session = Depends(get_db)
+):
+    """
+    Delete a custom column for a project based on the provided data.
+    """
+    return controller.delete_custom_column(column_id, organization, sql)
+
+
+@taskmanagementRoutes.post('/add-column-expected-values',
+    response_model=schema.ResponseCustomColumn,
+    dependencies=[
+        Depends(authenticate_token),
+    ],
+    status_code=status.HTTP_201_CREATED,
+    description="Withdraw a task from a user.",
+    name="Withdreaw task"
+)
+def create_column_expected_value(
+    data:schema.CreateCustomColumnExpected,
+    organization: Depends(organization_exist),
+    sql:Session = Depends(get_db)
+):
+    """
+    Creates new entries in the `CustomColumnExpected` table 
+    by adding expected values for a specific custom column.
+    """
+    return controller.create_column_expected_value(data, organization, sql)
