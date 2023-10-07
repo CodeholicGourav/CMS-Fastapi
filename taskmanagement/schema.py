@@ -233,3 +233,21 @@ class AssignTask(BaseModel):
         title="User ID",
         description="UUID of frontend user."
     )
+
+class ProjectCustomColumn(BaseModel):
+    project_id:str
+    column_name:str
+    type:Optional[str]
+
+
+class BasicUser(BaseModel):
+    uuid:str 
+    username:str 
+    email:str 
+
+class ResponseCustomColumn(BaseModel):
+    column_name:str
+    creator:BasicUser
+    created_at:datetime
+    updated_at:datetime
+    is_deleted:bool

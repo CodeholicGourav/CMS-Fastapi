@@ -10,6 +10,7 @@ from database import get_db
 from frontenduser import model as frontendModel
 from frontenduser.middleware import authenticate_token
 from organization import model as orgModel
+from . import model as proModel
 from organization.middleware import check_permission, organization_exist
 
 from . import controller, schema
@@ -205,3 +206,12 @@ def withdraw_task(
     Withdraws a task assigned to a user in an organization.
     """
     return controller.withdraw_task(data, organization, sql)
+
+@taskmanagementRoutes.post('/add-custom-column',response_model=schema.ResponseCustomColumn,status_code=status.HTTP_201_CREATED)
+def project_custom_column(
+    data:schema.ProjectCustomColumn,
+    authtoken:frontendModel.FrontendToken = Depends(authenticate_token),
+    sql:Session = Depends(get_db)
+):
+    return controller.project_custom_column(data,authtoken,sql)
+
