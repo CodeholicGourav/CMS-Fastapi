@@ -638,6 +638,15 @@ def assign_column_value(
     organization: orgModel.Organization,
     sql: Session
 ):
+    """
+    This function assigns a custom column value to a task in a project. It performs validations to ensure that the column,
+    value, and task exist and are active and not deleted.
+
+    :param data: The input data containing the column ID, value ID, and task ID.
+    :param organization: The organization to which the project and task belong.
+    :param sql: The SQLAlchemy session object for database operations.
+    :return: The updated task object with the assigned custom column value.
+    """
     column = sql.query(
         model.ProjectCustomColumn
     ).join(
@@ -687,6 +696,7 @@ def assign_column_value(
         model.Project.is_active==True, # project is active
         model.Project.is_deleted==False, # project not deleted
     ).first()
+    # If the task does not exist, raise a custom error
     if not task:
         CustomValidations.raize_custom_error(
             error_type="not_exist",
@@ -695,21 +705,25 @@ def assign_column_value(
             inp=data.task_id
         )
 
-
-    valueAssigned = sql.query(
-        model.CustomColumnAssigned
-    ).filter_by(
+    # Query the database to check if a custom column value has already been assigned to the task
+    valueAssigned = sql.query(model.CustomColumnAssigned).filter_by(
         column_id=column.id,
         task_id=task.id
     ).first()
+
+    # If not, create a new custom column assignment object and add it to the session
     if not valueAssigned:
         valueAssigned = model.CustomColumnAssigned(
             column_id=column.id,
             task_id=task.id
         )
         sql.add(valueAssigned)
+
+    # Update the value ID of the custom column assignment object with the provided value ID
     valueAssigned.value_id = value.id
 
+    # Commit the changes to the database and refresh the custom column assignment object
     sql.commit()
     sql.refresh(valueAssigned)
+
     return task
