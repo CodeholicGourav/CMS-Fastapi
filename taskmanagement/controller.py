@@ -279,8 +279,8 @@ def update_task(
         model.Project,
         model.Task.project_id == model.Project.id
     ).filter(
-        model.Task.tuid==data.task_id,
-        model.Project.org_id==organization.id
+        model.Task.tuid == data.task_id,
+        model.Project.org_id == organization.id
     ).first()
 
     if not task:
@@ -350,10 +350,10 @@ def assign_project_permission(
     # Check user exist in this organization
     user = sql.query(orgModel.OrganizationUser).join(
         frontendModel.FrontendUser,
-        orgModel.OrganizationUser.user_id==frontendModel.FrontendUser.id
+        orgModel.OrganizationUser.user_id == frontendModel.FrontendUser.id
     ).filter(
-        orgModel.OrganizationUser.org_id==organization.id,
-        frontendModel.FrontendUser.uuid==data.user_id
+        orgModel.OrganizationUser.org_id == organization.id,
+        frontendModel.FrontendUser.uuid == data.user_id
     ).first()
     if not user:
         CustomValidations.raize_custom_error(
@@ -414,10 +414,10 @@ def assign_task(
     # Check user exist in this organization
     user = sql.query(orgModel.OrganizationUser).join(
         frontendModel.FrontendUser,
-        orgModel.OrganizationUser.user_id==frontendModel.FrontendUser.id
+        orgModel.OrganizationUser.user_id == frontendModel.FrontendUser.id
     ).filter(
-        orgModel.OrganizationUser.org_id==organization.id,
-        frontendModel.FrontendUser.uuid==data.user_id
+        orgModel.OrganizationUser.org_id == organization.id,
+        frontendModel.FrontendUser.uuid == data.user_id
     ).first()
 
     if not user:
@@ -557,9 +557,9 @@ def update_column_expected_value(
         model.Project,
         model.Project.id == orgModel.Organization.id
     ).filter(
-        model.ProjectCustomColumn.cuid==data.column_id,
-        model.ProjectCustomColumn.is_deleted==False,
-        orgModel.Organization.orguid==organization.orguid
+        model.ProjectCustomColumn.cuid == data.column_id,
+        model.ProjectCustomColumn.is_deleted is False,
+        orgModel.Organization.orguid == organization.orguid
     ).first()
 
     # If the column does not exist, raise a custom error
@@ -571,7 +571,7 @@ def update_column_expected_value(
             inp=data.column_id
         )
 
-    # Remove previous values for custom column 
+    # Remove previous values for custom column
     sql.query(
         model.CustomColumnExpected
     ).filter_by(
@@ -606,19 +606,15 @@ def delete_custom_column(
     organization: orgModel.Organization,
     sql: Session
 ):
-    # Retrieve the custom column object from the database based on the provided column ID
-    column = sql.query(
-        model.ProjectCustomColumn
-    ).join(
-        model.Project,
-        model.ProjectCustomColumn.project_id==model.Project.id
-    ).filter(
-        model.ProjectCustomColumn.cuid==column_id,
-        model.ProjectCustomColumn.is_deleted==False,
-        model.Project.org_id==organization.id
+    """
+    Deletes a custom column from the database.
+    """
+    # Check custom column exist in project
+    column = sql.query(model.ProjectCustomColumn).filter(
+        model.ProjectCustomColumn.cuid == column_id,
+        model.ProjectCustomColumn.is_deleted is False,
+        model.Project.org_id == organization.id
     ).first()
-
-    # If the column does not exist, raise a custom error
     if not column or column.project.org_id != organization.id:
         CustomValidations.raize_custom_error(
             error_type="not_exist",
@@ -627,7 +623,7 @@ def delete_custom_column(
             inp=column_id
         )
 
-    column.is_deleted=True
+    column.is_deleted = True
     sql.commit()
     sql.refresh(column)
     return column
@@ -639,7 +635,8 @@ def assign_column_value(
     sql: Session
 ):
     """
-    This function assigns a custom column value to a task in a project. It performs validations to ensure that the column,
+    This function assigns a custom column value to a task in a project. 
+    It performs validations to ensure that the column,
     value, and task exist and are active and not deleted.
 
     :param data: The input data containing the column ID, value ID, and task ID.
@@ -651,13 +648,13 @@ def assign_column_value(
         model.ProjectCustomColumn
     ).join(
         model.Project,
-        model.ProjectCustomColumn.project_id==model.Project.id
+        model.ProjectCustomColumn.project_id == model.Project.id
     ).filter(
-        model.ProjectCustomColumn.cuid==data.column_id, # column uid
-        model.ProjectCustomColumn.is_deleted==False, # column not deleted
-        model.Project.org_id==organization.id, # Project under current organization
-        model.Project.is_active==True, # project is active
-        model.Project.is_deleted==False, # proect is not deleted
+        model.ProjectCustomColumn.cuid == data.column_id, # column uid
+        model.ProjectCustomColumn.is_deleted is False, # column not deleted
+        model.Project.org_id == organization.id, # Project under current organization
+        model.Project.is_active is True, # project is active
+        model.Project.is_deleted is False, # proect is not deleted
     ).first()
     if not column:
         CustomValidations.raize_custom_error(
@@ -686,15 +683,15 @@ def assign_column_value(
         model.Task
     ).join(
         model.Project,
-        model.Task.project_id==model.Project.id
+        model.Task.project_id == model.Project.id
     ).filter(
-        model.Task.tuid==data.task_id, # task uid
-        model.Task.is_active==True, # task active
-        model.Task.is_deleted==False, # task not deleted
-        model.Task.project_id==column.project_id, # task and column under same project
-        model.Project.org_id==organization.id, # project under current organization
-        model.Project.is_active==True, # project is active
-        model.Project.is_deleted==False, # project not deleted
+        model.Task.tuid == data.task_id, # task uid
+        model.Task.is_active is True, # task active
+        model.Task.is_deleted is False, # task not deleted
+        model.Task.project_id == column.project_id, # task and column under same project
+        model.Project.org_id == organization.id, # project under current organization
+        model.Project.is_active is True, # project is active
+        model.Project.is_deleted is False, # project not deleted
     ).first()
     # If the task does not exist, raise a custom error
     if not task:
@@ -706,24 +703,25 @@ def assign_column_value(
         )
 
     # Query the database to check if a custom column value has already been assigned to the task
-    valueAssigned = sql.query(model.CustomColumnAssigned).filter_by(
+    value_assigned = sql.query(model.CustomColumnAssigned).filter_by(
         column_id=column.id,
         task_id=task.id
     ).first()
 
     # If not, create a new custom column assignment object and add it to the session
-    if not valueAssigned:
-        valueAssigned = model.CustomColumnAssigned(
+    if not value_assigned:
+        value_assigned = model.CustomColumnAssigned(
             column_id=column.id,
             task_id=task.id
         )
-        sql.add(valueAssigned)
+        sql.add(value_assigned)
 
     # Update the value ID of the custom column assignment object with the provided value ID
-    valueAssigned.value_id = value.id
+    value_assigned.value_id = value.id
 
     # Commit the changes to the database and refresh the custom column assignment object
     sql.commit()
-    sql.refresh(valueAssigned)
+    sql.refresh(value_assigned)
 
+    print(task.column_values)
     return task

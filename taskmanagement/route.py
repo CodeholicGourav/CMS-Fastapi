@@ -13,7 +13,6 @@ from organization import model as orgModel
 from organization.middleware import check_permission, organization_exist
 
 from . import controller
-from . import model as proModel
 from . import schema
 
 taskmanagementRoutes = APIRouter()
@@ -303,4 +302,14 @@ def assign_column_value(
     organization: orgModel.Organization = Depends(organization_exist),
     sql:Session = Depends(get_db)
 ):
+    """
+    This function assigns a custom column value to a task in a project. 
+    It performs validations to ensure that the column,
+    value, and task exist and are active and not deleted.
+
+    :param data: The input data containing the column ID, value ID, and task ID.
+    :param organization: The organization to which the project and task belong.
+    :param sql: The SQLAlchemy session object for database operations.
+    :return: The updated task object with the assigned custom column value.
+    """
     return controller.assign_column_value(data, organization, sql)

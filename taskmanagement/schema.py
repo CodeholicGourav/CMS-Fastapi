@@ -91,10 +91,17 @@ class ExpectedValues(BaseModel):
 
 
 class ShowAssignedValue(BaseModel):
-    column_values: ExpectedValues
+    """
+    A pydantic model
+    """
+    vuid: str
+    value: str
 
 
 class ValueAssigned(BaseModel):
+    """
+    A pydantic model
+    """
     column: ShowCustomColumn
     value: ShowAssignedValue
     created_at: datetime
@@ -119,7 +126,7 @@ class ShowTask(BaseModel):
     updated_at: datetime
     creator: ShowUser
     assigned_to: Optional[list[TaskAssigned]] = []
-    values: Optional[list[ValueAssigned]] = []
+    column_values: Optional[list[ValueAssigned]] = []
     project: BaseProject
 
 
@@ -258,7 +265,7 @@ class BasicUser(BaseModel):
     """
     A pydantic model
     """
-    uuid:str 
+    uuid:str
     username:str
     email:str
 
@@ -308,6 +315,9 @@ class CreateCustomColumnExpected(BaseModel):
 
 
 class AssignCustomColumnValue(BaseModel):
+    """
+    A pydantic model
+    """
     task_id: str
     column_id: str
     value_id: str
