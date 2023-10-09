@@ -401,7 +401,7 @@ def convert_currency(currency: str):
         HTTPException: If the currency code is not valid or the API request fails.
     """
     conversion = requests.get(
-        f"${CONVERSION_URL}/pair/{SETTINGS.DEFAULT_CURRENCY}/{currency}", 
+        f"{CONVERSION_URL}/pair/{SETTINGS.DEFAULT_CURRENCY}/{currency}", 
         timeout=5
     )
     conversion_json = conversion.json()
