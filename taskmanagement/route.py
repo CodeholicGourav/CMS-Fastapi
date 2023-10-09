@@ -294,7 +294,7 @@ def update_column_expected_value(
     response_model=schema.ShowTask,
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(authenticate_token)],
-    description="Assign a value for the custom column of a task.",
+    description="Assign or update a previous value in a custom column for a task.",
     name="Assign custom column value"
 )
 def assign_column_value(
@@ -306,10 +306,23 @@ def assign_column_value(
     This function assigns a custom column value to a task in a project. 
     It performs validations to ensure that the column,
     value, and task exist and are active and not deleted.
-
-    :param data: The input data containing the column ID, value ID, and task ID.
-    :param organization: The organization to which the project and task belong.
-    :param sql: The SQLAlchemy session object for database operations.
-    :return: The updated task object with the assigned custom column value.
     """
     return controller.assign_column_value(data, organization, sql)
+
+
+@taskmanagementRoutes.post('/remove-custom-column-value',
+    response_model=schema.ShowTask,
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(authenticate_token)],
+    description="Remove any value assigned in a column for a task.",
+    name="Remove custom column value"
+)
+def remove_column_value(
+    data:schema.RemoveCustomColumnValue,
+    organization: orgModel.Organization = Depends(organization_exist),
+    sql:Session = Depends(get_db)
+):
+    """
+    Removes the assigned value of a custom column for a task.
+    """
+    return controller.remove_column_value(data, organization, sql)

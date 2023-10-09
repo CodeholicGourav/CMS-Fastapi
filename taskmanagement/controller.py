@@ -557,8 +557,9 @@ def update_column_expected_value(
         model.Project,
         model.Project.id == orgModel.Organization.id
     ).filter(
+        # pylint: disable=singleton-comparison
         model.ProjectCustomColumn.cuid == data.column_id,
-        model.ProjectCustomColumn.is_deleted is False,
+        model.ProjectCustomColumn.is_deleted == False,
         orgModel.Organization.orguid == organization.orguid
     ).first()
 
@@ -611,8 +612,9 @@ def delete_custom_column(
     """
     # Check custom column exist in project
     column = sql.query(model.ProjectCustomColumn).filter(
+        # pylint: disable=singleton-comparison
         model.ProjectCustomColumn.cuid == column_id,
-        model.ProjectCustomColumn.is_deleted is False,
+        model.ProjectCustomColumn.is_deleted == False,
         model.Project.org_id == organization.id
     ).first()
     if not column or column.project.org_id != organization.id:
@@ -650,11 +652,12 @@ def assign_column_value(
         model.Project,
         model.ProjectCustomColumn.project_id == model.Project.id
     ).filter(
+        # pylint: disable=singleton-comparison
         model.ProjectCustomColumn.cuid == data.column_id, # column uid
-        model.ProjectCustomColumn.is_deleted is False, # column not deleted
+        model.ProjectCustomColumn.is_deleted == False, # column not deleted
         model.Project.org_id == organization.id, # Project under current organization
-        model.Project.is_active is True, # project is active
-        model.Project.is_deleted is False, # proect is not deleted
+        model.Project.is_active == True, # project is active
+        model.Project.is_deleted == False, # proect is not deleted
     ).first()
     if not column:
         CustomValidations.raize_custom_error(
@@ -685,20 +688,21 @@ def assign_column_value(
         model.Project,
         model.Task.project_id == model.Project.id
     ).filter(
+        # pylint: disable=singleton-comparison
         model.Task.tuid == data.task_id, # task uid
-        model.Task.is_active is True, # task active
-        model.Task.is_deleted is False, # task not deleted
+        model.Task.is_active == True, # task active
+        model.Task.is_deleted == False, # task not deleted
         model.Task.project_id == column.project_id, # task and column under same project
         model.Project.org_id == organization.id, # project under current organization
-        model.Project.is_active is True, # project is active
-        model.Project.is_deleted is False, # project not deleted
+        model.Project.is_active == True, # project is active
+        model.Project.is_deleted == False, # project not deleted
     ).first()
     # If the task does not exist, raise a custom error
     if not task:
         CustomValidations.raize_custom_error(
             error_type="not_exist",
             loc="task_id",
-            msg="Column does not exist",
+            msg="Task does not exist",
             inp=data.task_id
         )
 
@@ -723,5 +727,76 @@ def assign_column_value(
     sql.commit()
     sql.refresh(value_assigned)
 
-    print(task.column_values)
+    return task
+
+
+def remove_column_value(
+    data: schema.RemoveCustomColumnValue,
+    organization: orgModel.Organization,
+    sql: Session
+):
+    """
+    Removes the assigned value of a custom column for a task.
+
+    :param data: The input data containing the column ID, value ID, and task ID.
+    :param organization: The organization to which the project and task belong.
+    :param sql: The SQLAlchemy session object for database operations.
+    :return: The updated task object with the assigned custom column value.
+    """
+    column_sql = sql.query(
+        model.ProjectCustomColumn
+    ).join(
+        model.Project,
+        model.ProjectCustomColumn.project_id == model.Project.id
+    ).filter(
+        # pylint: disable=singleton-comparison
+        model.ProjectCustomColumn.cuid == data.column_id, # column uid
+        model.ProjectCustomColumn.is_deleted == False, # column not deleted
+        model.Project.org_id == organization.id, # Project under current organization
+        model.Project.is_active == True, # project is active
+        model.Project.is_deleted == False, # proect is not deleted
+    )
+    print(column_sql)
+    column = column_sql.first()
+    if not column:
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
+            loc="column_id",
+            msg="Column does not exist",
+            inp=data.column_id
+        )
+
+    task = sql.query(
+        model.Task
+    ).join(
+        model.Project,
+        model.Task.project_id == model.Project.id
+    ).filter(
+        # pylint: disable=singleton-comparison
+        model.Task.tuid == data.task_id, # task uid
+        model.Task.is_active == True, # task active
+        model.Task.is_deleted == False, # task not deleted
+        model.Task.project_id == column.project_id, # task and column under same project
+        model.Project.org_id == organization.id, # project under current organization
+        model.Project.is_active == True, # project is active
+        model.Project.is_deleted == False, # project not deleted
+    ).first()
+    # If the task does not exist, raise a custom error
+    if not task:
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
+            loc="task_id",
+            msg="Task does not exist",
+            inp=data.task_id
+        )
+
+    # Query the database to check if a custom column value has already been assigned to the task
+    sql.query(model.CustomColumnAssigned).filter_by(
+        column_id=column.id,
+        task_id=task.id
+    ).delete()
+
+    sql.commit()
+    sql.refresh(task)
+
     return task

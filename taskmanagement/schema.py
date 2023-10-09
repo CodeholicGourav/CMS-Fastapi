@@ -310,14 +310,43 @@ class CreateCustomColumnExpected(BaseModel):
     """
     A pydantic model
     """
-    column_id: str
-    values: List[str]
+    column_id: str = Field(
+        title="Column ID",
+        description="cuid of the column"
+    )
+    values: List[str] = Field(
+        title="Values",
+        description="Values for expected value of a custom column"
+    )
 
 
 class AssignCustomColumnValue(BaseModel):
     """
     A pydantic model
     """
-    task_id: str
-    column_id: str
-    value_id: str
+    task_id: str = Field(
+        title="Task ID",
+        description="tuid of the task"
+    )
+    column_id: str = Field(
+        title="Column ID",
+        description="cuid of the column"
+    )
+    value_id: str = Field(
+        title="Value ID",
+        description="vuid of the value to assign"
+    )
+
+
+class RemoveCustomColumnValue(BaseModel):
+    """
+    A pydantic model
+    """
+    task_id: str = Field(
+        title="Task ID",
+        description="tuid of the task"
+    )
+    column_id: str = Field(
+        title="Column ID",
+        description="cuid of the column"
+    )
