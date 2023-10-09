@@ -165,6 +165,10 @@ class Task(Base):
         "FrontendUser",
         foreign_keys=created_by
     )
+    column_values = relationship(
+        "CustomColumnAssigned",
+        back_populates="task",
+    )
     project = relationship(
         "Project",
         foreign_keys=project_id
@@ -534,9 +538,9 @@ class CustomColumnAssigned(Base):
         Integer,
         ForeignKey('projecttaskcustomcolumn.id')
     )
-    is_deleted = Column(
-        Boolean,
-        default=False
+    task_id = Column(
+        Integer,
+        ForeignKey('tasks.id')
     )
     created_at = Column(
         DateTime,
@@ -550,6 +554,10 @@ class CustomColumnAssigned(Base):
     column = relationship(
         "ProjectCustomColumn",
         foreign_keys=column_id
+    )
+    task = relationship(
+        "Task",
+        foreign_keys=task_id,
     )
     value = relationship(
         "CustomColumnExpected",

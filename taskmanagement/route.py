@@ -237,7 +237,7 @@ def withdraw_task(
     name="Create custo column"
 )
 def project_custom_column(
-    data:schema.ProjectCustomColumn,
+    data:schema.AddCustomColumn,
     organization: orgModel.Organization = Depends(organization_exist),
     authtoken:frontendModel.FrontendToken = Depends(authenticate_token),
     sql:Session = Depends(get_db)
@@ -289,3 +289,18 @@ def update_column_expected_value(
     and delte previous values.
     """
     return controller.update_column_expected_value(data, organization, sql)
+
+
+@taskmanagementRoutes.post('/assign-custom-column-value',
+    response_model=schema.ShowTask,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(authenticate_token)],
+    description="Assign a value for the custom column of a task.",
+    name="Assign custom column value"
+)
+def assign_column_value(
+    data:schema.AssignCustomColumnValue,
+    organization: orgModel.Organization = Depends(organization_exist),
+    sql:Session = Depends(get_db)
+):
+    return controller.assign_column_value(data, organization, sql)

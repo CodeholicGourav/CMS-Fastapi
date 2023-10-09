@@ -493,7 +493,7 @@ def withdraw_task(
 
 
 def project_custom_column(
-    data:schema.ProjectCustomColumn,
+    data:schema.AddCustomColumn,
     organization: orgModel.Organization,
     authtoken:frontendModel.FrontendToken,
     sql:Session
@@ -503,6 +503,8 @@ def project_custom_column(
     """
     project = sql.query(model.Project).filter_by(
         puid=data.project_id,
+        is_active=True,
+        is_deleted=False,
         org_id=organization.id
     ).first()
     if not project:
@@ -556,6 +558,7 @@ def update_column_expected_value(
         model.Project.id == orgModel.Organization.id
     ).filter(
         model.ProjectCustomColumn.cuid==data.column_id,
+        model.ProjectCustomColumn.is_deleted==False,
         orgModel.Organization.orguid==organization.orguid
     ).first()
 
@@ -606,8 +609,13 @@ def delete_custom_column(
     # Retrieve the custom column object from the database based on the provided column ID
     column = sql.query(
         model.ProjectCustomColumn
-    ).filter_by(
-        cuid=column_id,
+    ).join(
+        model.Project,
+        model.ProjectCustomColumn.project_id==model.Project.id
+    ).filter(
+        model.ProjectCustomColumn.cuid==column_id,
+        model.ProjectCustomColumn.is_deleted==False,
+        model.Project.org_id==organization.id
     ).first()
 
     # If the column does not exist, raise a custom error
@@ -624,3 +632,84 @@ def delete_custom_column(
     sql.refresh(column)
     return column
 
+
+def assign_column_value(
+    data: schema.AssignCustomColumnValue,
+    organization: orgModel.Organization,
+    sql: Session
+):
+    column = sql.query(
+        model.ProjectCustomColumn
+    ).join(
+        model.Project,
+        model.ProjectCustomColumn.project_id==model.Project.id
+    ).filter(
+        model.ProjectCustomColumn.cuid==data.column_id, # column uid
+        model.ProjectCustomColumn.is_deleted==False, # column not deleted
+        model.Project.org_id==organization.id, # Project under current organization
+        model.Project.is_active==True, # project is active
+        model.Project.is_deleted==False, # proect is not deleted
+    ).first()
+    if not column:
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
+            loc="column_id",
+            msg="Column does not exist",
+            inp=data.column_id
+        )
+
+    value = sql.query(
+        model.CustomColumnExpected
+    ).filter_by(
+        vuid=data.value_id, #value uid
+        column_id=column.id, # value expecting for this column
+        is_deleted=False # value not deleted
+    ).first()
+    if not value:
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
+            loc="value_id",
+            msg="Value does not exist",
+            inp=data.value_id
+        )
+
+    task = sql.query(
+        model.Task
+    ).join(
+        model.Project,
+        model.Task.project_id==model.Project.id
+    ).filter(
+        model.Task.tuid==data.task_id, # task uid
+        model.Task.is_active==True, # task active
+        model.Task.is_deleted==False, # task not deleted
+        model.Task.project_id==column.project_id, # task and column under same project
+        model.Project.org_id==organization.id, # project under current organization
+        model.Project.is_active==True, # project is active
+        model.Project.is_deleted==False, # project not deleted
+    ).first()
+    if not task:
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
+            loc="task_id",
+            msg="Column does not exist",
+            inp=data.task_id
+        )
+
+
+    valueAssigned = sql.query(
+        model.CustomColumnAssigned
+    ).filter_by(
+        column_id=column.id,
+        task_id=task.id
+    ).first()
+    if not valueAssigned:
+        valueAssigned = model.CustomColumnAssigned(
+            column_id=column.id,
+            task_id=task.id
+        )
+        sql.add(valueAssigned)
+    valueAssigned.value_id = value.id
+
+    sql.commit()
+    sql.refresh(valueAssigned)
+    return task
