@@ -19,8 +19,7 @@ from .middleware import authenticate_token
 
 frontendUserRoutes = APIRouter()
 
-@frontendUserRoutes.post(
-    path="/register",
+@frontendUserRoutes.post("/register",
     response_model=schema.BaseUser,
     status_code=status.HTTP_201_CREATED,
     description="Register a new user",
@@ -37,8 +36,7 @@ def register(
     return controller.register_user(request, sql, background_tasks)
 
 
-@frontendUserRoutes.get(
-    path="/verify-token",
+@frontendUserRoutes.get("/verify-token",
     status_code=status.HTTP_202_ACCEPTED,
     description="Verify a email using token sent to that email address.",
     name="Verify email"
@@ -53,8 +51,7 @@ def verify_email_token(
     return controller.verify_email(token, sql)
 
 
-@frontendUserRoutes.post(
-    path="/login",
+@frontendUserRoutes.post("/login",
     response_model= schema.ShowToken,
     status_code=status.HTTP_200_OK,
     description="Create and get authtoken for a user.",
@@ -70,8 +67,7 @@ def login(
     return controller.create_auth_token(request, sql)
 
 
-@frontendUserRoutes.get(
-    path="/profile",
+@frontendUserRoutes.get("/profile",
     response_model= schema.BaseUser,
     status_code=status.HTTP_200_OK,
     description="Returns the profile details of user.",
@@ -83,8 +79,7 @@ def profile(
     return auth_token.user
 
 
-@frontendUserRoutes.delete(
-    path="/logout",
+@frontendUserRoutes.delete("/logout",
     status_code=status.HTTP_204_NO_CONTENT,
     description="Delete login token of this user.",
     name="Logout"
@@ -99,8 +94,7 @@ def logout(
     return controller.delete_token(auth_token, sql)
 
 
-@frontendUserRoutes.delete(
-    path="/logout-all",
+@frontendUserRoutes.delete("/logout-all",
     status_code=status.HTTP_204_NO_CONTENT,
     description="Delete all login tokens of this user.",
     name="Logout all devices"
@@ -114,8 +108,7 @@ def logout_all(
     """
     return controller.delete_all_tokens(auth_token, sql)
 
-@frontendUserRoutes.get(
-    path="/send-token",
+@frontendUserRoutes.get("/send-token",
     status_code=status.HTTP_200_OK,
     description="Send a token to the email to reset the password",
     name="Forgot password"
@@ -130,8 +123,7 @@ def send_token(
     return controller.send_verification_mail(email, sql)
 
 
-@frontendUserRoutes.post(
-    path='/create-password',
+@frontendUserRoutes.post('/create-password',
     response_model=schema.BaseUser,
     status_code=status.HTTP_201_CREATED,
     description="Create a new password if you forgot the old one.",
@@ -147,8 +139,7 @@ def create_new_password(
     return controller.create_new_password(request, sql)
 
 
-@frontendUserRoutes.post(
-    path='/update-profile',
+@frontendUserRoutes.post('/update-profile',
     response_model=schema.BaseUser,
     status_code=status.HTTP_200_OK,
     description="Update details of your profile.",
@@ -165,8 +156,7 @@ def update_profile(
     return controller.update_profile(data, auth_token, sql)
 
 
-@frontendUserRoutes.post(
-    path='/update-profile-photo',
+@frontendUserRoutes.post('/update-profile-photo',
     response_model=schema.BaseUser,
     status_code=status.HTTP_200_OK,
     description="Update the user's profile image.",
@@ -185,8 +175,7 @@ def update_profile_photo(
     return controller.update_profile_photo(image, auth_token, sql)
 
 
-@frontendUserRoutes.get(
-    path='/subscriptions',
+@frontendUserRoutes.get('/subscriptions',
     response_model=List[schema.BaseSubscription],
     status_code=status.HTTP_200_OK,
     description="Fetch all the subscriptions from database.",
@@ -204,8 +193,7 @@ def all_subscriptions(
     return controller.all_subscription_plans(limit, offset, sql)
 
 
-@frontendUserRoutes.get(
-    path='/subscriptions/{suid}',
+@frontendUserRoutes.get('/subscriptions/{suid}',
     response_model=schema.BaseSubscription,
     status_code=status.HTTP_200_OK,
     description="Get the details of a subscription.",
@@ -221,8 +209,7 @@ def subscription_details(
     return controller.subscription_plan_detail(suid, sql)
 
 
-@frontendUserRoutes.get(
-    path='/timezones',
+@frontendUserRoutes.get('/timezones',
     response_model=List[schema.TimeZones],
     status_code=status.HTTP_200_OK,
     description="Fetch all the timezones available in database.",
@@ -237,8 +224,7 @@ def all_timezones(
     return controller.timezones_list(sql)
 
 
-@frontendUserRoutes.post(
-    path='/stripe/create-order',
+@frontendUserRoutes.post('/stripe/create-order',
     response_model=schema.Orders,
     status_code=status.HTTP_201_CREATED,
     description="Create a new order in stripe.",
@@ -255,8 +241,7 @@ def create_stripe_order(
     return controller.stripe_add_orders(request, auth_token, sql)
 
 
-@frontendUserRoutes.post(
-    path='/stripe/create-transaction',
+@frontendUserRoutes.post('/stripe/create-transaction',
     status_code=status.HTTP_201_CREATED,
     description="Create a transaction for stripe order.",
     name="Create stripe transaction"
@@ -275,8 +260,7 @@ def create_stripe_transaction(
     return controller.stripe_add_transaction(request, auth_token, sql)
 
 
-@frontendUserRoutes.post(
-    path='/paypal/create-order',
+@frontendUserRoutes.post('/paypal/create-order',
     response_model=schema.Orders,
     status_code=status.HTTP_201_CREATED,
     description="Create a new order in paypal.",
@@ -293,8 +277,7 @@ def create_paypal_order(
     return controller.paypal_add_orders(request, auth_token, sql)
 
 
-@frontendUserRoutes.post(
-    path='/paypal/create-transaction',
+@frontendUserRoutes.post('/paypal/create-transaction',
     status_code=status.HTTP_201_CREATED,
     description="Create a transaction for paypal order.",
     name="Create paypal transaction"
@@ -310,8 +293,7 @@ def create_paypal_transaction(
     return controller.paypal_add_transaction(request, auth_token, sql)
 
 
-@frontendUserRoutes.post(
-    path='/razorpay/create-order',
+@frontendUserRoutes.post('/razorpay/create-order',
     response_model=schema.Orders,
     status_code=status.HTTP_201_CREATED,
     description="Create a new order in razorpay.",
@@ -328,8 +310,7 @@ def create_razorpay_order(
     return controller.razorpay_add_orders(request, auth_token, sql)
 
 
-@frontendUserRoutes.post(
-    path='/razorpay/create-transaction',
+@frontendUserRoutes.post('/razorpay/create-transaction',
     status_code=status.HTTP_201_CREATED,
     description="Create a transaction for paypal order.",
     name="Create paypal transaction"
