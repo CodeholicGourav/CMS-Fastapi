@@ -145,6 +145,7 @@ class ShowTask(BaseModel):
     is_deleted: bool
     created_at: datetime
     updated_at: datetime
+    parent: BaseTask
     creator: ShowUser
     group: Optional[BaseTaskGroup]
     assigned_to: Optional[list[TaskAssigned]] = []
@@ -172,6 +173,11 @@ class CreateTask(BaseModel):
     description: Annotated[str, Field(
         title="Task description",
         description="Description for task."
+    )]
+    parent_id: Annotated[str, Field(
+        None,
+        title="Parent ID",
+        description="tuid of a task to create new-task as a sub-task of this task."
     )]
     project_id: Annotated[str, Field(
         title="Project ID",
@@ -227,6 +233,11 @@ class UpdateTask(BaseModel):
     task_id: Annotated[str, Field(
         title="Task ID",
         description="tuid of a task to update."
+    )]
+    parent_id: Annotated[str, Field(
+        None,
+        title="Parent ID",
+        description="tuid of a task to create new-task as a sub-task of this task."
     )]
     group_id: Annotated[str, Field(
         None,

@@ -109,7 +109,8 @@ class Task(Base):
     )
     group_id = Column(
         Integer,
-        ForeignKey("task_groups.id")
+        ForeignKey("task_groups.id"),
+        nullable=True
     )
     task_name = Column(
         String(50),
@@ -122,6 +123,11 @@ class Task(Base):
     created_by = Column(
         Integer,
         ForeignKey("frontendusers.id")
+    )
+    parent_id = Column(
+        Integer,
+        ForeignKey('tasks.id'),
+        nullable=True
     )
     project_id = Column(
         Integer,
@@ -168,6 +174,10 @@ class Task(Base):
     creator = relationship(
         "FrontendUser",
         foreign_keys=created_by
+    )
+    parent = relationship(
+        "Task",
+        foreign_keys=parent_id
     )
     group = relationship(
         "TaskGroup",
