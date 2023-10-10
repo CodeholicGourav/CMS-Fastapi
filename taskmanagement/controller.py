@@ -800,3 +800,52 @@ def remove_column_value(
     sql.refresh(task)
 
     return task
+
+
+def create_task_group(
+    data: schema.AddTaskGroup,
+    organization: orgModel.Organization,
+    auth_token: frontendModel.FrontendToken,
+    sql: Session
+):
+    project = sql.query(model.Project).filter_by(
+        puid=data.project_id,
+        is_active=True,
+        is_deleted=False,
+        org_id=organization.id
+    ).first()
+    if not project:
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
+            loc="project_id",
+            msg="project  does not exist",
+            inp=data.project_id
+        )
+
+    title_exist = sql.query(
+        model.TaskGroup
+    ).filter_by(
+        title=data.group_title,
+        project_id=project.id
+    ).first()
+    if title_exist:
+        CustomValidations.raize_custom_error(
+            error_type="already_exist",
+            loc="group_title",
+            msg="Group title already exists in this project",
+            inp=data.group_title,
+            ctx={"group_title": "unique"}
+        )
+
+    task_group = model.TaskGroup(
+        guid=generate_uuid(data.group_title),
+        title=data.group_title,
+        project_id=project.id,
+        created_by=auth_token.user_id
+    )
+
+    sql.add(task_group)
+    sql.commit()
+    sql.refresh(task_group)
+
+    return task_group

@@ -350,3 +350,48 @@ class RemoveCustomColumnValue(BaseModel):
         title="Column ID",
         description="cuid of the column"
     )
+
+
+class BaseProject(BaseModel):
+    """
+    A pydantic model
+    """
+    puid: str
+    project_name: str
+    is_active: bool
+    is_deleted: bool
+
+
+class BaseTask(BaseModel):
+    """
+    A pydantic model
+    """
+    tuid: str
+    task_name: str
+    is_active: bool
+    is_deleted: bool
+
+
+class ShowTaskGroup(BaseModel):
+    guid: str
+    title: str
+    is_deleted: bool
+    created_at: datetime
+    updated_at: datetime
+    project: BaseProject
+    tasks: List[BaseTask]
+    creator: ShowUser
+
+
+class AddTaskGroup(BaseModel):
+    group_title: str = Field(
+        title="Group title",
+        description="A title for the group.",
+        min_length=3,
+        max_length=30
+    )
+    project_id: str = Field(
+        title="Project id",
+        description="A puid of a project."
+    )
+

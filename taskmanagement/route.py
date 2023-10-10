@@ -326,3 +326,18 @@ def remove_column_value(
     Removes the assigned value of a custom column for a task.
     """
     return controller.remove_column_value(data, organization, sql)
+
+
+@taskmanagementRoutes.post('/create-task-group',
+    response_model=schema.ShowTaskGroup,
+    status_code=status.HTTP_201_CREATED,
+    description="Create a tasks group inside a project.",
+    name="Create task group"
+)
+def create_task_group(
+    data:schema.AddTaskGroup,
+    organization: orgModel.Organization = Depends(organization_exist),
+    auth_token: frontendModel.FrontendToken = Depends(authenticate_token),
+    sql:Session = Depends(get_db)
+):
+    return controller.create_task_group(data, organization, auth_token, sql)
