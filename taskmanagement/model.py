@@ -196,6 +196,54 @@ class Task(Base):
         return self.task_name
 
 
+class TaskGroup(Base):
+    """
+    Represents a table in a database called 'task_groups'.
+    It is used to store the expected values for custom columns in projects and tasks.
+    """
+    __tablename__ = 'task_groups'
+
+    id = Column(
+        Integer,
+        primary_key=True
+    )
+    vuid = Column(
+        String(50),
+        index=True,
+        unique=True
+    )
+    value = Column(
+        String(50),
+    )
+    column_id = Column(
+        Integer,
+        ForeignKey('custom_columns.id')
+    )
+    is_deleted = Column(
+        Boolean,
+        default=False
+    )
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow
+    )
+    updated_at = Column(
+        DateTime,
+        default=datetime.utcnow
+    )
+
+    column = relationship(
+        "CustomColumn",
+        foreign_keys=column_id
+    )
+
+    def __repr__(self):
+        return f"CustomColumnExpected(id={self.id}, value='{self.value}')"
+
+    def __str__(self):
+        return self.value
+
+
 class ProjectPermission(Base):
     """
     Represents a table in a database called 'project_permissions'.
@@ -393,7 +441,7 @@ class UserTask(Base):
 
 class CustomColumn(Base):
     """
-    Represents a table in a database called 'projecttaskcustomcolumn'.
+    Represents a table in a database called 'custom_columns'.
     Used to store custom columns for projects and tasks.
     """
     __tablename__ = 'custom_columns'
@@ -492,7 +540,7 @@ class CustomColumnExpected(Base):
     )
     column_id = Column(
         Integer,
-        ForeignKey('projecttaskcustomcolumn.id')
+        ForeignKey('custom_columns.id')
     )
     is_deleted = Column(
         Boolean,
@@ -536,7 +584,7 @@ class CustomColumnAssigned(Base):
     )
     column_id = Column(
         Integer,
-        ForeignKey('projecttaskcustomcolumn.id')
+        ForeignKey('custom_columns.id')
     )
     task_id = Column(
         Integer,

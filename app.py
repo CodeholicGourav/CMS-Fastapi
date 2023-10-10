@@ -26,7 +26,8 @@ app = FastAPI(
         "efficiently manage digital content for their websites or web applications."
     ),
     contact={
-        "owner":"hello@codeholic.in"
+        "owner":"hello@codeholic.in",
+        "developer": "codeholic.gourav@gmail.com"
     },
 )
 
