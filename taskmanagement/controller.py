@@ -515,7 +515,7 @@ def project_custom_column(
             inp=data.project_id
         )
 
-    existing_column_name = sql.query(model.ProjectCustomColumn).filter_by(
+    existing_column_name = sql.query(model.CustomColumn).filter_by(
         column_name=data.column_name,
         project_id=project.id
     ).first()
@@ -526,7 +526,7 @@ def project_custom_column(
             msg="Column  already exists in this project.",
             inp=data.column_name,
         )
-    customcolumn = model.ProjectCustomColumn(
+    customcolumn = model.CustomColumn(
         cuid = generate_uuid(data.column_name),
         type = data.type,
         column_name = data.column_name,
@@ -552,14 +552,14 @@ def update_column_expected_value(
     """
     # Retrieve the custom column object from the database based on the provided column ID
     column = sql.query(
-        model.ProjectCustomColumn
+        model.CustomColumn
     ).join(
         model.Project,
         model.Project.id == orgModel.Organization.id
     ).filter(
         # pylint: disable=singleton-comparison
-        model.ProjectCustomColumn.cuid == data.column_id,
-        model.ProjectCustomColumn.is_deleted == False,
+        model.CustomColumn.cuid == data.column_id,
+        model.CustomColumn.is_deleted == False,
         orgModel.Organization.orguid == organization.orguid
     ).first()
 
@@ -611,10 +611,10 @@ def delete_custom_column(
     Deletes a custom column from the database.
     """
     # Check custom column exist in project
-    column = sql.query(model.ProjectCustomColumn).filter(
+    column = sql.query(model.CustomColumn).filter(
         # pylint: disable=singleton-comparison
-        model.ProjectCustomColumn.cuid == column_id,
-        model.ProjectCustomColumn.is_deleted == False,
+        model.CustomColumn.cuid == column_id,
+        model.CustomColumn.is_deleted == False,
         model.Project.org_id == organization.id
     ).first()
     if not column or column.project.org_id != organization.id:
@@ -647,14 +647,14 @@ def assign_column_value(
     :return: The updated task object with the assigned custom column value.
     """
     column = sql.query(
-        model.ProjectCustomColumn
+        model.CustomColumn
     ).join(
         model.Project,
-        model.ProjectCustomColumn.project_id == model.Project.id
+        model.CustomColumn.project_id == model.Project.id
     ).filter(
         # pylint: disable=singleton-comparison
-        model.ProjectCustomColumn.cuid == data.column_id, # column uid
-        model.ProjectCustomColumn.is_deleted == False, # column not deleted
+        model.CustomColumn.cuid == data.column_id, # column uid
+        model.CustomColumn.is_deleted == False, # column not deleted
         model.Project.org_id == organization.id, # Project under current organization
         model.Project.is_active == True, # project is active
         model.Project.is_deleted == False, # proect is not deleted
@@ -744,14 +744,14 @@ def remove_column_value(
     :return: The updated task object with the assigned custom column value.
     """
     column_sql = sql.query(
-        model.ProjectCustomColumn
+        model.CustomColumn
     ).join(
         model.Project,
-        model.ProjectCustomColumn.project_id == model.Project.id
+        model.CustomColumn.project_id == model.Project.id
     ).filter(
         # pylint: disable=singleton-comparison
-        model.ProjectCustomColumn.cuid == data.column_id, # column uid
-        model.ProjectCustomColumn.is_deleted == False, # column not deleted
+        model.CustomColumn.cuid == data.column_id, # column uid
+        model.CustomColumn.is_deleted == False, # column not deleted
         model.Project.org_id == organization.id, # Project under current organization
         model.Project.is_active == True, # project is active
         model.Project.is_deleted == False, # proect is not deleted

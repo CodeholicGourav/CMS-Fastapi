@@ -69,7 +69,7 @@ class Project(Base):
         foreign_keys=created_by
     )
     columns = relationship(
-        "ProjectCustomColumn",
+        "CustomColumn",
         back_populates="project"
     )
 
@@ -391,7 +391,7 @@ class UserTask(Base):
         )
 
 
-class ProjectCustomColumn(Base):
+class CustomColumn(Base):
     """
     Represents a table in a database called 'projecttaskcustomcolumn'.
     Used to store custom columns for projects and tasks.
@@ -454,7 +454,7 @@ class ProjectCustomColumn(Base):
 
     def __repr__(self):
         return (
-            "ProjectCustomColumn("
+            "CustomColumn("
                 f"id={self.id}, "
                 f"cuid='{self.cuid}', "
                 f"column_name='{self.column_name}'"
@@ -463,7 +463,7 @@ class ProjectCustomColumn(Base):
 
     def __str__(self):
         return (
-            "ProjectCustomColumn("
+            "CustomColumn("
                 f"id={self.id}, "
                 f"cuid='{self.cuid}', "
                 f"column_name='{self.column_name}'"
@@ -508,7 +508,7 @@ class CustomColumnExpected(Base):
     )
 
     column = relationship(
-        "ProjectCustomColumn",
+        "CustomColumn",
         foreign_keys=column_id
     )
 
@@ -552,7 +552,7 @@ class CustomColumnAssigned(Base):
     )
 
     column = relationship(
-        "ProjectCustomColumn",
+        "CustomColumn",
         foreign_keys=column_id
     )
     task = relationship(
