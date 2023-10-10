@@ -299,7 +299,7 @@ class ResponseCustomColumn(BaseModel):
     """
     column_name:str
     cuid: str
-    creator:BasicUser
+    creator:ShowUser
     created_at:datetime
     updated_at:datetime
     is_deleted:bool
