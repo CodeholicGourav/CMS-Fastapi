@@ -6,7 +6,7 @@ Date: 05/09/2023
 from datetime import datetime
 from typing import Annotated, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field,constr
 
 from dependencies import ShowUser
 
@@ -350,3 +350,16 @@ class RemoveCustomColumnValue(BaseModel):
         title="Column ID",
         description="cuid of the column"
     )
+
+class add_comments(BaseModel):
+    task_uid:str
+    comment:str
+    parent_id:Optional[str]=None
+
+class BaseComments(BaseModel):
+    cuid:str
+    comment:str
+    creator:BasicUser
+    is_deleted:bool
+    created_at:datetime 
+    updated_at:datetime 

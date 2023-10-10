@@ -10,6 +10,7 @@ from database import get_db
 from frontenduser import model as frontendModel
 from frontenduser.middleware import authenticate_token
 from organization import model as orgModel
+from frontenduser import model
 from organization.middleware import check_permission, organization_exist
 
 from . import controller
@@ -326,3 +327,13 @@ def remove_column_value(
     Removes the assigned value of a custom column for a task.
     """
     return controller.remove_column_value(data, organization, sql)
+
+@taskmanagementRoutes.post('/add-comments',response_model=schema.BaseComments,status_code=status.HTTP_201_CREATED)
+def add_comments(
+    data:schema.add_comments,
+    authtoken:model.FrontendToken = Depends(authenticate_token),
+    # organization:orgModel.Organization = Depends(organization_exist),
+    sql:Session = Depends(get_db),
+):
+    return controller.add_comments(data,authtoken,sql)
+

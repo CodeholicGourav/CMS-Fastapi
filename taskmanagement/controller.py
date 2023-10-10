@@ -800,3 +800,58 @@ def remove_column_value(
     sql.refresh(task)
 
     return task
+
+def add_comments(
+    data:schema.add_comments,
+    authtoken:frontendModel.FrontendToken,
+    sql:Session
+):
+    """
+    Add a comment for a task.
+
+    This function adds a comment to a task. 
+    The comment can be a reply to another comment if a parent_id is provided.
+
+    Raises:
+    - CustomValidationError: If the task is not found or the parent comment is not found.
+    by devanshu 10-10-2023
+    """
+    task_id = sql.query(model.Task).filter_by(
+        tuid=data.task_uid,is_deleted=False
+    ).first()
+
+
+    if not task_id:
+        CustomValidations.raize_custom_error(
+            error_type="task not found",
+            loc="task_id",
+            msg="task not found",
+            inp=data.task_uid
+        )
+    # Initialize parent_id to None if not provided
+    parent_id = None
+    if data.parent_id:
+         # Check if the parent comment exists
+        parent_comment = sql.query(model.Comments).filter_by(cuid=data.parent_id).first()
+        if not parent_comment:
+            CustomValidations.raize_custom_error(
+                error_type="parent comment not found",
+                loc="parent_id",
+                msg="Parent comment not found",
+                inp=data.parent_id
+            )
+        parent_id = parent_comment.id
+
+    comments = model.Comments(
+        cuid = generate_uuid(data.comment),
+        comment = data.comment,
+        user_id = authtoken.id,
+        task_id = task_id.id,
+        parent_id = parent_id
+    )
+    sql.add(comments)
+    sql.commit()
+    sql.refresh(comments)
+    
+    return comments
+
