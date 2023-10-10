@@ -185,6 +185,28 @@ def create_task(
         task.start_date = data.start_date
     if data.end_date is not None:
         task.end_date = data.end_date
+    if data.group_id is not None:
+        group_task = sql.query(model.TaskGroup).\
+            join(
+                model.Project,
+                model.TaskGroup.project_id == model.Project.id
+            ).\
+            filter(
+                # pylint: disable=singleton-comparison
+                model.TaskGroup.guid == data.group_id,
+                model.TaskGroup.is_deleted == False,
+                model.Project.org_id == organization.id
+            ).\
+            first()
+        # If the task group does not exist, raise a custom error
+        if not group_task:
+            CustomValidations.raize_custom_error(
+                error_type="not_exist",
+                loc="group_id",
+                msg="Group does not exist",
+                inp=data.group_id
+            )
+        task.group_id = group_task.id
 
     # Add the new task to the session
     sql.add(task)
@@ -318,6 +340,29 @@ def update_task(
 
     if data.is_deleted is not None:
         task.is_deleted = data.is_deleted
+
+    if data.group_id is not None:
+        group_task = sql.query(model.TaskGroup).\
+            join(
+                model.Project,
+                model.TaskGroup.project_id == model.Project.id
+            ).\
+            filter(
+                # pylint: disable=singleton-comparison
+                model.TaskGroup.guid == data.group_id,
+                model.TaskGroup.is_deleted == False,
+                model.Project.org_id == organization.id
+            ).\
+            first()
+        # If the task group does not exist, raise a custom error
+        if not group_task:
+            CustomValidations.raize_custom_error(
+                error_type="not_exist",
+                loc="group_id",
+                msg="Group does not exist",
+                inp=data.group_id
+            )
+        task.group_id = group_task.id
 
     sql.commit()
     sql.refresh(task)

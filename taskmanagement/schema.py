@@ -110,6 +110,25 @@ class ValueAssigned(BaseModel):
     updated_at: datetime
 
 
+class BaseTask(BaseModel):
+    """
+    A pydantic model
+    """
+    tuid: str
+    task_name: str
+    is_active: bool
+    is_deleted: bool
+
+
+class BaseTaskGroup(BaseModel):
+    """
+    A pydantic model
+    """
+    guid: str
+    title: str
+    is_deleted: bool
+
+
 class ShowTask(BaseModel):
     """
     A pydantic model
@@ -127,6 +146,7 @@ class ShowTask(BaseModel):
     created_at: datetime
     updated_at: datetime
     creator: ShowUser
+    group: Optional[BaseTaskGroup]
     assigned_to: Optional[list[TaskAssigned]] = []
     column_values: Optional[list[ValueAssigned]] = []
     project: BaseProject
@@ -156,6 +176,11 @@ class CreateTask(BaseModel):
     project_id: Annotated[str, Field(
         title="Project ID",
         description="puid of a project to create task under this project."
+    )]
+    group_id: Annotated[str, Field(
+        None,
+        title="Group ID",
+        description="guid of a group to create task under this group."
     )]
     event_id: Annotated[str, Field(
         None,
@@ -202,6 +227,11 @@ class UpdateTask(BaseModel):
     task_id: Annotated[str, Field(
         title="Task ID",
         description="tuid of a task to update."
+    )]
+    group_id: Annotated[str, Field(
+        None,
+        title="Group ID",
+        description="guid of a group to create task under this group."
     )]
     event_id: Annotated[str, Field(
         None,
@@ -261,15 +291,6 @@ class AssignTask(BaseModel):
         title="User ID",
         description="UUID of frontend user."
     )
-
-
-class BasicUser(BaseModel):
-    """
-    A pydantic model
-    """
-    uuid:str
-    username:str
-    email:str
 
 
 class ResponseCustomColumn(BaseModel):
@@ -354,16 +375,6 @@ class RemoveCustomColumnValue(BaseModel):
     )
 
 
-class BaseTask(BaseModel):
-    """
-    A pydantic model
-    """
-    tuid: str
-    task_name: str
-    is_active: bool
-    is_deleted: bool
-
-
 class ShowTaskGroup(BaseModel):
     """
     A pydantic model
@@ -392,6 +403,7 @@ class AddTaskGroup(BaseModel):
         title="Project id",
         description="A puid of a project."
     )
+
 
 class UpdateTaskGroup(BaseModel):
     """
