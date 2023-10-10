@@ -333,7 +333,7 @@ def remove_column_value(
 def add_comments(
     data:schema.add_comments,
     authtoken:model.FrontendToken = Depends(authenticate_token),
-    # organization:orgModel.Organization = Depends(organization_exist),
+    organization:orgModel.Organization = Depends(organization_exist),
     sql:Session = Depends(get_db),
 ):
     return controller.add_comments(data,authtoken,sql)
@@ -343,6 +343,7 @@ def all_comment(
     limit:Optional[int]=Query(default=10,ge=10,le=100),
     offset:Optional[int]=0,
     authtoken:model.FrontendToken = Depends(authenticate_token),
+    organization:orgModel.Organization = Depends(organization_exist),
     sql:Session = Depends(get_db)
 ):
     return controller.get_all_task_comments(limit,offset,sql)

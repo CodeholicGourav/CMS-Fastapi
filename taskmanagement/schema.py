@@ -362,7 +362,8 @@ class BaseComments(BaseModel):
     creator:BasicUser
     is_deleted:bool
     created_at:datetime 
-    updated_at:datetime 
+    updated_at:datetime
+     
 
 
 
