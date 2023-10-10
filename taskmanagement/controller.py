@@ -808,26 +808,30 @@ def create_task_group(
     auth_token: frontendModel.FrontendToken,
     sql: Session
 ):
+    """
+    Creates a new task group for a project in the database, 
+    ensuring that the group title is unique within the project.
+    """
     project = sql.query(model.Project).filter_by(
         puid=data.project_id,
         is_active=True,
         is_deleted=False,
         org_id=organization.id
     ).first()
+
     if not project:
         CustomValidations.raize_custom_error(
             error_type="not_exist",
             loc="project_id",
-            msg="project  does not exist",
+            msg="project does not exist",
             inp=data.project_id
         )
 
-    title_exist = sql.query(
-        model.TaskGroup
-    ).filter_by(
+    title_exist = sql.query(model.TaskGroup).filter_by(
         title=data.group_title,
         project_id=project.id
     ).first()
+
     if title_exist:
         CustomValidations.raize_custom_error(
             error_type="already_exist",
@@ -849,3 +853,64 @@ def create_task_group(
     sql.refresh(task_group)
 
     return task_group
+
+
+def update_task_group(
+    data: schema.UpdateTaskGroup,
+    organization: orgModel.Organization,
+    sql: Session
+):
+    """
+    Updates the details of a task group in the database.
+    """
+    # Query the task group from the database based on the provided group ID and organization ID
+    group_task = sql.query(model.TaskGroup).\
+        join(
+            model.Project,
+            model.TaskGroup.project_id == model.Project.id
+        ).\
+        filter(
+            # pylint: disable=singleton-comparison
+            model.TaskGroup.guid == data.group_id,
+            model.TaskGroup.is_deleted == False,
+            model.Project.org_id == organization.id
+        ).\
+        first()
+
+    # If the task group does not exist, raise a custom error
+    if not group_task:
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
+            loc="group_id",
+            msg="Group does not exist",
+            inp=data.group_id
+        )
+
+    # Check if the new group title already exists in the project. If it does, raise a custom error
+    title_exist = sql.query(model.TaskGroup).\
+        filter_by(
+            title=data.group_title,
+            project_id=group_task.project_id
+        ).\
+        first()
+    if title_exist:
+        CustomValidations.raize_custom_error(
+            error_type="already_exist",
+            loc="group_title",
+            msg="Group title already exists in this project",
+            inp=data.group_title,
+            ctx={"group_title": "unique"}
+        )
+
+    # Update the task group's title and deletion status based on the provided input data
+    if data.group_title is not None:
+        group_task.title = data.group_title
+
+    if data.is_deleted is not None:
+        group_task.is_deleted = data.is_deleted
+
+    # Commit the changes to the database and refresh the task group object
+    sql.commit()
+    sql.refresh(group_task)
+
+    return group_task

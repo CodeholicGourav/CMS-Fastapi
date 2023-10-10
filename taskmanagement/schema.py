@@ -16,6 +16,8 @@ class BaseProject(BaseModel):
     """
     puid: str
     project_name: str
+    is_active: bool
+    is_deleted: bool
 
 
 class CreateProject(BaseModel):
@@ -352,16 +354,6 @@ class RemoveCustomColumnValue(BaseModel):
     )
 
 
-class BaseProject(BaseModel):
-    """
-    A pydantic model
-    """
-    puid: str
-    project_name: str
-    is_active: bool
-    is_deleted: bool
-
-
 class BaseTask(BaseModel):
     """
     A pydantic model
@@ -373,6 +365,9 @@ class BaseTask(BaseModel):
 
 
 class ShowTaskGroup(BaseModel):
+    """
+    A pydantic model
+    """
     guid: str
     title: str
     is_deleted: bool
@@ -384,6 +379,9 @@ class ShowTaskGroup(BaseModel):
 
 
 class AddTaskGroup(BaseModel):
+    """
+    A pydantic model
+    """
     group_title: str = Field(
         title="Group title",
         description="A title for the group.",
@@ -395,3 +393,15 @@ class AddTaskGroup(BaseModel):
         description="A puid of a project."
     )
 
+class UpdateTaskGroup(BaseModel):
+    """
+    A pydantic model
+    """
+    group_id: str
+    group_title: str = Field(
+        title="Group title",
+        description="A title for the group.",
+        min_length=3,
+        max_length=30
+    )
+    is_deleted: bool

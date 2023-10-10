@@ -340,4 +340,28 @@ def create_task_group(
     auth_token: frontendModel.FrontendToken = Depends(authenticate_token),
     sql:Session = Depends(get_db)
 ):
+    """
+    Creates a new task group for a project in the database, 
+    ensuring that the group title is unique within the project.
+    """
     return controller.create_task_group(data, organization, auth_token, sql)
+
+
+@taskmanagementRoutes.post('/update-task-group',
+    response_model=schema.ShowTaskGroup,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[
+        Depends(authenticate_token)
+    ],
+    description="Update a tasks group inside a project.",
+    name="Update task group"
+)
+def update_task_group(
+    data:schema.UpdateTaskGroup,
+    organization: orgModel.Organization = Depends(organization_exist),
+    sql:Session = Depends(get_db)
+):
+    """
+    Updates the details of a task group in the database.
+    """
+    return controller.update_task_group(data, organization, sql)

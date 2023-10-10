@@ -104,10 +104,9 @@ def organization_exist(
     Checks if an organization with the given orguid exists in the database 
     and if the organization's admin has an active subscription.
     """
-    organization = sql.query(model.Organization).filter_by(
-        orguid=orguid
-    ).first()
-
+    organization = sql.query(model.Organization).\
+        filter_by(orguid=orguid).\
+        first()
     if not organization:
         CustomValidations.raize_custom_error(
             error_type="not_exist",
