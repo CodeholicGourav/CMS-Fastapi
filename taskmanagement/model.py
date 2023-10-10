@@ -396,7 +396,7 @@ class ProjectCustomColumn(Base):
     Represents a table in a database called 'projecttaskcustomcolumn'.
     Used to store custom columns for projects and tasks.
     """
-    __tablename__ = 'projecttaskcustomcolumn'
+    __tablename__ = 'custom_columns'
 
     id = Column(
         Integer,
