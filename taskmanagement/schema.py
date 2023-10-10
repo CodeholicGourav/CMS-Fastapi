@@ -363,3 +363,19 @@ class BaseComments(BaseModel):
     is_deleted:bool
     created_at:datetime 
     updated_at:datetime 
+
+
+
+class Responsegetcomment(BaseModel):
+    cuid:str
+    comment:str
+    creator:BasicUser
+    is_deleted:bool
+    created_at:datetime
+    updated_at:datetime
+
+ 
+
+class Responsecomment(BaseModel):
+    result:List[Responsegetcomment]
+    total:int

@@ -5,11 +5,11 @@ Date: 05/09/2023
 """
 
 from sqlalchemy.orm import Session
-
+from sqlalchemy.orm.exc import NoResultFound
 from dependencies import CustomValidations, generate_uuid
 from frontenduser import model as frontendModel
 from organization import model as orgModel
-
+from sqlalchemy import func
 from . import model, schema
 
 
@@ -852,6 +852,18 @@ def add_comments(
     sql.add(comments)
     sql.commit()
     sql.refresh(comments)
-    
+
     return comments
 
+def get_all_task_comments(limit,offset,sql:Session):
+    try:
+        all_task_comments = sql.query(model.Comments).limit(limit).offset(offset).all()
+        total = sql.query(func.count(model.Comments.id)).scalar()
+        return {"result":all_task_comments,
+                "total":total
+                }
+    except NoResultFound:
+        return {
+            "result":[],
+            "total":0
+        }

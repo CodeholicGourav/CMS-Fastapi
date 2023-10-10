@@ -671,3 +671,4 @@ class Comments(Base):
     
     creator = relationship("FrontendUser",foreign_keys=user_id)
     tasks = relationship("Task",foreign_keys=task_id)
+    parent = relationship("Comments",foreign_keys=parent_id)

@@ -11,6 +11,7 @@ from frontenduser import model as frontendModel
 from frontenduser.middleware import authenticate_token
 from organization import model as orgModel
 from frontenduser import model
+from typing import Optional,List
 from organization.middleware import check_permission, organization_exist
 
 from . import controller
@@ -336,4 +337,14 @@ def add_comments(
     sql:Session = Depends(get_db),
 ):
     return controller.add_comments(data,authtoken,sql)
+
+@taskmanagementRoutes.get('/get-task-comments',response_model=schema.Responsecomment,status_code=status.HTTP_200_OK)
+def all_comment(
+    limit:Optional[int]=Query(default=10,ge=10,le=100),
+    offset:Optional[int]=0,
+    authtoken:model.FrontendToken = Depends(authenticate_token),
+    sql:Session = Depends(get_db)
+):
+    return controller.get_all_task_comments(limit,offset,sql)
+
 
