@@ -856,6 +856,9 @@ def add_comments(
     return comments
 
 def get_all_task_comments(limit,offset,sql:Session):
+    """
+     Retrieves all comments for tasks with pagination.
+    """
     try:
         all_task_comments = sql.query(model.Comments).limit(limit).offset(offset).all()
         total = sql.query(func.count(model.Comments.id)).scalar()

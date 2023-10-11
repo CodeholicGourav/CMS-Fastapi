@@ -336,6 +336,9 @@ def add_comments(
     organization:orgModel.Organization = Depends(organization_exist),
     sql:Session = Depends(get_db),
 ):
+    """
+    Adds comments to a specified entity within the organization.
+    """
     return controller.add_comments(data,authtoken,sql)
 
 @taskmanagementRoutes.get('/get-task-comments',response_model=schema.Responsecomment,status_code=status.HTTP_200_OK)
@@ -346,6 +349,9 @@ def all_comment(
     organization:orgModel.Organization = Depends(organization_exist),
     sql:Session = Depends(get_db)
 ):
+    """
+     Retrieves comments for a specific task within the organization.
+    """
     return controller.get_all_task_comments(limit,offset,sql)
 
 
