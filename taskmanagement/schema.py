@@ -143,14 +143,15 @@ class ShowTask(BaseModel):
     end_date: Optional[datetime]
     is_active: bool
     is_deleted: bool
+    medias: dict | None
     created_at: datetime
     updated_at: datetime
-    parent: BaseTask
+    parent: BaseTask | list = []
     creator: ShowUser
     group: Optional[BaseTaskGroup]
     assigned_to: Optional[list[TaskAssigned]] = []
     column_values: Optional[list[ValueAssigned]] = []
-    project: BaseProject
+    project: Optional[BaseProject] = {}
 
 
 class TaskList(BaseModel):

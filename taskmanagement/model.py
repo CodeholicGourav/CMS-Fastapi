@@ -6,7 +6,7 @@ Date: 05/09/2023
 from datetime import datetime
 
 from sqlalchemy import (
-    Boolean, Column, DateTime, ForeignKey, Integer, String, Text, exc
+    Boolean, Column, DateTime, ForeignKey, Integer, String, Text, JSON, exc
 )
 from sqlalchemy.orm import relationship
 
@@ -160,6 +160,10 @@ class Task(Base):
     is_deleted = Column(
         Boolean,
         default=False
+    )
+    medias = Column(
+        JSON,
+        nullable=True
     )
     created_at = Column(
         DateTime,

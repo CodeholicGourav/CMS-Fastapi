@@ -3,10 +3,17 @@ taskmanagement/controller.py
 Author: Gourav Sahu
 Date: 05/09/2023
 """
-
+import json
+from fastapi import UploadFile
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
 from sqlalchemy.orm import Session
 
-from dependencies import CustomValidations, generate_uuid
+from dependencies import (
+    ALLOWED_FILE_EXTENSIONS,
+    CustomValidations, SETTINGS,
+    allowed_file, generate_uuid, create_folder_if_not_exists, upload_to_drive
+)
 from frontenduser import model as frontendModel
 from organization import model as orgModel
 
@@ -115,10 +122,8 @@ def update_project(
 
     if data.description:
         project.description = data.description
-
     if data.is_active is not None:
         project.is_active = data.is_active
-
     if data.is_deleted is not None:
         project.is_deleted = data.is_deleted
 
@@ -134,10 +139,7 @@ def create_task(
     sql: Session
 ):
     """
-    Creates a new task for an organization in the database,
-    performing validations to ensure 
-    project exist in organization and 
-    the task name should be unique in project.
+    Creates a new task for an organization in the database
     """
     # Check if the project specified by the project ID exists in the organization
     exist_project = sql.query(model.Project).filter_by(
@@ -187,19 +189,16 @@ def create_task(
         task.end_date = data.end_date
 
     if data.group_id is not None:
-        group_task = sql.query(model.TaskGroup).\
-            join(
-                model.Project,
-                model.TaskGroup.project_id == model.Project.id
-            ).\
-            filter(
-                # pylint: disable=singleton-comparison
-                model.TaskGroup.guid == data.group_id,
-                model.TaskGroup.is_deleted == False,
-                model.Project.org_id == organization.id
-            ).\
-            first()
         # If the task group does not exist, raise a custom error
+        group_task = sql.query(model.TaskGroup).join(
+            model.Project,
+            model.TaskGroup.project_id == model.Project.id
+        ).filter(
+            # pylint: disable=singleton-comparison
+            model.TaskGroup.guid == data.group_id,
+            model.TaskGroup.is_deleted == False,
+            model.Project.org_id == organization.id
+        ).first()
         if not group_task:
             CustomValidations.raize_custom_error(
                 error_type="not_exist",
@@ -207,6 +206,7 @@ def create_task(
                 msg="Group does not exist",
                 inp=data.group_id
             )
+
         task.group_id = group_task.id
 
     if data.parent_id is not None:
@@ -230,6 +230,70 @@ def create_task(
         task.parent_id = parent_task.id
 
     sql.add(task)
+    sql.commit()
+    sql.refresh(task)
+    return task
+
+
+async def upload_task_media(
+    task_id: str,
+    files: list[UploadFile],
+    organization: orgModel.Organization,
+    sql:Session
+):
+    """
+    Uploads media files to Google Drive for a specific task in an organization.
+    """
+    task = sql.query(model.Task).join(
+            model.Project,
+            model.Task.project_id == model.Project.id
+        ).filter(
+            model.Task.tuid == task_id,
+            model.Project.org_id == organization.id
+        ).first()
+    if not task:
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
+            loc="task_id",
+            msg="Task does not exist",
+            inp=task_id,
+            ctx={"task_id": "exist"}
+        )
+
+    if not organization.gtoken:
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
+            loc="google token",
+            msg="Google token does not exist",
+            inp="",
+            ctx={"google token": "exist"}
+        )
+
+    # Create an instance of OAuth 2.0 credentials using the dictionary
+    creds = Credentials.from_authorized_user_info(json.loads(organization.gtoken))
+
+    # Check if the Google token provided is valid.
+    if creds.expired and creds.refresh_token:
+        creds.refresh(Request())
+
+    folder_path = f'{SETTINGS.APP_NAME}/media/{organization.org_name}/{task.task_name}'
+    folder_id = create_folder_if_not_exists(folder_path, creds)
+
+    file_ids = {}
+    for index, file in enumerate(files):
+        if not allowed_file(file.filename, ALLOWED_FILE_EXTENSIONS):
+            CustomValidations.raize_custom_error(
+                error_type="invalid",
+                loc="files",
+                msg=f"Allowed extensions are {ALLOWED_FILE_EXTENSIONS}",
+                inp=file.filename,
+                ctx={"image": "invalid type"}
+            )
+
+        created_file = await upload_to_drive(file, creds, folder_id)
+        file_ids[index] = created_file.get('id', '')
+
+    task.medias = file_ids
     sql.commit()
     sql.refresh(task)
     return task
@@ -269,7 +333,6 @@ def get_tasks(
         tasks = sql.query(model.Task).filter_by(
             project_id=exist_project.id
         ).order_by(model.Task.id).limit(limit).offset(offset).all()
-
     else:
         count = sql.query(model.Task).count()
         tasks = sql.query(model.Task).limit(limit).order_by(model.Task.id).offset(offset).all()
@@ -311,14 +374,13 @@ def update_task(
     """
     Updates the details of a task in the database based on the provided input data.
     """
-    task = sql.query(model.Task).\
-        join(
-            model.Project,
-            model.Task.project_id == model.Project.id
-        ).filter(
-            model.Task.tuid == data.task_id,
-            model.Project.org_id == organization.id
-        ).first()
+    task = sql.query(model.Task).join(
+        model.Project,
+        model.Task.project_id == model.Project.id
+    ).filter(
+        model.Task.tuid == data.task_id,
+        model.Project.org_id == organization.id
+    ).first()
     if not task:
         CustomValidations.raize_custom_error(
             error_type="not_exist",
@@ -339,18 +401,15 @@ def update_task(
     task.is_deleted = data.is_deleted or task.is_deleted
 
     if data.group_id is not None:
-        group_task = sql.query(model.TaskGroup).\
-            join(
-                model.Project,
-                model.TaskGroup.project_id == model.Project.id
-            ).\
-            filter(
-                # pylint: disable=singleton-comparison
-                model.TaskGroup.guid == data.group_id,
-                model.TaskGroup.is_deleted == False,
-                model.Project.org_id == organization.id
-            ).\
-            first()
+        group_task = sql.query(model.TaskGroup).join(
+            model.Project,
+            model.TaskGroup.project_id == model.Project.id
+        ).filter(
+            # pylint: disable=singleton-comparison
+            model.TaskGroup.guid == data.group_id,
+            model.TaskGroup.is_deleted == False,
+            model.Project.org_id == organization.id
+        ).first()
         if not group_task:
             CustomValidations.raize_custom_error(
                 error_type="not_exist",
@@ -541,9 +600,10 @@ def withdraw_task(
             ctx={"user_id": "exist"}
         )
 
-    sql.query(model.UserTask).\
-        filter_by(task_id=task.id, user_id=user.id,).\
-        delete()
+    sql.query(model.UserTask).filter_by(
+        task_id=task.id,
+        user_id=user.id,
+    ).delete()
 
     sql.commit()
     sql.refresh(task)
@@ -675,7 +735,6 @@ def delete_custom_column(
         )
 
     column.is_deleted = True
-
     sql.commit()
     sql.refresh(column)
     return column
@@ -752,7 +811,9 @@ def assign_column_value(
         )
 
     # Query the database to check if a custom column value has already been assigned to the task
-    value_assigned = sql.query(model.CustomColumnAssigned).filter_by(
+    value_assigned = sql.query(
+        model.CustomColumnAssigned
+    ).filter_by(
         column_id=column.id,
         task_id=task.id
     ).first()
@@ -803,9 +864,7 @@ def remove_column_value(
             inp=data.column_id
         )
 
-    task = sql.query(
-        model.Task
-    ).join(
+    task = sql.query(model.Task).join(
         model.Project,
         model.Task.project_id == model.Project.id
     ).filter(
@@ -896,18 +955,15 @@ def update_task_group(
     Updates the details of a task group in the database.
     """
     # Query the task group from the database based on the provided group ID and organization ID
-    group_task = sql.query(model.TaskGroup).\
-        join(
+    group_task = sql.query(model.TaskGroup).join(
             model.Project,
             model.TaskGroup.project_id == model.Project.id
-        ).\
-        filter(
+        ).filter(
             # pylint: disable=singleton-comparison
             model.TaskGroup.guid == data.group_id,
             model.TaskGroup.is_deleted == False,
             model.Project.org_id == organization.id
-        ).\
-        first()
+        ).first()
     if not group_task:
         CustomValidations.raize_custom_error(
             error_type="not_exist",
@@ -917,12 +973,10 @@ def update_task_group(
         )
 
     # Check if the new group title already exists in the project. If it does, raise a custom error
-    title_exist = sql.query(model.TaskGroup).\
-        filter_by(
+    title_exist = sql.query(model.TaskGroup).filter_by(
             title=data.group_title,
             project_id=group_task.project_id
-        ).\
-        first()
+        ).first()
     if title_exist:
         CustomValidations.raize_custom_error(
             error_type="already_exist",
@@ -932,7 +986,6 @@ def update_task_group(
             ctx={"group_title": "unique"}
         )
 
-    # Update the task group's title and deletion status based on the provided input data
     if data.group_title is not None:
         group_task.title = data.group_title
 

@@ -14,6 +14,11 @@ import time
 import urllib.parse
 from email.message import EmailMessage
 from email.mime.text import MIMEText
+from fastapi import UploadFile
+from googleapiclient.errors import HttpError
+from googleapiclient.http import MediaInMemoryUpload
+from googleapiclient.discovery import build
+from google.oauth2.credentials import Credentials
 
 import requests
 from fastapi import HTTPException, status
@@ -74,7 +79,6 @@ class Hash:
     """
     The `Hash` class provides methods for hashing and verifying passwords using bcrypt algorithm.
     """
-
     pwd_cxt = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
     @staticmethod
@@ -334,11 +338,11 @@ def send_mail(recipient_email: str, subject: str, message: str):
         return False
 
 
-def allowed_file(filename: str):
+def allowed_file(filename: str, allowed_extensions: set[str]):
     """
     Checks if a given filename has an allowed extension.
     """
-    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in allowed_extensions
 
 
 def generate_paypal_access_token():
@@ -417,6 +421,62 @@ def convert_currency(currency: str):
     return conversion_json
 
 
+def create_folder_if_not_exists(folder_path: str, creds: Credentials):
+    parts = folder_path.split('/')
+    current_folder_id = None
+
+    # Call the Drive v3 API
+    service = build('drive', 'v3', credentials=creds)
+
+    for part in parts:
+        # pylint: disable=E1101 is used 
+        folder = service.files().list(
+            q=f"'{current_folder_id}' in parents and mimeType='application/vnd.google-apps.folder' and name='{part}'"
+        ).execute()
+
+        if folder.get('files'):
+            current_folder_id = folder['files'][0]['id']
+        else:
+            folder_metadata = {
+                'name': part,
+                'parents': [current_folder_id] if current_folder_id else []
+            }
+            folder = service.files().create(body=folder_metadata, fields='id').execute()
+            current_folder_id = folder['id']
+
+    return current_folder_id
+
+
+async def upload_to_drive(file: UploadFile, creds: Credentials, folder_id):
+    try:
+        # Read the file content and create a MediaInMemoryUpload object
+        content = await file.read()
+        media = MediaInMemoryUpload(content, mimetype=file.content_type)
+
+        # Call the Drive v3 API
+        service = build('drive', 'v3', credentials=creds)
+        
+        # pylint: disable=E1101 is used 
+        created_file = service.files().create(
+            body={
+                'name': file.filename,
+                'parents': [folder_id]
+            },
+            media_body=media
+        ).execute()
+
+    except HttpError as error:
+        CustomValidations.raize_custom_error(
+            error_type="drive",
+            loc= "google_drive",
+            msg= str(error),
+            inp= "",
+            ctx={"drive": "unexpected error"}
+        )
+
+    return created_file
+
+
 SETTINGS = Settings()
 
 TEMPLATES = os.path.join(os.path.dirname(__file__), 'templates')
@@ -436,9 +496,13 @@ TOKEN_LIMIT = 5
 # Conversion api endpoint
 CONVERSION_URL = "https://v6.exchangerate-api.com/v6/3a1bbc03599e950fa56cda33"
 
-# Define allowed image file extensions and size limit
-ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "gif"}
+# Define allowed image file extensions
+ALLOWED_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "gif"}
 
+# Define allowed file extensions
+ALLOWED_FILE_EXTENSIONS = {"csv", "xlsx", "pdf", "jpg", "png", "page", "word", "ppt", "txt", "webp"}
+
+# Define maximu file size
 MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024  # 5 MB
 
 predefined_backend_permissions = [
