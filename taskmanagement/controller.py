@@ -4,16 +4,15 @@ Author: Gourav Sahu
 Date: 05/09/2023
 """
 import json
+
 from fastapi import UploadFile
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from sqlalchemy.orm import Session
 
-from dependencies import (
-    ALLOWED_FILE_EXTENSIONS,
-    CustomValidations, SETTINGS,
-    allowed_file, generate_uuid, create_folder_if_not_exists, upload_to_drive
-)
+from dependencies import (ALLOWED_FILE_EXTENSIONS, SETTINGS, CustomValidations,
+                          allowed_file, create_folder_if_not_exists,
+                          generate_uuid, upload_to_drive)
 from frontenduser import model as frontendModel
 from organization import model as orgModel
 
@@ -41,6 +40,29 @@ def get_projects(
         "total": count,
         "projects": projects
     }
+
+
+def project_details(
+    project_id: str,
+    organization: orgModel.Organization,
+    sql: Session
+):
+    """
+    Retrieves the details of a project based on the provided project ID.
+    """
+    project = sql.query(model.Project).filter_by(
+        puid=project_id,
+        org_id=organization.id
+    ).first()
+    if not project:
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
+            loc="project_id",
+            msg="Project does not exist",
+            inp=project_id,
+            ctx={"project_id": "exist"}
+        )
+    return project
 
 
 def create_project(
@@ -120,12 +142,9 @@ def update_project(
             )
         project.project_name = data.project_name
 
-    if data.description:
-        project.description = data.description
-    if data.is_active is not None:
-        project.is_active = data.is_active
-    if data.is_deleted is not None:
-        project.is_deleted = data.is_deleted
+    project.description = data.description or project.description
+    project.is_active = data.is_active or project.is_active
+    project.is_deleted = data.is_deleted or project.is_deleted
 
     sql.commit()
     sql.refresh(project)
@@ -177,16 +196,11 @@ def create_task(
         project_id = exist_project.id,
     )
 
-    if data.event_id is not None:
-        task.event_id = data.event_id
-    if data.estimate_hours is not None:
-        task.estimate_hours = data.estimate_hours
-    if data.deadline_date is not None:
-        task.deadline = data.deadline_date
-    if data.start_date is not None:
-        task.start_date = data.start_date
-    if data.end_date is not None:
-        task.end_date = data.end_date
+    task.event_id = data.event_id or task.event_id
+    task.estimate_hours = data.estimate_hours or task.estimate_hours
+    task.deadline = data.deadline_date or task.deadline
+    task.start_date = data.start_date or task.start_date
+    task.end_date = data.end_date or task.end_date
 
     if data.group_id is not None:
         # If the task group does not exist, raise a custom error
@@ -277,7 +291,7 @@ async def upload_task_media(
         creds.refresh(Request())
 
     folder_path = f'{SETTINGS.APP_NAME}/media/{organization.org_name}/{task.task_name}'
-    folder_id = create_folder_if_not_exists(folder_path, creds)
+    folder = create_folder_if_not_exists(folder_path, creds)
 
     file_ids = {}
     for index, file in enumerate(files):
@@ -290,7 +304,7 @@ async def upload_task_media(
                 ctx={"image": "invalid type"}
             )
 
-        created_file = await upload_to_drive(file, creds, folder_id)
+        created_file = await upload_to_drive(file, creds, folder['id'])
         file_ids[index] = created_file.get('id', '')
 
     task.medias = file_ids
@@ -341,29 +355,6 @@ def get_tasks(
         "total": count,
         "tasks": tasks
     }
-
-
-def project_details(
-    project_id: str,
-    organization: orgModel.Organization,
-    sql: Session
-):
-    """
-    Retrieves the details of a project based on the provided project ID.
-    """
-    project = sql.query(model.Project).filter_by(
-        puid=project_id,
-        org_id=organization.id
-    ).first()
-    if not project:
-        CustomValidations.raize_custom_error(
-            error_type="not_exist",
-            loc="project_id",
-            msg="Project does not exist",
-            inp=project_id,
-            ctx={"project_id": "exist"}
-        )
-    return project
 
 
 def update_task(
@@ -986,11 +977,8 @@ def update_task_group(
             ctx={"group_title": "unique"}
         )
 
-    if data.group_title is not None:
-        group_task.title = data.group_title
-
-    if data.is_deleted is not None:
-        group_task.is_deleted = data.is_deleted
+    group_task.title = data.group_title or group_task.title
+    group_task.is_deleted = data.is_deleted or group_task.is_deleted
 
     # Commit the changes to the database and refresh the task group object
     sql.commit()

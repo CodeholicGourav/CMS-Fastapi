@@ -421,33 +421,59 @@ def convert_currency(currency: str):
     return conversion_json
 
 
-def create_folder_if_not_exists(folder_path: str, creds: Credentials):
+def create_folder_if_not_exists(
+    folder_path: str,
+    creds: Credentials
+):
+    """
+    Creates a folder in Google Drive if it does not already exist.
+
+    Args:
+        folder_path (str): The path of the folder to be created. 
+        It should be in the format "Folder1/Folder2/Folder3".
+        creds (Credentials): The Google Drive credentials object.
+    """
     parts = folder_path.split('/')
     current_folder_id = None
 
-    # Call the Drive v3 API
+    # Build the Google Drive service using the provided credentials
     service = build('drive', 'v3', credentials=creds)
 
     for part in parts:
-        # pylint: disable=E1101 is used 
-        folder = service.files().list(
-            q=f"'{current_folder_id}' in parents and mimeType='application/vnd.google-apps.folder' and name='{part}'"
-        ).execute()
+        # Check if the folder already exists in the current folder using the Drive v3 API
+        folder_query = f"'{current_folder_id}' in parents and mimeType='application/vnd.google-apps.folder' and name='{part}'"
+        folder = service.files().list(q=folder_query).execute()
 
         if folder.get('files'):
+            # If the folder exists, update current_folder_id with the folder's ID
             current_folder_id = folder['files'][0]['id']
         else:
+            # If the folder does not exist, create the folder with the given name and parent folder ID (if available)
             folder_metadata = {
                 'name': part,
                 'parents': [current_folder_id] if current_folder_id else []
             }
             folder = service.files().create(body=folder_metadata, fields='id').execute()
-            current_folder_id = folder['id']
 
-    return current_folder_id
+    return folder
 
 
-async def upload_to_drive(file: UploadFile, creds: Credentials, folder_id):
+async def upload_to_drive(
+    file: UploadFile,
+    creds: Credentials,
+    folder_id
+):
+    """
+    Uploads a file to Google Drive using the Google Drive API.
+
+    Args:
+        file: An instance of the `UploadFile` class representing the file to be uploaded.
+        creds: An instance of the `Credentials` class representing the user's credentials for accessing Google Drive.
+        folder_id: A string representing the ID of the folder in Google Drive where the file should be uploaded.
+
+    Returns:
+        A dictionary representing the metadata of the file that was created in Google Drive.
+    """
     try:
         # Read the file content and create a MediaInMemoryUpload object
         content = await file.read()
@@ -468,9 +494,9 @@ async def upload_to_drive(file: UploadFile, creds: Credentials, folder_id):
     except HttpError as error:
         CustomValidations.raize_custom_error(
             error_type="drive",
-            loc= "google_drive",
-            msg= str(error),
-            inp= "",
+            loc="google_drive",
+            msg=str(error),
+            inp="",
             ctx={"drive": "unexpected error"}
         )
 
