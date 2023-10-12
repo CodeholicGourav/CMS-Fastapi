@@ -12,7 +12,7 @@ from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from database import get_db
-from dependencies import ALLOWED_EXTENSIONS, TEMPLATES
+from dependencies import ALLOWED_IMAGE_EXTENSIONS, TEMPLATES
 
 from . import controller, model, schema
 from .middleware import authenticate_token
@@ -164,7 +164,7 @@ def update_profile(
 )
 def update_profile_photo(
     image: UploadFile = File(
-        description=f"Allowed extensions are {ALLOWED_EXTENSIONS}"
+        description=f"Allowed extensions are {ALLOWED_IMAGE_EXTENSIONS}"
     ),
     sql : Session = Depends(get_db),
     auth_token: model.FrontendToken = Depends(authenticate_token)
@@ -312,8 +312,8 @@ def create_razorpay_order(
 
 @frontendUserRoutes.post('/razorpay/create-transaction',
     status_code=status.HTTP_201_CREATED,
-    description="Create a transaction for paypal order.",
-    name="Create paypal transaction"
+    description="Create a transaction for razorpay order.",
+    name="Create razorpay transaction"
 )
 def create_razorpay_transaction(
     request: schema.RazorpayReturn,

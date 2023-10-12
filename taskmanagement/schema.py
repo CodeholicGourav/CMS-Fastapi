@@ -16,6 +16,8 @@ class BaseProject(BaseModel):
     """
     puid: str
     project_name: str
+    is_active: bool
+    is_deleted: bool
 
 
 class CreateProject(BaseModel):
@@ -108,6 +110,25 @@ class ValueAssigned(BaseModel):
     updated_at: datetime
 
 
+class BaseTask(BaseModel):
+    """
+    A pydantic model
+    """
+    tuid: str
+    task_name: str
+    is_active: bool
+    is_deleted: bool
+
+
+class BaseTaskGroup(BaseModel):
+    """
+    A pydantic model
+    """
+    guid: str
+    title: str
+    is_deleted: bool
+
+
 class ShowTask(BaseModel):
     """
     A pydantic model
@@ -122,12 +143,15 @@ class ShowTask(BaseModel):
     end_date: Optional[datetime]
     is_active: bool
     is_deleted: bool
+    medias: dict | None
     created_at: datetime
     updated_at: datetime
+    parent: BaseTask | list = []
     creator: ShowUser
+    group: Optional[BaseTaskGroup]
     assigned_to: Optional[list[TaskAssigned]] = []
     column_values: Optional[list[ValueAssigned]] = []
-    project: BaseProject
+    project: Optional[BaseProject] = {}
 
 
 class TaskList(BaseModel):
@@ -151,9 +175,19 @@ class CreateTask(BaseModel):
         title="Task description",
         description="Description for task."
     )]
+    parent_id: Annotated[str, Field(
+        None,
+        title="Parent ID",
+        description="tuid of a task to create new-task as a sub-task of this task."
+    )]
     project_id: Annotated[str, Field(
         title="Project ID",
         description="puid of a project to create task under this project."
+    )]
+    group_id: Annotated[str, Field(
+        None,
+        title="Group ID",
+        description="guid of a group to create task under this group."
     )]
     event_id: Annotated[str, Field(
         None,
@@ -200,6 +234,16 @@ class UpdateTask(BaseModel):
     task_id: Annotated[str, Field(
         title="Task ID",
         description="tuid of a task to update."
+    )]
+    parent_id: Annotated[str, Field(
+        None,
+        title="Parent ID",
+        description="tuid of a task to create new-task as a sub-task of this task."
+    )]
+    group_id: Annotated[str, Field(
+        None,
+        title="Group ID",
+        description="guid of a group to create task under this group."
     )]
     event_id: Annotated[str, Field(
         None,
@@ -261,22 +305,13 @@ class AssignTask(BaseModel):
     )
 
 
-class BasicUser(BaseModel):
-    """
-    A pydantic model
-    """
-    uuid:str
-    username:str
-    email:str
-
-
 class ResponseCustomColumn(BaseModel):
     """
     A pydantic model
     """
     column_name:str
     cuid: str
-    creator:BasicUser
+    creator:ShowUser
     created_at:datetime
     updated_at:datetime
     is_deleted:bool
@@ -350,7 +385,11 @@ class RemoveCustomColumnValue(BaseModel):
         title="Column ID",
         description="cuid of the column"
     )
-
+class BasicUser(BaseModel):
+    uuid:str 
+    username:str 
+    email:str
+    
 class add_comments(BaseModel):
     task_uid:str
     comment:str
@@ -380,3 +419,46 @@ class Responsegetcomment(BaseModel):
 class Responsecomment(BaseModel):
     result:List[Responsegetcomment]
     total:int
+
+class ShowTaskGroup(BaseModel):
+    """
+    A pydantic model
+    """
+    guid: str
+    title: str
+    is_deleted: bool
+    created_at: datetime
+    updated_at: datetime
+    project: BaseProject
+    tasks: List[BaseTask]
+    creator: ShowUser
+
+
+class AddTaskGroup(BaseModel):
+    """
+    A pydantic model
+    """
+    group_title: str = Field(
+        title="Group title",
+        description="A title for the group.",
+        min_length=3,
+        max_length=30
+    )
+    project_id: str = Field(
+        title="Project id",
+        description="A puid of a project."
+    )
+
+
+class UpdateTaskGroup(BaseModel):
+    """
+    A pydantic model
+    """
+    group_id: str
+    group_title: str = Field(
+        title="Group title",
+        description="A title for the group.",
+        min_length=3,
+        max_length=30
+    )
+    is_deleted: bool

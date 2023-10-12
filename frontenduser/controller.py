@@ -18,7 +18,7 @@ from taskmanagement.model import (
 )
 from backenduser import controller as backendusercontroller
 from dependencies import (
-    ALLOWED_EXTENSIONS, MAX_FILE_SIZE_BYTES, PAYPAL_BASE_URL,
+    ALLOWED_IMAGE_EXTENSIONS, MAX_FILE_SIZE_BYTES, PAYPAL_BASE_URL,
     SETTINGS, TOKEN_LIMIT, TOKEN_VALIDITY, UPLOAD_FOLDER,
     CustomValidations, FrontendEmail, Hash,
     allowed_file, convert_currency, generate_paypal_access_token,
@@ -141,11 +141,11 @@ def update_profile_photo(file: UploadFile, auth_token: model.FrontendToken, sql:
     """
     user = auth_token.user
     # Check if the file is an allowed image type
-    if not allowed_file(file.filename):
+    if not allowed_file(file.filename, ALLOWED_IMAGE_EXTENSIONS):
         CustomValidations.raize_custom_error(
             error_type="invalid",
             loc= "image",
-            msg= f"Allowed extensions are {ALLOWED_EXTENSIONS}",
+            msg= f"Allowed extensions are {ALLOWED_IMAGE_EXTENSIONS}",
             inp= file.filename,
             ctx={"image": "invalid type"}
         )
@@ -543,7 +543,7 @@ def stripe_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, 
         final_amount = total_amount - coupon_amount
 
         order.coupon_id = coupon.id
-        order.cuoupon_code = coupon.coupon_code
+        order.coupon_code = coupon.coupon_code
         order.coupon_amount = coupon_amount
         order.final_amount = round(final_amount, 2)
 
@@ -704,7 +704,7 @@ def paypal_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, 
         final_amount = total_amount - coupon_amount
 
         order.coupon_id = coupon.id
-        order.cuoupon_code = coupon.coupon_code
+        order.coupon_code = coupon.coupon_code
         order.coupon_amount = coupon_amount
         order.final_amount = round(final_amount, 2)
 
@@ -872,7 +872,7 @@ def razorpay_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken
         final_amount = total_amount - coupon_amount
 
         order.coupon_id = coupon.id
-        order.cuoupon_code = coupon.coupon_code
+        order.coupon_code = coupon.coupon_code
         order.coupon_amount = coupon_amount
         order.final_amount = round(final_amount, 2)
 

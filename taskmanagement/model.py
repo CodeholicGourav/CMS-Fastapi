@@ -6,7 +6,7 @@ Date: 05/09/2023
 from datetime import datetime
 
 from sqlalchemy import (
-    Boolean, Column, DateTime, ForeignKey, Integer, String, Text, exc
+    Boolean, Column, DateTime, ForeignKey, Integer, String, Text, JSON, exc
 )
 from sqlalchemy.orm import relationship
 
@@ -107,6 +107,11 @@ class Task(Base):
         index=True,
         unique=True
     )
+    group_id = Column(
+        Integer,
+        ForeignKey("task_groups.id"),
+        nullable=True
+    )
     task_name = Column(
         String(50),
         nullable=False
@@ -118,6 +123,11 @@ class Task(Base):
     created_by = Column(
         Integer,
         ForeignKey("frontendusers.id")
+    )
+    parent_id = Column(
+        Integer,
+        ForeignKey('tasks.id'),
+        nullable=True
     )
     project_id = Column(
         Integer,
@@ -151,6 +161,10 @@ class Task(Base):
         Boolean,
         default=False
     )
+    medias = Column(
+        JSON,
+        nullable=True
+    )
     created_at = Column(
         DateTime,
         default=datetime.utcnow
@@ -164,6 +178,14 @@ class Task(Base):
     creator = relationship(
         "FrontendUser",
         foreign_keys=created_by
+    )
+    parent = relationship(
+        "Task",
+        foreign_keys=parent_id
+    )
+    group = relationship(
+        "TaskGroup",
+        foreign_keys=group_id
     )
     column_values = relationship(
         "CustomColumnAssigned",
@@ -207,17 +229,21 @@ class TaskGroup(Base):
         Integer,
         primary_key=True
     )
-    vuid = Column(
+    guid = Column(
         String(50),
         index=True,
         unique=True
     )
-    value = Column(
+    title = Column(
         String(50),
     )
-    column_id = Column(
+    project_id = Column(
         Integer,
-        ForeignKey('custom_columns.id')
+        ForeignKey('projects.id')
+    )
+    created_by = Column(
+        Integer,
+        ForeignKey('frontendusers.id')
     )
     is_deleted = Column(
         Boolean,
@@ -232,16 +258,29 @@ class TaskGroup(Base):
         default=datetime.utcnow
     )
 
-    column = relationship(
-        "CustomColumn",
-        foreign_keys=column_id
+    project = relationship(
+        "Project",
+        foreign_keys=project_id
+    )
+    tasks = relationship(
+        "Task",
+        back_populates="group"
+    )
+    creator = relationship(
+        "FrontendUser",
+        foreign_keys=created_by
     )
 
     def __repr__(self):
-        return f"CustomColumnExpected(id={self.id}, value='{self.value}')"
+        return (
+            "CustomColumnExpected("
+                f"guid={self.guid}, "
+                f"value='{self.title}'"
+            ")"
+        )
 
     def __str__(self):
-        return self.value
+        return self.title
 
 
 class ProjectPermission(Base):

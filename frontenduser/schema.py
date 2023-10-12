@@ -205,7 +205,7 @@ class Orders(BaseModel):
     currency: str
     conversion_rate: float
     coupon_amount: float
-    cuoupon_code: Optional[str] = None
+    coupon_code: Optional[str] = None
     status: str
     created_at: datetime
     updated_at: datetime

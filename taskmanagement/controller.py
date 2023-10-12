@@ -3,10 +3,17 @@ taskmanagement/controller.py
 Author: Gourav Sahu
 Date: 05/09/2023
 """
-
+import json
+from fastapi import UploadFile
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
 from sqlalchemy.orm import Session
-from sqlalchemy.orm.exc import NoResultFound
-from dependencies import CustomValidations, generate_uuid
+
+from dependencies import (
+    ALLOWED_FILE_EXTENSIONS,
+    CustomValidations, SETTINGS,
+    allowed_file, generate_uuid, create_folder_if_not_exists, upload_to_drive
+)
 from frontenduser import model as frontendModel
 from organization import model as orgModel
 from sqlalchemy import func
@@ -70,17 +77,18 @@ def create_project(
         org_id=organization.id
     )
 
-    # Add the new project to the session.
     sql.add(project)
-    # Commit the session to save the changes to the database.
     sql.commit()
-    # Refresh the project object to get the updated values from the database.
     sql.refresh(project)
 
     return project
 
 
-def update_project(data: schema.UpdateProject, organization: orgModel.Organization, sql: Session):
+def update_project(
+    data: schema.UpdateProject,
+    organization: orgModel.Organization,
+    sql: Session
+):
     """
     Updates the details of a project in the database.
     """
@@ -102,7 +110,6 @@ def update_project(data: schema.UpdateProject, organization: orgModel.Organizati
             project_name=data.project_name,
             org_id=organization.id
         ).first()
-
         if exist_name:
             CustomValidations.raize_custom_error(
                 error_type="already_exist",
@@ -115,10 +122,8 @@ def update_project(data: schema.UpdateProject, organization: orgModel.Organizati
 
     if data.description:
         project.description = data.description
-
     if data.is_active is not None:
         project.is_active = data.is_active
-
     if data.is_deleted is not None:
         project.is_deleted = data.is_deleted
 
@@ -134,10 +139,7 @@ def create_task(
     sql: Session
 ):
     """
-    Creates a new task for an organization in the database,
-    performing validations to ensure 
-    project exist in organization and 
-    the task name should be unique in project.
+    Creates a new task for an organization in the database
     """
     # Check if the project specified by the project ID exists in the organization
     exist_project = sql.query(model.Project).filter_by(
@@ -186,13 +188,114 @@ def create_task(
     if data.end_date is not None:
         task.end_date = data.end_date
 
-    # Add the new task to the session
-    sql.add(task)
-    # Commit the session to save the changes to the database
-    sql.commit()
-    # Refresh the task object to get the updated values from the database
-    sql.refresh(task)
+    if data.group_id is not None:
+        # If the task group does not exist, raise a custom error
+        group_task = sql.query(model.TaskGroup).join(
+            model.Project,
+            model.TaskGroup.project_id == model.Project.id
+        ).filter(
+            # pylint: disable=singleton-comparison
+            model.TaskGroup.guid == data.group_id,
+            model.TaskGroup.is_deleted == False,
+            model.Project.org_id == organization.id
+        ).first()
+        if not group_task:
+            CustomValidations.raize_custom_error(
+                error_type="not_exist",
+                loc="group_id",
+                msg="Group does not exist",
+                inp=data.group_id
+            )
 
+        task.group_id = group_task.id
+
+    if data.parent_id is not None:
+        parent_task = sql.query(
+            model.Task
+        ).join(
+            model.Project,
+            model.Task.project_id == model.Project.id
+        ).filter(
+            model.Task.tuid == data.parent_id,
+            model.Project.org_id == organization.id
+        ).first()
+        if not task:
+            CustomValidations.raize_custom_error(
+                error_type="not_exist",
+                loc="parent_id",
+                msg="Task does not exist",
+                inp=data.parent_id,
+                ctx={"parent_id": "exist"}
+            )
+        task.parent_id = parent_task.id
+
+    sql.add(task)
+    sql.commit()
+    sql.refresh(task)
+    return task
+
+
+async def upload_task_media(
+    task_id: str,
+    files: list[UploadFile],
+    organization: orgModel.Organization,
+    sql:Session
+):
+    """
+    Uploads media files to Google Drive for a specific task in an organization.
+    """
+    task = sql.query(model.Task).join(
+            model.Project,
+            model.Task.project_id == model.Project.id
+        ).filter(
+            model.Task.tuid == task_id,
+            model.Project.org_id == organization.id
+        ).first()
+    if not task:
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
+            loc="task_id",
+            msg="Task does not exist",
+            inp=task_id,
+            ctx={"task_id": "exist"}
+        )
+
+    if not organization.gtoken:
+        CustomValidations.raize_custom_error(
+            error_type="not_exist",
+            loc="google token",
+            msg="Google token does not exist",
+            inp="",
+            ctx={"google token": "exist"}
+        )
+
+    # Create an instance of OAuth 2.0 credentials using the dictionary
+    creds = Credentials.from_authorized_user_info(json.loads(organization.gtoken))
+
+    # Check if the Google token provided is valid.
+    if creds.expired and creds.refresh_token:
+        creds.refresh(Request())
+
+    folder_path = f'{SETTINGS.APP_NAME}/media/{organization.org_name}/{task.task_name}'
+    folder_id = create_folder_if_not_exists(folder_path, creds)
+
+    file_ids = {}
+    for index, file in enumerate(files):
+        if not allowed_file(file.filename, ALLOWED_FILE_EXTENSIONS):
+            CustomValidations.raize_custom_error(
+                error_type="invalid",
+                loc="files",
+                msg=f"Allowed extensions are {ALLOWED_FILE_EXTENSIONS}",
+                inp=file.filename,
+                ctx={"image": "invalid type"}
+            )
+
+        created_file = await upload_to_drive(file, creds, folder_id)
+        file_ids[index] = created_file.get('id', '')
+
+    task.medias = file_ids
+    sql.commit()
+    sql.refresh(task)
     return task
 
 
@@ -214,7 +317,6 @@ def get_tasks(
             puid=project_id,
             org_id=organization.id
         ).first()
-
         if not exist_project:
             CustomValidations.raize_custom_error(
                 error_type="not_xist",
@@ -231,7 +333,6 @@ def get_tasks(
         tasks = sql.query(model.Task).filter_by(
             project_id=exist_project.id
         ).order_by(model.Task.id).limit(limit).offset(offset).all()
-
     else:
         count = sql.query(model.Task).count()
         tasks = sql.query(model.Task).limit(limit).order_by(model.Task.id).offset(offset).all()
@@ -273,16 +374,13 @@ def update_task(
     """
     Updates the details of a task in the database based on the provided input data.
     """
-    task = sql.query(
-        model.Task
-    ).join(
+    task = sql.query(model.Task).join(
         model.Project,
         model.Task.project_id == model.Project.id
     ).filter(
         model.Task.tuid == data.task_id,
         model.Project.org_id == organization.id
     ).first()
-
     if not task:
         CustomValidations.raize_custom_error(
             error_type="not_exist",
@@ -292,32 +390,54 @@ def update_task(
             ctx={"task_id": "exist"}
         )
 
-    if data.task_name is not None:
-        task.task_name = data.task_name
+    task.task_name = data.task_name or task.task_name
+    task.description = data.description or task.description
+    task.event_id = data.event_id or task.event_id
+    task.estimate_hours = data.estimate_hours or task.estimate_hours
+    task.deadline = data.deadline_date or task.deadline
+    task.start_date = data.start_date or task.start_date
+    task.end_date = data.end_date or task.end_date
+    task.is_active = data.is_active or task.is_active
+    task.is_deleted = data.is_deleted or task.is_deleted
 
-    if data.description is not None:
-        task.description = data.description
+    if data.group_id is not None:
+        group_task = sql.query(model.TaskGroup).join(
+            model.Project,
+            model.TaskGroup.project_id == model.Project.id
+        ).filter(
+            # pylint: disable=singleton-comparison
+            model.TaskGroup.guid == data.group_id,
+            model.TaskGroup.is_deleted == False,
+            model.Project.org_id == organization.id
+        ).first()
+        if not group_task:
+            CustomValidations.raize_custom_error(
+                error_type="not_exist",
+                loc="group_id",
+                msg="Group does not exist",
+                inp=data.group_id
+            )
+        task.group_id = group_task.id
 
-    if data.event_id is not None:
-        task.event_id = data.event_id
-
-    if data.estimate_hours is not None:
-        task.estimate_hours = data.estimate_hours
-
-    if data.deadline_date is not None:
-        task.deadline = data.deadline_date
-
-    if data.start_date is not None:
-        task.start_date = data.start_date
-
-    if data.end_date is not None:
-        task.end_date = data.end_date
-
-    if data.is_active is not None:
-        task.is_active = data.is_active
-
-    if data.is_deleted is not None:
-        task.is_deleted = data.is_deleted
+    if data.parent_id is not None:
+        parent_task = sql.query(
+            model.Task
+        ).join(
+            model.Project,
+            model.Task.project_id == model.Project.id
+        ).filter(
+            model.Task.tuid == data.parent_id,
+            model.Project.org_id == organization.id
+        ).first()
+        if not task:
+            CustomValidations.raize_custom_error(
+                error_type="not_exist",
+                loc="parent_id",
+                msg="Task does not exist",
+                inp=data.parent_id,
+                ctx={"parent_id": "exist"}
+            )
+        task.parent_id = parent_task.id
 
     sql.commit()
     sql.refresh(task)
@@ -419,7 +539,6 @@ def assign_task(
         orgModel.OrganizationUser.org_id == organization.id,
         frontendModel.FrontendUser.uuid == data.user_id
     ).first()
-
     if not user:
         CustomValidations.raize_custom_error(
             error_type="not_exist",
@@ -439,9 +558,9 @@ def assign_task(
             user_id=user.id,
             created_by=auth_token.user_id
         )
+
     sql.add(user_task)
     sql.commit()
-
     return task
 
 
@@ -472,7 +591,6 @@ def withdraw_task(
         orgModel.OrganizationUser.org_id == organization.id,
         frontendModel.FrontendUser.uuid == data.user_id
     ).first()
-
     if not user:
         CustomValidations.raize_custom_error(
             error_type="not_exist",
@@ -486,9 +604,9 @@ def withdraw_task(
         task_id=task.id,
         user_id=user.id,
     ).delete()
+
     sql.commit()
     sql.refresh(task)
-
     return task
 
 
@@ -534,9 +652,9 @@ def project_custom_column(
         project_id = project.id,
         )
     sql.add(customcolumn)
+
     sql.commit()
     sql.refresh(customcolumn)
-
     return customcolumn
 
 
@@ -562,8 +680,6 @@ def update_column_expected_value(
         model.CustomColumn.is_deleted == False,
         orgModel.Organization.orguid == organization.orguid
     ).first()
-
-    # If the column does not exist, raise a custom error
     if not column:
         CustomValidations.raize_custom_error(
             error_type="not_exist",
@@ -588,17 +704,10 @@ def update_column_expected_value(
             column_id=column.id
         ) for value in data.values
     ]
-
-    # Add all the `CustomColumnExpected` objects to the session
     sql.add_all(values)
 
-    # Commit the session to persist the changes
     sql.commit()
-
-    # Refresh the custom column object to reflect the newly added expected values
     sql.refresh(column)
-
-    # Return the updated custom column object
     return column
 
 
@@ -640,11 +749,6 @@ def assign_column_value(
     This function assigns a custom column value to a task in a project. 
     It performs validations to ensure that the column,
     value, and task exist and are active and not deleted.
-
-    :param data: The input data containing the column ID, value ID, and task ID.
-    :param organization: The organization to which the project and task belong.
-    :param sql: The SQLAlchemy session object for database operations.
-    :return: The updated task object with the assigned custom column value.
     """
     column = sql.query(
         model.CustomColumn
@@ -707,12 +811,12 @@ def assign_column_value(
         )
 
     # Query the database to check if a custom column value has already been assigned to the task
-    value_assigned = sql.query(model.CustomColumnAssigned).filter_by(
+    value_assigned = sql.query(
+        model.CustomColumnAssigned
+    ).filter_by(
         column_id=column.id,
         task_id=task.id
     ).first()
-
-    # If not, create a new custom column assignment object and add it to the session
     if not value_assigned:
         value_assigned = model.CustomColumnAssigned(
             column_id=column.id,
@@ -726,7 +830,6 @@ def assign_column_value(
     # Commit the changes to the database and refresh the custom column assignment object
     sql.commit()
     sql.refresh(value_assigned)
-
     return task
 
 
@@ -737,11 +840,6 @@ def remove_column_value(
 ):
     """
     Removes the assigned value of a custom column for a task.
-
-    :param data: The input data containing the column ID, value ID, and task ID.
-    :param organization: The organization to which the project and task belong.
-    :param sql: The SQLAlchemy session object for database operations.
-    :return: The updated task object with the assigned custom column value.
     """
     column_sql = sql.query(
         model.CustomColumn
@@ -766,9 +864,7 @@ def remove_column_value(
             inp=data.column_id
         )
 
-    task = sql.query(
-        model.Task
-    ).join(
+    task = sql.query(model.Task).join(
         model.Project,
         model.Task.project_id == model.Project.id
     ).filter(
@@ -781,7 +877,6 @@ def remove_column_value(
         model.Project.is_active == True, # project is active
         model.Project.is_deleted == False, # project not deleted
     ).first()
-    # If the task does not exist, raise a custom error
     if not task:
         CustomValidations.raize_custom_error(
             error_type="not_exist",
@@ -798,7 +893,6 @@ def remove_column_value(
 
     sql.commit()
     sql.refresh(task)
-
     return task
 
 def add_comments(
@@ -859,14 +953,10 @@ def get_all_task_comments(limit,offset,sql:Session):
     """
      Retrieves all comments for tasks with pagination.
     """
-    try:
-        all_task_comments = sql.query(model.Comments).limit(limit).offset(offset).all()
-        total = sql.query(func.count(model.Comments.id)).scalar()
-        return {"result":all_task_comments,
-                "total":total
-                }
-    except NoResultFound:
-        return {
-            "result":[],
-            "total":0
+    all_task_comments = sql.query(model.Comments).limit(limit).offset(offset).all()
+    total = sql.query(func.count(model.Comments.id)).scalar()
+
+    return {
+        "result": all_task_comments, 
+        "total": total
         }

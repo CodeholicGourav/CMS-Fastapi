@@ -3,10 +3,11 @@ taskmanagement/route.py
 Author: Gourav Sahu
 Date: 23/09/2023
 """
-from fastapi import APIRouter, Depends, Query, Path, status
+from fastapi import APIRouter, Depends, File, Path, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
 from database import get_db
+from dependencies import ALLOWED_FILE_EXTENSIONS, MAX_FILE_SIZE_BYTES
 from frontenduser import model as frontendModel
 from frontenduser.middleware import authenticate_token
 from organization import model as orgModel
@@ -14,8 +15,7 @@ from frontenduser import model
 from typing import Optional,List
 from organization.middleware import check_permission, organization_exist
 
-from . import controller
-from . import schema
+from . import controller, schema
 
 taskmanagementRoutes = APIRouter()
 
@@ -173,6 +173,35 @@ def get_tasks(
     for all tasks in the organization.
     """
     return controller.get_tasks(limit, offset, organization, project_id, sql)
+
+
+@taskmanagementRoutes.post('/upload-task-media/{task_id}',
+    response_model=schema.ShowTask,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[
+        Depends(authenticate_token)
+    ],
+    description="Upload a media in a task.",
+    name="Upload task media"
+)
+async def upload_task_media(
+    task_id : str,
+    files: list[UploadFile] = File(
+        max_length=MAX_FILE_SIZE_BYTES,
+        max_count=5,
+        title="Files",
+        description=(
+            "Upload multiple files in a task. "
+            f"Allowed extensions are {ALLOWED_FILE_EXTENSIONS}"
+        ),
+    ),
+    organization: orgModel.Organization = Depends(organization_exist),
+    sql : Session = Depends(get_db),
+):
+    """
+    Uploads media files to Google Drive for a specific task in an organization.
+    """
+    return await controller.upload_task_media(task_id, files, organization, sql)
 
 
 @taskmanagementRoutes.post('/update-task',
@@ -355,3 +384,41 @@ def all_comment(
     return controller.get_all_task_comments(limit,offset,sql)
 
 
+
+@taskmanagementRoutes.post('/create-task-group',
+    response_model=schema.ShowTaskGroup,
+    status_code=status.HTTP_201_CREATED,
+    description="Create a tasks group inside a project.",
+    name="Create task group"
+)
+def create_task_group(
+    data:schema.AddTaskGroup,
+    organization: orgModel.Organization = Depends(organization_exist),
+    auth_token: frontendModel.FrontendToken = Depends(authenticate_token),
+    sql:Session = Depends(get_db)
+):
+    """
+    Creates a new task group for a project in the database, 
+    ensuring that the group title is unique within the project.
+    """
+    return controller.create_task_group(data, organization, auth_token, sql)
+
+
+@taskmanagementRoutes.post('/update-task-group',
+    response_model=schema.ShowTaskGroup,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[
+        Depends(authenticate_token)
+    ],
+    description="Update a tasks group inside a project.",
+    name="Update task group"
+)
+def update_task_group(
+    data:schema.UpdateTaskGroup,
+    organization: orgModel.Organization = Depends(organization_exist),
+    sql:Session = Depends(get_db)
+):
+    """
+    Updates the details of a task group in the database.
+    """
+    return controller.update_task_group(data, organization, sql)
