@@ -434,26 +434,36 @@ def create_folder_if_not_exists(
         creds (Credentials): The Google Drive credentials object.
     """
     parts = folder_path.split('/')
-    current_folder_id = None
+    current_folder_id = 'root'
 
     # Build the Google Drive service using the provided credentials
     service = build('drive', 'v3', credentials=creds)
+    try:
+        for part in parts:
+            # Check if the folder already exists in the current folder using the Drive v3 API
+            folder_query = f"'{current_folder_id}' in parents and mimeType='application/vnd.google-apps.folder' and name='{part}'"
+            folder = service.files().list(q=folder_query).execute()
 
-    for part in parts:
-        # Check if the folder already exists in the current folder using the Drive v3 API
-        folder_query = f"'{current_folder_id}' in parents and mimeType='application/vnd.google-apps.folder' and name='{part}'"
-        folder = service.files().list(q=folder_query).execute()
-
-        if folder.get('files'):
-            # If the folder exists, update current_folder_id with the folder's ID
-            current_folder_id = folder['files'][0]['id']
-        else:
-            # If the folder does not exist, create the folder with the given name and parent folder ID (if available)
-            folder_metadata = {
-                'name': part,
-                'parents': [current_folder_id] if current_folder_id else []
-            }
-            folder = service.files().create(body=folder_metadata, fields='id').execute()
+            if folder.get('files'):
+                # If the folder exists, update current_folder_id with the folder's ID
+                current_folder_id = folder['files'][0]['id']
+            else:
+                # If the folder does not exist, create the folder with the given name and parent folder ID (if available)
+                folder_metadata = {
+                    'name': part,
+                    'mimeType': 'application/vnd.google-apps.folder',
+                    'parents': [current_folder_id] if current_folder_id else []
+                }
+                folder = service.files().create(body=folder_metadata, fields='id').execute()
+                current_folder_id = folder['id']
+    except HttpError as error:
+        CustomValidations.raize_custom_error(
+            error_type="drive",
+            loc="google_drive",
+            msg=str(error),
+            inp="",
+            ctx={"drive": "unexpected error"}
+        )
 
     return folder
 
@@ -485,7 +495,7 @@ async def upload_to_drive(
         # pylint: disable=E1101 is used 
         created_file = service.files().create(
             body={
-                'name': file.filename,
+                'name': f'{math.floor(time.time())}_{file.filename}',
                 'parents': [folder_id]
             },
             media_body=media
