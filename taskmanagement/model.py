@@ -670,6 +670,11 @@ class CustomColumnAssigned(Base):
         )
 
 class Comments(Base):
+    """
+    Represents a comment in the application.
+
+    This class defines the structure and relationships of a comment.
+    """
     __tablename__ = 'comments'
     id = Column(
         Integer,

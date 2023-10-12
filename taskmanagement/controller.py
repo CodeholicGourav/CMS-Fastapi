@@ -8,7 +8,6 @@ from fastapi import UploadFile
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from sqlalchemy.orm import Session
-
 from dependencies import (
     ALLOWED_FILE_EXTENSIONS,
     CustomValidations, SETTINGS,
@@ -16,8 +15,7 @@ from dependencies import (
 )
 from frontenduser import model as frontendModel
 from organization import model as orgModel
-from sqlalchemy import func
-from . import model, schema
+from . import (model, schema)
 
 
 def get_projects(
@@ -954,7 +952,7 @@ def get_all_task_comments(limit,offset,sql:Session):
      Retrieves all comments for tasks with pagination.
     """
     all_task_comments = sql.query(model.Comments).limit(limit).offset(offset).all()
-    total = sql.query(func.count(model.Comments.id)).scalar()
+    total = sql.query(model.Comments.id).count()
 
     return {
         "result": all_task_comments, 
