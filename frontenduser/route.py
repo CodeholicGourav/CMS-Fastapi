@@ -312,8 +312,8 @@ def create_razorpay_order(
 
 @frontendUserRoutes.post('/razorpay/create-transaction',
     status_code=status.HTTP_201_CREATED,
-    description="Create a transaction for paypal order.",
-    name="Create paypal transaction"
+    description="Create a transaction for razorpay order.",
+    name="Create razorpay transaction"
 )
 def create_razorpay_transaction(
     request: schema.RazorpayReturn,

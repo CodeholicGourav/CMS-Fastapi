@@ -543,7 +543,7 @@ def stripe_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, 
         final_amount = total_amount - coupon_amount
 
         order.coupon_id = coupon.id
-        order.cuoupon_code = coupon.coupon_code
+        order.coupon_code = coupon.coupon_code
         order.coupon_amount = coupon_amount
         order.final_amount = round(final_amount, 2)
 
@@ -704,7 +704,7 @@ def paypal_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, 
         final_amount = total_amount - coupon_amount
 
         order.coupon_id = coupon.id
-        order.cuoupon_code = coupon.coupon_code
+        order.coupon_code = coupon.coupon_code
         order.coupon_amount = coupon_amount
         order.final_amount = round(final_amount, 2)
 
@@ -872,7 +872,7 @@ def razorpay_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken
         final_amount = total_amount - coupon_amount
 
         order.coupon_id = coupon.id
-        order.cuoupon_code = coupon.coupon_code
+        order.coupon_code = coupon.coupon_code
         order.coupon_amount = coupon_amount
         order.final_amount = round(final_amount, 2)
 
