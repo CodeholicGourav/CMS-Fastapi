@@ -668,3 +668,51 @@ class CustomColumnAssigned(Base):
                 f"column_id={self.column_id}"
             ")"
         )
+
+class Comments(Base):
+    """
+    Represents a comment in the application.
+
+    This class defines the structure and relationships of a comment.
+    """
+    __tablename__ = 'comments'
+    id = Column(
+        Integer,
+        primary_key=True
+    )
+    cuid = Column(
+        String(50),
+        unique=True
+    )
+    comment = Column(
+        String(50)
+    )
+    user_id = Column(
+        Integer,
+        ForeignKey('frontendusers.id')
+    )
+    is_deleted = Column(
+        Boolean,
+        default=False
+    )
+    task_id = Column(
+        Integer,
+        ForeignKey('tasks.id')
+    )
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow
+
+    )
+    updated_at = Column(
+        DateTime,
+        default=datetime.utcnow
+    )
+    parent_id = Column(
+        Integer,
+        ForeignKey('comments.id')
+    )
+    
+    creator = relationship("FrontendUser",foreign_keys=user_id)
+    tasks = relationship("Task",foreign_keys=task_id)
+    parent = relationship("Comments",foreign_keys=parent_id)

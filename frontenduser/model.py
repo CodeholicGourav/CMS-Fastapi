@@ -300,3 +300,4 @@ class OrderProduct(Base):
                 f"quantity={self.quantity}"
             ")"
         )
+

@@ -6,7 +6,6 @@ Date: 23/09/2023
 import getpass
 import secrets
 from datetime import datetime, timedelta
-
 from fastapi import status, BackgroundTasks
 from sqlalchemy import func
 from sqlalchemy.orm import Session

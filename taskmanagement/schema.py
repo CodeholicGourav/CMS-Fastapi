@@ -385,7 +385,40 @@ class RemoveCustomColumnValue(BaseModel):
         title="Column ID",
         description="cuid of the column"
     )
+class BasicUser(BaseModel):
+    uuid:str 
+    username:str 
+    email:str
 
+class add_comments(BaseModel):
+    task_uid:str
+    comment:str
+    parent_id:Optional[str]=None
+
+class BaseComments(BaseModel):
+    cuid:str
+    comment:str
+    creator:BasicUser
+    is_deleted:bool
+    created_at:datetime 
+    updated_at:datetime
+     
+
+
+
+class Responsegetcomment(BaseModel):
+    cuid:str
+    comment:str
+    creator:BasicUser
+    is_deleted:bool
+    created_at:datetime
+    updated_at:datetime
+
+ 
+
+class Responsecomment(BaseModel):
+    result:List[Responsegetcomment]
+    total:int
 
 class ShowTaskGroup(BaseModel):
     """

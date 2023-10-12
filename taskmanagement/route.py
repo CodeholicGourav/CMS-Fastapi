@@ -11,6 +11,8 @@ from dependencies import ALLOWED_FILE_EXTENSIONS, MAX_FILE_SIZE_BYTES
 from frontenduser import model as frontendModel
 from frontenduser.middleware import authenticate_token
 from organization import model as orgModel
+from frontenduser import model
+from typing import Optional,List
 from organization.middleware import check_permission, organization_exist
 
 from . import controller, schema
@@ -355,6 +357,38 @@ def remove_column_value(
     Removes the assigned value of a custom column for a task.
     """
     return controller.remove_column_value(data, organization, sql)
+
+@taskmanagementRoutes.post('/add-comments',
+    response_model=schema.BaseComments,
+    status_code=status.HTTP_201_CREATED
+)
+def add_comments(
+    data:schema.add_comments,
+    authtoken:model.FrontendToken = Depends(authenticate_token),
+    organization:orgModel.Organization = Depends(organization_exist),
+    sql:Session = Depends(get_db),
+):
+    """
+    Adds comments to a specified entity within the organization.
+    """
+    return controller.add_comments(data,authtoken,sql)
+
+@taskmanagementRoutes.get('/get-task-comments',
+    response_model=schema.Responsecomment,
+    status_code=status.HTTP_200_OK
+)
+def all_comment(
+    limit:Optional[int]=Query(default=10,ge=10,le=100),
+    offset:Optional[int]=0,
+    authtoken:model.FrontendToken = Depends(authenticate_token),
+    organization:orgModel.Organization = Depends(organization_exist),
+    sql:Session = Depends(get_db)
+):
+    """
+     Retrieves comments for a specific task within the organization.
+    """
+    return controller.get_all_task_comments(limit,offset,sql)
+
 
 
 @taskmanagementRoutes.post('/create-task-group',

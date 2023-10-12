@@ -8,7 +8,6 @@ from fastapi import UploadFile
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from sqlalchemy.orm import Session
-
 from dependencies import (
     ALLOWED_FILE_EXTENSIONS,
     CustomValidations, SETTINGS,
@@ -16,8 +15,7 @@ from dependencies import (
 )
 from frontenduser import model as frontendModel
 from organization import model as orgModel
-
-from . import model, schema
+from . import (model, schema)
 
 
 def get_projects(
@@ -895,104 +893,68 @@ def remove_column_value(
     sql.refresh(task)
     return task
 
-
-def create_task_group(
-    data: schema.AddTaskGroup,
-    organization: orgModel.Organization,
-    auth_token: frontendModel.FrontendToken,
-    sql: Session
+def add_comments(
+    data:schema.add_comments,
+    authtoken:frontendModel.FrontendToken,
+    sql:Session
 ):
     """
-    Creates a new task group for a project in the database, 
-    ensuring that the group title is unique within the project.
+    Add a comment for a task.
+
+    This function adds a comment to a task. 
+    The comment can be a reply to another comment if a parent_id is provided.
+
+    Raises:
+    - CustomValidationError: If the task is not found or the parent comment is not found.
+    by devanshu 10-10-2023
     """
-    project = sql.query(model.Project).filter_by(
-        puid=data.project_id,
-        is_active=True,
-        is_deleted=False,
-        org_id=organization.id
+    task_id = sql.query(model.Task).filter_by(
+        tuid=data.task_uid,is_deleted=False
     ).first()
-    if not project:
-        CustomValidations.raize_custom_error(
-            error_type="not_exist",
-            loc="project_id",
-            msg="project does not exist",
-            inp=data.project_id
-        )
 
-    title_exist = sql.query(model.TaskGroup).filter_by(
-        title=data.group_title,
-        project_id=project.id
-    ).first()
-    if title_exist:
-        CustomValidations.raize_custom_error(
-            error_type="already_exist",
-            loc="group_title",
-            msg="Group title already exists in this project",
-            inp=data.group_title,
-            ctx={"group_title": "unique"}
-        )
 
-    task_group = model.TaskGroup(
-        guid=generate_uuid(data.group_title),
-        title=data.group_title,
-        project_id=project.id,
-        created_by=auth_token.user_id
+    if not task_id:
+        CustomValidations.raize_custom_error(
+            error_type="task not found",
+            loc="task_id",
+            msg="task not found",
+            inp=data.task_uid
+        )
+    # Initialize parent_id to None if not provided
+    parent_id = None
+    if data.parent_id:
+         # Check if the parent comment exists
+        parent_comment = sql.query(model.Comments).filter_by(cuid=data.parent_id).first()
+        if not parent_comment:
+            CustomValidations.raize_custom_error(
+                error_type="parent comment not found",
+                loc="parent_id",
+                msg="Parent comment not found",
+                inp=data.parent_id
+            )
+        parent_id = parent_comment.id
+
+    comments = model.Comments(
+        cuid = generate_uuid(data.comment),
+        comment = data.comment,
+        user_id = authtoken.id,
+        task_id = task_id.id,
+        parent_id = parent_id
     )
-    sql.add(task_group)
-
+    sql.add(comments)
     sql.commit()
-    sql.refresh(task_group)
-    return task_group
+    sql.refresh(comments)
 
+    return comments
 
-def update_task_group(
-    data: schema.UpdateTaskGroup,
-    organization: orgModel.Organization,
-    sql: Session
-):
+def get_all_task_comments(limit,offset,sql:Session):
     """
-    Updates the details of a task group in the database.
+     Retrieves all comments for tasks with pagination.
     """
-    # Query the task group from the database based on the provided group ID and organization ID
-    group_task = sql.query(model.TaskGroup).join(
-            model.Project,
-            model.TaskGroup.project_id == model.Project.id
-        ).filter(
-            # pylint: disable=singleton-comparison
-            model.TaskGroup.guid == data.group_id,
-            model.TaskGroup.is_deleted == False,
-            model.Project.org_id == organization.id
-        ).first()
-    if not group_task:
-        CustomValidations.raize_custom_error(
-            error_type="not_exist",
-            loc="group_id",
-            msg="Group does not exist",
-            inp=data.group_id
-        )
+    all_task_comments = sql.query(model.Comments).limit(limit).offset(offset).all()
+    total = sql.query(model.Comments.id).count()
 
-    # Check if the new group title already exists in the project. If it does, raise a custom error
-    title_exist = sql.query(model.TaskGroup).filter_by(
-            title=data.group_title,
-            project_id=group_task.project_id
-        ).first()
-    if title_exist:
-        CustomValidations.raize_custom_error(
-            error_type="already_exist",
-            loc="group_title",
-            msg="Group title already exists in this project",
-            inp=data.group_title,
-            ctx={"group_title": "unique"}
-        )
-
-    if data.group_title is not None:
-        group_task.title = data.group_title
-
-    if data.is_deleted is not None:
-        group_task.is_deleted = data.is_deleted
-
-    # Commit the changes to the database and refresh the task group object
-    sql.commit()
-    sql.refresh(group_task)
-    return group_task
+    return {
+        "result": all_task_comments, 
+        "total": total
+        }
