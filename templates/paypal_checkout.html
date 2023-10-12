@@ -32,9 +32,9 @@
                     try {
                         const response = await fetch("http://127.0.0.1:8000/frontend-user/paypal/create-order", {
                             method: "POST",
-                            headers: { "Content-Type": "application/json", "authtoken": "MPwtb6dUv00PNKzQgyEgBQ" },
+                            headers: { "Content-Type": "application/json", "authtoken": "PfFGzvBk4EyQyTsH80ZQhA" },
                             body: JSON.stringify({
-                                "suid": "VW5saW1pdGVkIHBhY2s=86531695025752",
+                                "suid": "UHJpbWUgcGFjaw==60121695710782",
                                 "currency": "USD"
                             }),
                         });
@@ -52,7 +52,7 @@
                     try {
                         const response = await fetch(`http://127.0.0.1:8000/frontend-user/paypal/create-transaction`, {
                             method: "POST",
-                            headers: { "Content-Type": "application/json", "authtoken": "MPwtb6dUv00PNKzQgyEgBQ" },
+                            headers: { "Content-Type": "application/json", "authtoken": "PfFGzvBk4EyQyTsH80ZQhA" },
                             body: JSON.stringify({}),
                         });
 
