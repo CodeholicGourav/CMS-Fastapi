@@ -14,18 +14,17 @@ import time
 import urllib.parse
 from email.message import EmailMessage
 from email.mime.text import MIMEText
-from fastapi import UploadFile
-from googleapiclient.errors import HttpError
-from googleapiclient.http import MediaInMemoryUpload
-from googleapiclient.discovery import build
-from google.oauth2.credentials import Credentials
+from typing import Optional
 
 import requests
-from fastapi import HTTPException, status
+from fastapi import (HTTPException, UploadFile, status)
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+from googleapiclient.http import MediaInMemoryUpload
 from passlib.context import CryptContext
 from pydantic import BaseModel, EmailStr, HttpUrl
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import Optional
 
 
 class Settings(BaseSettings):
@@ -175,6 +174,7 @@ class CustomValidations():
     Contains static methods for performing custom validations on user input.
     """
     @staticmethod
+    # pylint: disable=R0913
     def raize_custom_error(
         status_code: int = status.HTTP_422_UNPROCESSABLE_ENTITY,
         error_type: str = "",
@@ -441,19 +441,26 @@ def create_folder_if_not_exists(
     try:
         for part in parts:
             # Check if the folder already exists in the current folder using the Drive v3 API
-            folder_query = f"'{current_folder_id}' in parents and mimeType='application/vnd.google-apps.folder' and name='{part}'"
+            folder_query = (
+                f"'{current_folder_id}' in parents "
+                "and mimeType='application/vnd.google-apps.folder' "
+                "and name='{part}'"
+            )
+            # pylint: disable=E1101
             folder = service.files().list(q=folder_query).execute()
 
             if folder.get('files'):
                 # If the folder exists, update current_folder_id with the folder's ID
                 current_folder_id = folder['files'][0]['id']
             else:
-                # If the folder does not exist, create the folder with the given name and parent folder ID (if available)
+                # If the folder does not exist,
+                # create the folder with the given name and parent folder ID (if available)
                 folder_metadata = {
                     'name': part,
                     'mimeType': 'application/vnd.google-apps.folder',
                     'parents': [current_folder_id] if current_folder_id else []
                 }
+                # pylint: disable=E1101
                 folder = service.files().create(body=folder_metadata, fields='id').execute()
                 current_folder_id = folder['id']
     except HttpError as error:
@@ -475,14 +482,6 @@ async def upload_to_drive(
 ):
     """
     Uploads a file to Google Drive using the Google Drive API.
-
-    Args:
-        file: An instance of the `UploadFile` class representing the file to be uploaded.
-        creds: An instance of the `Credentials` class representing the user's credentials for accessing Google Drive.
-        folder_id: A string representing the ID of the folder in Google Drive where the file should be uploaded.
-
-    Returns:
-        A dictionary representing the metadata of the file that was created in Google Drive.
     """
     try:
         # Read the file content and create a MediaInMemoryUpload object
@@ -491,8 +490,8 @@ async def upload_to_drive(
 
         # Call the Drive v3 API
         service = build('drive', 'v3', credentials=creds)
-        
-        # pylint: disable=E1101 is used 
+
+        # pylint: disable=E1101
         created_file = service.files().create(
             body={
                 'name': f'{math.floor(time.time())}_{file.filename}',
