@@ -69,7 +69,8 @@ class UpdateProfile(BaseModel):
     social_platform: Optional[str] = None
 
     @validator("username")
-    def username_valid(self, value):
+    # pylint: disable=no-self-argument
+    def username_valid(cls, value):
         """
         Validates a given username value.
         """
@@ -90,14 +91,16 @@ class RegisterUser(BaseModel):
     timezone: Optional[str] = None
 
     @validator("username")
-    def username_valid(self, value):
+    # pylint: disable=no-self-argument
+    def username_valid(cls, value):
         """
         Validates a given username value.
         """
         return CustomValidations.validate_username(value)
 
     @validator("password")
-    def password_validate(self, value):
+    # pylint: disable=no-self-argument
+    def password_validate(cls, value):
         """
         Validates a given password value.
         """
@@ -164,7 +167,8 @@ class ForgotPassword(BaseModel):
     password: constr(min_length=8)
 
     @validator("password")
-    def _password(self, value):
+    # pylint: disable=no-self-argument
+    def _password(cls, value):
         """
         Validates a given password value.
         """
