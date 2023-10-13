@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 """
 organization/schema.py
 Author: Gourav Sahu

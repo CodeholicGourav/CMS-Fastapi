@@ -929,7 +929,7 @@ def razorpay_add_orders(
 
     sql.add(order_product)
     sql.commit()
-    order.clientSecret = payment["id"]
+    order.client_secret = payment["id"]
     return order
 
 
