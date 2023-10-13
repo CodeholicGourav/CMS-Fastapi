@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 frontenduser/controller.py
 Author: Gourav Sahu
@@ -10,33 +11,46 @@ from datetime import datetime, timedelta
 import razorpay
 import requests
 import stripe
-from fastapi import UploadFile, status, BackgroundTasks
+from fastapi import BackgroundTasks, UploadFile, status
 from sqlalchemy.orm import Session
-from sqlalchemy import asc, desc
-from taskmanagement.model import (
-    Project
-)
+
 from backenduser import controller as backendusercontroller
 from dependencies import (
-    ALLOWED_IMAGE_EXTENSIONS, MAX_FILE_SIZE_BYTES, PAYPAL_BASE_URL,
-    SETTINGS, TOKEN_LIMIT, TOKEN_VALIDITY, UPLOAD_FOLDER,
-    CustomValidations, FrontendEmail, Hash,
-    allowed_file, convert_currency, generate_paypal_access_token,
-    generate_token, generate_uuid
+    ALLOWED_IMAGE_EXTENSIONS,
+    MAX_FILE_SIZE_BYTES,
+    PAYPAL_BASE_URL,
+    SETTINGS,
+    TOKEN_LIMIT,
+    TOKEN_VALIDITY,
+    UPLOAD_FOLDER,
+    CustomValidations,
+    FrontendEmail,
+    Hash,
+    allowed_file,
+    convert_currency,
+    generate_paypal_access_token,
+    generate_token,
+    generate_uuid,
 )
 
 from . import model, schema
 
 
-def register_user(data: schema.RegisterUser, sql: Session, background_tasks: BackgroundTasks):
+def register_user(
+    data: schema.RegisterUser, sql: Session, background_tasks: BackgroundTasks
+):
     """
     Creates a new Frontend user
     """
     # Check if a user with the same email or username already exists
-    existing_user = sql.query(model.FrontendUser).filter(
-        (model.FrontendUser.email == data.email) |
-        (model.FrontendUser.username == data.username)
-    ).first()
+    existing_user = (
+        sql.query(model.FrontendUser)
+        .filter(
+            (model.FrontendUser.email == data.email)
+            | (model.FrontendUser.username == data.username)
+        )
+        .first()
+    )
 
     if existing_user:
         # raise a custom error indicating that the username is already in use
@@ -46,7 +60,7 @@ def register_user(data: schema.RegisterUser, sql: Session, background_tasks: Bac
                 loc="username",
                 msg="Username already in use",
                 inp=data.username,
-                ctx={"username": "unique"}
+                ctx={"username": "unique"},
             )
 
         # raise a custom error indicating that the email is already in use
@@ -56,7 +70,7 @@ def register_user(data: schema.RegisterUser, sql: Session, background_tasks: Bac
                 loc="email",
                 msg="Email already in use",
                 inp=data.email,
-                ctx={"email": "unique"}
+                ctx={"email": "unique"},
             )
 
     # Create a new FrontendUser object with the provided data
@@ -80,16 +94,14 @@ def register_user(data: schema.RegisterUser, sql: Session, background_tasks: Bac
 
     if data.timezone:
         # Check if the provided timezone exists in the database
-        exist_timezone = sql.query(model.Timezone).filter_by(
-            code=data.timezone
-        ).first()
+        exist_timezone = sql.query(model.Timezone).filter_by(code=data.timezone).first()
         if not exist_timezone:
             CustomValidations.raize_custom_error(
                 error_type="not_exist",
                 loc="timezone",
                 msg="Timezone does not exist.",
                 inp=data.timezone,
-                ctx={"timezone": "exist"}
+                ctx={"timezone": "exist"},
             )
         new_user.timezone = data.timezone
 
@@ -110,16 +122,13 @@ def user_list(limit: int, offset: int, sql: Session) -> dict:
     """
     total = sql.query(model.FrontendUser.id).count()
     users = sql.query(model.FrontendUser).limit(limit).offset(offset).all()
-    return {
-        "users": users,
-        "total": total
-    }
+    return {"users": users, "total": total}
 
 
 def user_details(user_id: str, sql: Session):
     """
     Retrieves the details of a frontend user based on the provided user ID.
-        
+
     Raises:
         raize_custom_error: If the user does not exist.
     """
@@ -130,12 +139,14 @@ def user_details(user_id: str, sql: Session):
             loc="user_id",
             msg="User does not exist",
             inp=user_id,
-            ctx={"user": "exist"}
+            ctx={"user": "exist"},
         )
     return user
 
 
-def update_profile_photo(file: UploadFile, auth_token: model.FrontendToken, sql: Session):
+def update_profile_photo(
+    file: UploadFile, auth_token: model.FrontendToken, sql: Session
+):
     """
     Updates the profile photo of a user.
     """
@@ -144,20 +155,20 @@ def update_profile_photo(file: UploadFile, auth_token: model.FrontendToken, sql:
     if not allowed_file(file.filename, ALLOWED_IMAGE_EXTENSIONS):
         CustomValidations.raize_custom_error(
             error_type="invalid",
-            loc= "image",
-            msg= f"Allowed extensions are {ALLOWED_IMAGE_EXTENSIONS}",
-            inp= file.filename,
-            ctx={"image": "invalid type"}
+            loc="image",
+            msg=f"Allowed extensions are {ALLOWED_IMAGE_EXTENSIONS}",
+            inp=file.filename,
+            ctx={"image": "invalid type"},
         )
 
     # Check file size
     if file.size > MAX_FILE_SIZE_BYTES:
         CustomValidations.raize_custom_error(
             error_type="invalid",
-            loc= "image",
-            msg= f"Maximum image size should be {MAX_FILE_SIZE_BYTES} bytes" ,
-            inp= f"{file.size} bytes",
-            ctx={"image": "Big size"}
+            loc="image",
+            msg=f"Maximum image size should be {MAX_FILE_SIZE_BYTES} bytes",
+            inp=f"{file.size} bytes",
+            ctx={"image": "Big size"},
         )
 
     file_extension = file.filename.split(".")[-1]
@@ -167,7 +178,7 @@ def update_profile_photo(file: UploadFile, auth_token: model.FrontendToken, sql:
     else:
         unique_filename = f"{math.floor(time.time())}_{user.username}.{file_extension}"
 
-    with open(UPLOAD_FOLDER+'/'+unique_filename, "wb") as image_file:
+    with open(UPLOAD_FOLDER + "/" + unique_filename, "wb") as image_file:
         image_file.write(file.file.read())
 
     user.profile_photo = unique_filename
@@ -187,7 +198,7 @@ def update_user(data: schema.UpdateUser, sql: Session):
             loc="user_id",
             msg="No user found.",
             inp=data.user_id,
-            ctx={"user_id": "exist"}
+            ctx={"user_id": "exist"},
         )
 
     if data.is_active is not None:
@@ -203,33 +214,34 @@ def verify_email(token: str, sql: Session):
     """
     Verify email through token and enable user account login.
     """
-    user = sql.query(model.FrontendUser).filter_by(
-        verification_token=token,
-        is_deleted=False
-    ).first()
+    user = (
+        sql.query(model.FrontendUser)
+        .filter_by(verification_token=token, is_deleted=False)
+        .first()
+    )
 
     if not user:
         CustomValidations.raize_custom_error(
             status_code=status.HTTP_403_FORBIDDEN,
             error_type="not_exist",
-            loc= "token",
-            msg= "Invalid verification token",
-            inp= token,
-            ctx={"token": "exist"}
+            loc="token",
+            msg="Invalid verification token",
+            inp=token,
+            ctx={"token": "exist"},
         )
 
     if not user.is_active:
         CustomValidations.raize_custom_error(
             status_code=status.HTTP_403_FORBIDDEN,
             error_type="deactive",
-            loc= "account",
-            msg= "Your account is deactivated!",
-            inp= token,
-            ctx={"account": "active"}
+            loc="account",
+            msg="Your account is deactivated!",
+            inp=token,
+            ctx={"account": "active"},
         )
 
-    user.email_verified_at=datetime.utcnow()
-    user.verification_token=None
+    user.email_verified_at = datetime.utcnow()
+    user.verification_token = None
     sql.commit()
     return {"details": "Email verified successfully"}
 
@@ -238,10 +250,15 @@ def create_auth_token(request: schema.LoginUser, sql: Session):
     """
     Create a login token for backend user.
     """
-    user = sql.query(model.FrontendUser).filter(
-        (model.FrontendUser.email == request.username_or_email) |
-        (model.FrontendUser.username == request.username_or_email),
-    ).filter_by(is_deleted=False).first()
+    user = (
+        sql.query(model.FrontendUser)
+        .filter(
+            (model.FrontendUser.email == request.username_or_email)
+            | (model.FrontendUser.username == request.username_or_email),
+        )
+        .filter_by(is_deleted=False)
+        .first()
+    )
 
     if not user:
         CustomValidations.raize_custom_error(
@@ -250,7 +267,7 @@ def create_auth_token(request: schema.LoginUser, sql: Session):
             loc="username_or_email",
             msg="Email/Username is wrong!",
             inp=request.username_or_email,
-            ctx={"username_or_email": "exist"}
+            ctx={"username_or_email": "exist"},
         )
 
     if not Hash.verify(user.password, request.password):
@@ -260,7 +277,7 @@ def create_auth_token(request: schema.LoginUser, sql: Session):
             loc="password",
             msg="Password is wrong!",
             inp=request.password,
-            ctx={"password": "match"}
+            ctx={"password": "match"},
         )
 
     if not user.email_verified_at:
@@ -279,7 +296,7 @@ def create_auth_token(request: schema.LoginUser, sql: Session):
 
     sql.query(model.FrontendToken).filter(
         model.FrontendToken.user_id == user.id,
-        model.FrontendToken.expire_at < datetime.now()
+        model.FrontendToken.expire_at < datetime.now(),
     ).delete()
     sql.commit()
     # Count the number of active tokens for the user.
@@ -295,7 +312,7 @@ def create_auth_token(request: schema.LoginUser, sql: Session):
         token=generate_token(16),
         user_id=user.id,
         details=request.details.to_string(),
-        expire_at=datetime.utcnow() + timedelta(hours=int(TOKEN_VALIDITY))
+        expire_at=datetime.utcnow() + timedelta(hours=int(TOKEN_VALIDITY)),
     )
     sql.add(token)
     sql.commit()
@@ -307,9 +324,7 @@ def delete_token(auth_token: model.FrontendToken, sql: Session):
     """
     Deletes the login token for a user.
     """
-    sql.query(model.FrontendToken).filter_by(
-        token=auth_token.token
-    ).delete()
+    sql.query(model.FrontendToken).filter_by(token=auth_token.token).delete()
     sql.commit()
     return True
 
@@ -318,9 +333,7 @@ def delete_all_tokens(auth_token: model.FrontendToken, sql: Session):
     """
     Deletes all the login token for a user.
     """
-    sql.query(model.FrontendToken).filter_by(
-        user_id=auth_token.user.id
-    ).delete()
+    sql.query(model.FrontendToken).filter_by(user_id=auth_token.user.id).delete()
     sql.commit()
     return True
 
@@ -333,10 +346,9 @@ def send_verification_mail(email: str, sql: Session):
         raize_custom_error: If no account is found or the account is suspended.
         raize_custom_error: If the email fails to send.
     """
-    user = sql.query(model.FrontendUser).filter_by(
-        email=email,
-        is_deleted=False
-    ).first()
+    user = (
+        sql.query(model.FrontendUser).filter_by(email=email, is_deleted=False).first()
+    )
 
     if not user:
         CustomValidations.raize_custom_error(
@@ -345,14 +357,14 @@ def send_verification_mail(email: str, sql: Session):
             loc="email",
             msg="No account found.",
             inp=email,
-            ctx={"email": "exist"}
+            ctx={"email": "exist"},
         )
 
     if not user.is_active:
         CustomValidations.raize_custom_error(
             status_code=status.HTTP_403_FORBIDDEN,
             error_type="suspended",
-            msg="Your account is suspended!"
+            msg="Your account is suspended!",
         )
 
     user.verification_token = generate_token(32)
@@ -363,7 +375,7 @@ def send_verification_mail(email: str, sql: Session):
         CustomValidations.raize_custom_error(
             status_code=status.HTTP_417_EXPECTATION_FAILED,
             error_type="mail_sent_error",
-            msg="Cannot send email."
+            msg="Cannot send email.",
         )
     return {"message": "Email sent successfully"}
 
@@ -373,10 +385,11 @@ def create_new_password(request: schema.ForgotPassword, sql: Session):
     Verify the token and change the password of the user
     """
     # Find the user with the given verification token
-    user = sql.query(model.FrontendUser).filter_by(
-        verification_token=request.token,
-        is_deleted=False
-    ).first()
+    user = (
+        sql.query(model.FrontendUser)
+        .filter_by(verification_token=request.token, is_deleted=False)
+        .first()
+    )
 
     # If the user is not found, raise a custom error
     if not user:
@@ -386,7 +399,7 @@ def create_new_password(request: schema.ForgotPassword, sql: Session):
             loc="token",
             msg="Token is expired!",
             inp=request.token,
-            ctx={"token": "valid"}
+            ctx={"token": "valid"},
         )
 
     # If the user's email is not verified, raise a custom error
@@ -421,37 +434,43 @@ def create_new_password(request: schema.ForgotPassword, sql: Session):
     return user
 
 
-def update_profile(request: schema.UpdateProfile, auth_token: model.FrontendToken, sql: Session):
+def update_profile(
+    request: schema.UpdateProfile, auth_token: model.FrontendToken, sql: Session
+):
     """
     Updates the profile of a user based on the provided data.
     """
     user = auth_token.user
     if request.username:
-        existing_user = sql.query(model.FrontendUser).filter(
-            model.FrontendUser.username==request.username,
-            model.FrontendUser.id!=user.id
-        ).first()
+        existing_user = (
+            sql.query(model.FrontendUser)
+            .filter(
+                model.FrontendUser.username == request.username,
+                model.FrontendUser.id != user.id,
+            )
+            .first()
+        )
         if existing_user:
             CustomValidations.raize_custom_error(
                 error_type="exist",
                 loc="username",
                 msg="Username already in use",
                 inp=request.username,
-                ctx={"username": "unique"}
+                ctx={"username": "unique"},
             )
         user.username = request.username
 
     if request.timezone:
-        exist_timezone = sql.query(model.Timezone).filter_by(
-            code=request.timezone
-        ).first()
+        exist_timezone = (
+            sql.query(model.Timezone).filter_by(code=request.timezone).first()
+        )
         if not exist_timezone:
             CustomValidations.raize_custom_error(
                 error_type="not_exist",
                 loc="timezone",
                 msg="Timezone does not exist.",
                 inp=request.timezone,
-                ctx={"timezone": "exist"}
+                ctx={"timezone": "exist"},
             )
         user.timezone = request.timezone
 
@@ -490,7 +509,9 @@ def timezones_list(sql: Session):
     return sql.query(model.Timezone).all()
 
 
-def stripe_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, sql: Session):
+def stripe_add_orders(
+    request: schema.AddOrder, authtoken: model.FrontendToken, sql: Session
+):
     """
     Adds a new order to the database.
     """
@@ -504,7 +525,7 @@ def stripe_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, 
             loc="suid",
             msg="Subscription does not exist.",
             inp=request.suid,
-            ctx={"suid": "exist"}
+            ctx={"suid": "exist"},
         )
 
     # Calculate the total amount of the order
@@ -526,17 +547,14 @@ def stripe_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, 
 
     # Apply coupon discount if coupon ID is provided
     if request.coupon_code:
-        coupon = backendusercontroller.coupon_details(
-            request.coupon_code,
-            sql
-        )
+        coupon = backendusercontroller.coupon_details(request.coupon_code, sql)
         if not coupon or not coupon.is_active:
             CustomValidations.raize_custom_error(
                 error_type="not_exist",
                 loc="coupon",
                 msg="Coupon does not exist.",
                 inp=request.coupon_code,
-                ctx={"coupon": "exist"}
+                ctx={"coupon": "exist"},
             )
 
         coupon_amount = (coupon.percentage / 100) * total_amount
@@ -561,40 +579,39 @@ def stripe_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, 
             description=order.ouid,
             metadata={
                 "order_id": order.ouid,
-            }
+            },
         )
+    # pylint: disable=W0718
     except Exception as error:
         CustomValidations.raize_custom_error(
             error_type="stripe_error",
             loc="currency",
             msg=str(error),
             inp=request.currency,
-            ctx={"currency": "exist"}
+            ctx={"currency": "exist"},
         )
 
     order_product = model.OrderProduct(
-        product_price = subscription.price,
-        product_sale_price = subscription.sale_price,
-        order_id = order.id,
-        product_id = subscription.id,
-        quantity = 1,
+        product_price=subscription.price,
+        product_sale_price=subscription.sale_price,
+        order_id=order.id,
+        product_id=subscription.id,
+        quantity=1,
     )
 
     sql.add(order_product)
     sql.commit()
-    order.clientSecret = intent['client_secret']
+    order.client_secret = intent["client_secret"]
     return order
 
 
 def stripe_add_transaction(
-    request: schema.StripeReturn,
-    auth_token: model.FrontendToken,
-    sql: Session
+    request: schema.StripeReturn, auth_token: model.FrontendToken, sql: Session
 ):
     """
     Updates the status of an order in the database based on the Stripe payment status.
     Creates a new transaction record for the order if it doesn't already exist.
-    Updates the active plan of the user associated with the authentication token 
+    Updates the active plan of the user associated with the authentication token
     based on the product ID from the order.
     """
     # Retrieve the order based on the order unique ID provided in the request
@@ -608,9 +625,7 @@ def stripe_add_transaction(
     sql.commit()
 
     # Retrieve the transaction record associated with the order
-    transaction = sql.query(model.Transaction).filter_by(
-        order_id=order.id
-    ).first()
+    transaction = sql.query(model.Transaction).filter_by(order_id=order.id).first()
 
     # If the transaction record doesn't exist,
     # create a new transaction record
@@ -633,9 +648,7 @@ def stripe_add_transaction(
     user = auth_token.user
 
     # Retrieve the order product based on the order ID
-    order_product = sql.query(model.OrderProduct).filter_by(
-        order_id=order.id
-    ).first()
+    order_product = sql.query(model.OrderProduct).filter_by(order_id=order.id).first()
 
     # Update the active plan of the user with the product ID from the order product
     user.active_plan = order_product.product_id
@@ -651,7 +664,9 @@ def stripe_add_transaction(
     return transaction
 
 
-def paypal_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, sql: Session):
+def paypal_add_orders(
+    request: schema.AddOrder, authtoken: model.FrontendToken, sql: Session
+):
     """
     Adds a new order to the database.
     """
@@ -665,7 +680,7 @@ def paypal_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, 
             loc="suid",
             msg="Subscription does not exist.",
             inp=request.suid,
-            ctx={"suid": "exist"}
+            ctx={"suid": "exist"},
         )
 
     # Calculate the total amount of the order
@@ -687,17 +702,14 @@ def paypal_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, 
 
     # Apply coupon discount if coupon ID is provided
     if request.coupon_code:
-        coupon = backendusercontroller.coupon_details(
-            request.coupon_code,
-            sql
-        )
+        coupon = backendusercontroller.coupon_details(request.coupon_code, sql)
         if not coupon or not coupon.is_active:
             CustomValidations.raize_custom_error(
                 error_type="not_exist",
                 loc="coupon",
                 msg="Coupon does not exist.",
                 inp=request.coupon_code,
-                ctx={"coupon": "exist"}
+                ctx={"coupon": "exist"},
             )
 
         coupon_amount = (coupon.percentage / 100) * total_amount
@@ -718,18 +730,20 @@ def paypal_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, 
         access_token = generate_paypal_access_token()
 
         response = requests.post(
-            url=f'{PAYPAL_BASE_URL}/v2/checkout/orders',
-            headers={"Authorization": f'Bearer {access_token}'},
+            url=f"{PAYPAL_BASE_URL}/v2/checkout/orders",
+            headers={"Authorization": f"Bearer {access_token}"},
             json={
                 "intent": "CAPTURE",
-                "purchase_units": [{
-                    "amount": {
-                        "currency_code": order.currency,
-                        "value": round(order.final_amount, 2),
-                    },
-                }],
+                "purchase_units": [
+                    {
+                        "amount": {
+                            "currency_code": order.currency,
+                            "value": round(order.final_amount, 2),
+                        },
+                    }
+                ],
             },
-            timeout=5
+            timeout=5,
         )
         paypal = response.json()
 
@@ -739,36 +753,34 @@ def paypal_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, 
             loc="payment gateway",
             msg=str(error),
             inp="paypal",
-            ctx={"paypal": "error"}
+            ctx={"paypal": "error"},
         )
 
-    if 'id' not in paypal:
+    if "id" not in paypal:
         CustomValidations.raize_custom_error(
-            error_type=paypal['name'],
+            error_type=paypal["name"],
             loc="paypal",
-            msg=paypal['message'],
-            inp='paypal',
-            ctx={"paypal": paypal["links"]}
+            msg=paypal["message"],
+            inp="paypal",
+            ctx={"paypal": paypal["links"]},
         )
 
     sql.add(
         model.OrderProduct(
-            product_price = subscription.price,
-            product_sale_price = subscription.sale_price,
-            order_id = order.id,
-            product_id = subscription.id,
-            quantity = 1,
+            product_price=subscription.price,
+            product_sale_price=subscription.sale_price,
+            order_id=order.id,
+            product_id=subscription.id,
+            quantity=1,
         )
     )
     sql.commit()
-    order.clientSecret = paypal['id']
+    order.clientSecret = paypal["id"]
     return order
 
 
 def paypal_add_transaction(
-    request: schema.StripeReturn,
-    auth_token: model.FrontendToken,
-    sql: Session
+    request: schema.StripeReturn, auth_token: model.FrontendToken, sql: Session
 ):
     """
     Add a transaction to the database when a payment is made through PayPal.
@@ -824,7 +836,9 @@ def paypal_add_transaction(
     return transaction
 
 
-def razorpay_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken, sql: Session):
+def razorpay_add_orders(
+    request: schema.AddOrder, authtoken: model.FrontendToken, sql: Session
+):
     """
     Adds a new order to the database.
     """
@@ -837,7 +851,7 @@ def razorpay_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken
             loc="suid",
             msg="Subscription does not exist.",
             inp=request.suid,
-            ctx={"suid": "exist"}
+            ctx={"suid": "exist"},
         )
 
     # Calculate the total amount of the order
@@ -865,7 +879,7 @@ def razorpay_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken
                 loc="coupon",
                 msg="Coupon does not exist.",
                 inp=request.coupon_code,
-                ctx={"coupon": "exist"}
+                ctx={"coupon": "exist"},
             )
 
         coupon_amount = (coupon.percentage / 100) * total_amount
@@ -884,42 +898,43 @@ def razorpay_add_orders(request: schema.AddOrder, authtoken: model.FrontendToken
     amount_in_paise = int(order.final_amount * 100)
 
     try:
-        client = razorpay.Client(auth=(SETTINGS.RAZORPAY_CLIENT, SETTINGS.RAZORPAY_SECRET))
-        client.set_app_details({"title" : SETTINGS.APP_NAME})
+        client = razorpay.Client(
+            auth=(SETTINGS.RAZORPAY_CLIENT, SETTINGS.RAZORPAY_SECRET)
+        )
+        client.set_app_details({"title": SETTINGS.APP_NAME})
         payment = razorpay.Order(client).create(
             data={
                 "amount": amount_in_paise,
                 "currency": order.currency,
-                "receipt":  order.ouid
+                "receipt": order.ouid,
             }
         )
+    # pylint: disable=W0718
     except Exception as error:
         CustomValidations.raize_custom_error(
             error_type="stripe_error",
             loc="currency",
             msg=str(error),
             inp=request.currency,
-            ctx={"currency": "exist"}
+            ctx={"currency": "exist"},
         )
 
     order_product = model.OrderProduct(
-        product_price = subscription.price,
-        product_sale_price = subscription.sale_price,
-        order_id = order.id,
-        product_id = subscription.id,
-        quantity = 1,
+        product_price=subscription.price,
+        product_sale_price=subscription.sale_price,
+        order_id=order.id,
+        product_id=subscription.id,
+        quantity=1,
     )
 
     sql.add(order_product)
     sql.commit()
-    order.clientSecret = payment['id']
+    order.clientSecret = payment["id"]
     return order
 
 
 def razorpay_add_transaction(
-    request: schema.RazorpayReturn,
-    auth_token: model.FrontendToken,
-    sql: Session
+    request: schema.RazorpayReturn, auth_token: model.FrontendToken, sql: Session
 ):
     """
     Updates the status of an order in and creates a new transaction for the order.
@@ -960,9 +975,7 @@ def razorpay_add_transaction(
     user = auth_token.user
 
     # Retrieve the order product from the database based on the order ID
-    order_product = sql.query(model.OrderProduct).filter_by(
-        order_id=order.id
-    ).first()
+    order_product = sql.query(model.OrderProduct).filter_by(order_id=order.id).first()
 
     # Update the active plan of the user with the product ID from the order product
     user.active_plan = order_product.product_id
@@ -973,8 +986,7 @@ def razorpay_add_transaction(
 
     # Create subscription-user mapping
     backendusercontroller.create_subscription_user(
-        order_product.product_id,
-        user.id, transaction.id, sql
+        order_product.product_id, user.id, transaction.id, sql
     )
 
     # Refresh the transaction record
@@ -982,5 +994,3 @@ def razorpay_add_transaction(
 
     # Return the transaction record
     return transaction
-
-

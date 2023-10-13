@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 main.py
 Author: Gourav Sahu
@@ -19,7 +20,7 @@ from taskmanagement import model as taskModel
 def run():
     """
     Run the application using the Uvicorn server.
-    
+
     The server is run on the host "127.0.0.1" and port 8000.
     The log level is set to "info".
     """
@@ -47,7 +48,7 @@ def migrate_tables():
 def drop_tables():
     """
     Prompts the user for confirmation to delete all tables in the database.
-    
+
     If the user confirms, it drops all tables related to the backend and frontend models.
     If the user does not confirm, it prints "Exited."
     """
@@ -66,17 +67,17 @@ def main():
     """
     command = sys.argv[1] if len(sys.argv) > 1 else None
 
-    if command == 'migrate':
+    if command == "migrate":
         migrate_tables()
-    elif command == 'drop':
+    elif command == "drop":
         drop_tables()
-    elif command == 'run':
+    elif command == "run":
         run()
-    elif command == 'createsuperuser':
-        createsuperuser(db=SessionLocal())
+    elif command == "createsuperuser":
+        createsuperuser(sql=SessionLocal())
     else:
         print("No command found. Try 'run', 'migrate', 'createsuperuser' instead.")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

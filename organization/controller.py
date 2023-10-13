@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 organization/controller.py
 Author: Gourav Sahu
@@ -16,43 +17,34 @@ from frontenduser import model as frontendModel
 from . import model, schema
 
 
-def all_organizations(
-    limit: int,
-    offset: int,
-    sql: Session
-):
+def all_organizations(limit: int, offset: int, sql: Session):
     """
-    Retrieves a specified number of organizations from the database, 
+    Retrieves a specified number of organizations from the database,
     along with the total count of organizations.
     """
     count = sql.query(model.Organization).count()
-    organizations = sql.query(
-        model.Organization
-    ).limit(limit).offset(offset).all()
+    organizations = sql.query(model.Organization).limit(limit).offset(offset).all()
 
-    return {
-        "total": count,
-        "organizations": organizations
-    }
+    return {"total": count, "organizations": organizations}
 
 
 def create_organization(
     data: schema.CreateOrganization,
     sql: Session,
     auth_token: frontendModel.FrontendToken,
-    subscription: backendModel.SubscriptionFeature
+    subscription: backendModel.SubscriptionFeature,
 ):
     """
-    Creates a new organization in the database, 
+    Creates a new organization in the database,
     performing several validations before saving the organization.
     """
 
     # Number of organizations can subscription allows.
     org_quantity = subscription.quantity
 
-    total_organizations = sql.query(model.Organization.id).filter_by(
-        admin_id=auth_token.id
-    ).count()
+    total_organizations = (
+        sql.query(model.Organization.id).filter_by(admin_id=auth_token.id).count()
+    )
 
     if total_organizations >= org_quantity:
         CustomValidations.raize_custom_error(
@@ -60,20 +52,20 @@ def create_organization(
             loc="organization",
             msg=f"Can not create more than '{org_quantity}' organizations.",
             inp=data.org_name,
-            ctx={"organization": "limited_creation"}
+            ctx={"organization": "limited_creation"},
         )
 
     # Check if the organization name already exists in the database.
-    existing_name = sql.query(model.Organization).filter_by(
-        org_name=data.org_name
-    ).first()
+    existing_name = (
+        sql.query(model.Organization).filter_by(org_name=data.org_name).first()
+    )
     if existing_name:
         CustomValidations.raize_custom_error(
             error_type="existing",
             loc="org_name",
             msg="Organization name already exists.",
             inp=data.org_name,
-            ctx={"org_name": "unique"}
+            ctx={"org_name": "unique"},
         )
 
     # Check if the registration type provided is allowed.
@@ -83,7 +75,7 @@ def create_organization(
             loc="registration_type",
             msg=f"Allowed values are {model.Organization.allowed_registration}",
             inp=data.registration_type,
-            ctx={"registration_type": "valid"}
+            ctx={"registration_type": "valid"},
         )
 
     # Create an instance of OAuth 2.0 credentials using the dictionary
@@ -96,7 +88,7 @@ def create_organization(
             loc="gtoken",
             msg="Not a valid Google token.",
             inp=str(data.gtoken),
-            ctx={"gtoken": "valid"}
+            ctx={"gtoken": "valid"},
         )
 
     organization = model.Organization(
@@ -104,7 +96,7 @@ def create_organization(
         org_name=data.org_name,
         admin_id=auth_token.user_id,
         gtoken=json.dumps(data.gtoken),
-        registration_type=data.registration_type
+        registration_type=data.registration_type,
     )
 
     sql.add(organization)
@@ -113,10 +105,10 @@ def create_organization(
 
     # Create default role
     org_role = model.OrganizationRole(
-        ruid = generate_uuid(data.org_name+"Default"),
-        role = 'Default',
-        created_by = auth_token.user_id,
-        org_id = organization.id
+        ruid=generate_uuid(data.org_name + "Default"),
+        role="Default",
+        created_by=auth_token.user_id,
+        org_id=organization.id,
     )
     sql.add(org_role)
     sql.commit()
@@ -125,17 +117,13 @@ def create_organization(
 
 
 def register_to_organization(
-    data: schema.OrgUserRegister,
-    sql: Session,
-    auth_token: frontendModel.FrontendToken
+    data: schema.OrgUserRegister, sql: Session, auth_token: frontendModel.FrontendToken
 ):
     """
     Registers a user to an organization.
     """
     user = auth_token.user
-    organization = sql.query(model.Organization).filter_by(
-        orguid=data.org_uid
-    ).first()
+    organization = sql.query(model.Organization).filter_by(orguid=data.org_uid).first()
 
     if not organization:
         CustomValidations.raize_custom_error(
@@ -143,7 +131,7 @@ def register_to_organization(
             loc="org_uid",
             msg="Organization does not exist.",
             inp=str(data.org_uid),
-            ctx={"org_uid": "exist"}
+            ctx={"org_uid": "exist"},
         )
 
     if organization.registration_type == "admin_only":
@@ -153,30 +141,27 @@ def register_to_organization(
             loc="org_uid",
             msg="Organization does allow new registration.",
             inp=str(data.org_uid),
-            ctx={"registration": "admin_only"}
+            ctx={"registration": "admin_only"},
         )
 
     admin = organization.admin
-    feature = sql.query(backendModel.Feature).filter_by(
-        feature_code="add_member"
-    ).first()
+    feature = (
+        sql.query(backendModel.Feature).filter_by(feature_code="add_member").first()
+    )
 
-    subscription_feature = sql.query(
-        backendModel.SubscriptionFeature
-    ).filter_by(
-        subscription_id=admin.active_plan,
-        feature_id=feature.id
-    ).first()
+    subscription_feature = (
+        sql.query(backendModel.SubscriptionFeature)
+        .filter_by(subscription_id=admin.active_plan, feature_id=feature.id)
+        .first()
+    )
 
     user_quantity = subscription_feature.quantity
 
-    total_users = sql.query(
-        model.OrganizationUser.id
-    ).filter_by(
-        org_id=organization.id,
-        is_deleted=False,
-        is_active=True
-    ).count()
+    total_users = (
+        sql.query(model.OrganizationUser.id)
+        .filter_by(org_id=organization.id, is_deleted=False, is_active=True)
+        .count()
+    )
 
     if total_users >= user_quantity:
         CustomValidations.raize_custom_error(
@@ -184,15 +169,14 @@ def register_to_organization(
             loc="organization",
             msg=f"Can not add more than '{user_quantity}' users.",
             inp=data.org_uid,
-            ctx={"organization": "limited_creation"}
+            ctx={"organization": "limited_creation"},
         )
 
-    org_user = sql.query(
-        model.OrganizationUser
-    ).filter_by(
-        org_id=organization.id,
-        user_id=user.id
-    ).first()
+    org_user = (
+        sql.query(model.OrganizationUser)
+        .filter_by(org_id=organization.id, user_id=user.id)
+        .first()
+    )
 
     if org_user:
         CustomValidations.raize_custom_error(
@@ -200,13 +184,11 @@ def register_to_organization(
             loc="organization",
             msg="User already registered.",
             inp=data.org_uid,
-            ctx={"organization": "new_registration"}
+            ctx={"organization": "new_registration"},
         )
 
     org_user = model.OrganizationUser(
-        user_id=user.id,
-        org_id=organization.id,
-        role_id=1  # Assign default role
+        user_id=user.id, org_id=organization.id, role_id=1  # Assign default role
     )
 
     if organization.registration_type == "approval_required":
@@ -219,35 +201,29 @@ def register_to_organization(
 
 
 def get_all_users(
-    limit: int,
-    offset: int,
-    organization: model.Organization,
-    sql: Session
+    limit: int, offset: int, organization: model.Organization, sql: Session
 ):
     """
-    Retrieves a specified number of users belonging to a specific organization, 
+    Retrieves a specified number of users belonging to a specific organization,
     along with the total count of users.
     """
-    users = sql.query(model.OrganizationUser).filter_by(
-        org_id=organization.id
-    ).limit(limit).offset(offset).all()
-    count = sql.query(model.OrganizationUser.id).filter_by(
-        org_id=organization.id
-    ).count()
+    users = (
+        sql.query(model.OrganizationUser)
+        .filter_by(org_id=organization.id)
+        .limit(limit)
+        .offset(offset)
+        .all()
+    )
+    count = (
+        sql.query(model.OrganizationUser.id).filter_by(org_id=organization.id).count()
+    )
     print(count)
     print(users)
 
-    return {
-        "total": count,
-        "users": users
-    }
+    return {"total": count, "users": users}
 
 
-def get_user_details(
-    uuid: str,
-    organization: model.Organization,
-    sql: Session
-):
+def get_user_details(uuid: str, organization: model.Organization, sql: Session):
     """
     Retrieves the details of a user in an organization based on the user's UUID.
     """
@@ -258,72 +234,66 @@ def get_user_details(
             loc="user_id",
             msg="User does not exist",
             inp=uuid,
-            ctx={"user": "exist"}
+            ctx={"user": "exist"},
         )
-    org_user = sql.query(model.OrganizationUser).filter_by(
-        user_id=user.id, org_id=organization.id
-    ).first()
+    org_user = (
+        sql.query(model.OrganizationUser)
+        .filter_by(user_id=user.id, org_id=organization.id)
+        .first()
+    )
     if not org_user:
         CustomValidations.raize_custom_error(
             error_type="not_exist",
             loc="user_id",
             msg="User does not exist in organization",
             inp=uuid,
-            ctx={"user": "exist"}
+            ctx={"user": "exist"},
         )
 
     return org_user
 
 
 def get_all_roles(
-    limit: int,
-    offset: int,
-    organization: model.Organization,
-    sql: Session
+    limit: int, offset: int, organization: model.Organization, sql: Session
 ):
     """
     Retrieves a specified number of roles belonging to a specific organization,
     along with the total count of roles.
     """
-    roles = sql.query(model.OrganizationRole).filter_by(
-        org_id=organization.id
-    ).limit(limit).offset(offset).all()
-    count = sql.query(model.OrganizationRole).filter_by(
-        org_id=organization.id
-    ).count()
+    roles = (
+        sql.query(model.OrganizationRole)
+        .filter_by(org_id=organization.id)
+        .limit(limit)
+        .offset(offset)
+        .all()
+    )
+    count = sql.query(model.OrganizationRole).filter_by(org_id=organization.id).count()
 
-    return {
-        "total": count,
-        "roles": roles
-    }
+    return {"total": count, "roles": roles}
 
 
-def get_role_details(
-    role_id: str,
-    organization: model.Organization,
-    sql: Session
-):
+def get_role_details(role_id: str, organization: model.Organization, sql: Session):
     """
     Retrieves the details of a role in an organization based on the role's UUID.
     """
-    role = sql.query(model.OrganizationRole).filter_by(
-        ruid=role_id, org_id=organization.id
-    ).first()
+    role = (
+        sql.query(model.OrganizationRole)
+        .filter_by(ruid=role_id, org_id=organization.id)
+        .first()
+    )
     if not role:
         CustomValidations.raize_custom_error(
             error_type="not_exist",
             loc="role_id",
             msg="User does not exist",
             inp=role_id,
-            ctx={"role": "exist"}
+            ctx={"role": "exist"},
         )
 
     return role
 
 
-def get_all_permissions(
-    sql: Session
-):
+def get_all_permissions(sql: Session):
     """
     Retrieves all the organization permissions from the database.
     """
@@ -334,23 +304,25 @@ def create_role(
     data: schema.CreateRole,
     organization: model.Organization,
     authtoken: frontendModel.FrontendToken,
-    sql:Session
+    sql: Session,
 ):
     """
-    Creates a new role for an organization in the database, 
+    Creates a new role for an organization in the database,
     performing validations to ensure the role does not already exist.
     """
     # Check if a role with the same name already exists in the organization
-    role = sql.query(model.OrganizationRole).filter_by(
-        role=data.role, org_id=organization.id
-    ).first()
+    role = (
+        sql.query(model.OrganizationRole)
+        .filter_by(role=data.role, org_id=organization.id)
+        .first()
+    )
     if role:
         CustomValidations.raize_custom_error(
             error_type="already_exist",
             loc="role",
             msg="Role already exists",
             inp=data.role,
-            ctx={"role": "unique"}
+            ctx={"role": "unique"},
         )
 
     # Create a new role object
@@ -358,7 +330,7 @@ def create_role(
         ruid=generate_uuid(data.role),
         role=data.role,
         org_id=organization.id,
-        created_by=authtoken.user_id
+        created_by=authtoken.user_id,
     )
     sql.add(new_role)
     sql.commit()
@@ -366,15 +338,16 @@ def create_role(
 
     # Retrieve the permissions associated with the role from the input data
     codenames = data.permissions
-    permissions = sql.query(model.OrganizationPermission).filter(
-        model.OrganizationPermission.codename.in_(codenames)
-    ).all()
+    permissions = (
+        sql.query(model.OrganizationPermission)
+        .filter(model.OrganizationPermission.codename.in_(codenames))
+        .all()
+    )
 
     # Create role_permission objects and add them to the database
     role_permissions = [
         model.OrganizationRolePermission(
-            role_id=new_role.id,
-            permission_id=permission.id
+            role_id=new_role.id, permission_id=permission.id
         )
         for permission in permissions
     ]
@@ -385,16 +358,16 @@ def create_role(
 
 
 def update_role(
-    data: schema.UpdateRole,
-    organization: model.Organization,
-    sql:Session
+    data: schema.UpdateRole, organization: model.Organization, sql: Session
 ):
     """
     Updates the role of an organization.
     """
-    role = sql.query(model.OrganizationRole).filter_by(
-        ruid=data.ruid, org_id=organization.id
-    ).first()
+    role = (
+        sql.query(model.OrganizationRole)
+        .filter_by(ruid=data.ruid, org_id=organization.id)
+        .first()
+    )
 
     # If the role does not exist, raise a custom error
     if not role:
@@ -403,20 +376,22 @@ def update_role(
             loc="role",
             msg="Role does not exist",
             inp=data.ruid,
-            ctx={"ruid": "exist"}
+            ctx={"ruid": "exist"},
         )
 
     # Check if there is already a role with the same name in the organization.
-    exit_role = sql.query(model.OrganizationRole).filter_by(
-        role=data.role, org_id=organization.id
-    ).first()
+    exit_role = (
+        sql.query(model.OrganizationRole)
+        .filter_by(role=data.role, org_id=organization.id)
+        .first()
+    )
     if exit_role:
         CustomValidations.raize_custom_error(
             error_type="already_exist",
             loc="role",
             msg="Role already exists",
             inp=data.role,
-            ctx={"role": "unique"}
+            ctx={"role": "unique"},
         )
 
     if data.role:
@@ -424,21 +399,20 @@ def update_role(
 
     if data.permissions:
         # Delete existing permissions for the role from the database
-        sql.query(model.OrganizationRolePermission).filter_by(
-            role_id=role.id
-        ).delete()
+        sql.query(model.OrganizationRolePermission).filter_by(role_id=role.id).delete()
 
         # Retrieve the permissions associated with the provided permission codenames
         codenames = data.permissions
-        permissions = sql.query(model.OrganizationPermission).filter(
-            model.OrganizationPermission.codename.in_(codenames)
-        ).all()
+        permissions = (
+            sql.query(model.OrganizationPermission)
+            .filter(model.OrganizationPermission.codename.in_(codenames))
+            .all()
+        )
 
         # Assign new permissions to the role
         role_permissions = [
             model.OrganizationRolePermission(
-                role_id=role.id,
-                permission_id=permission.id
+                role_id=role.id, permission_id=permission.id
             )
             for permission in permissions
         ]
@@ -450,52 +424,51 @@ def update_role(
 
 
 def assign_role(
-    data: schema.AssignRole,
-    organization: model.Organization,
-    sql:Session
+    data: schema.AssignRole, organization: model.Organization, sql: Session
 ):
     """
     Assigns a role to a user in an organization.
     """
 
     # Get role with the specified role ID which belong to the given organization
-    role = sql.query(model.OrganizationRole).filter_by(
-        ruid=data.role_id,
-        org_id=organization.id
-    ).first()
+    role = (
+        sql.query(model.OrganizationRole)
+        .filter_by(ruid=data.role_id, org_id=organization.id)
+        .first()
+    )
     if not role:
         CustomValidations.raize_custom_error(
             error_type="not_exist",
             loc="role",
             msg="Role does not exist",
             inp=data.user_id,
-            ctx={"ruid": "exist"}
+            ctx={"ruid": "exist"},
         )
 
     # Find the user with the specified user ID
-    user = sql.query(frontendModel.FrontendUser).filter_by(
-        uuid=data.user_id
-    ).first()
+    user = sql.query(frontendModel.FrontendUser).filter_by(uuid=data.user_id).first()
     if not user:
         CustomValidations.raize_custom_error(
             error_type="not_exist",
             loc="role",
             msg="Role does not exist",
             inp=data.user_id,
-            ctx={"ruid": "exist"}
+            ctx={"ruid": "exist"},
         )
 
     # Find the organization user entry for the user and organization
-    org_user = sql.query(model.OrganizationUser).filter_by(
-        user_id=user.id, org_id=organization.id
-    ).first()
+    org_user = (
+        sql.query(model.OrganizationUser)
+        .filter_by(user_id=user.id, org_id=organization.id)
+        .first()
+    )
     if not org_user:
         CustomValidations.raize_custom_error(
             error_type="not_exist",
             loc="role",
             msg="Role does not exist",
             inp=data.role_id,
-            ctx={"ruid": "exist"}
+            ctx={"ruid": "exist"},
         )
 
     # Update the role ID of the organization user entry
@@ -509,58 +482,53 @@ def assign_role(
     return org_user
 
 
-
 def assign_user_permission(
-    data: schema.UpdateUserPermission,
-    organization: model.Organization,
-    sql: Session
+    data: schema.UpdateUserPermission, organization: model.Organization, sql: Session
 ):
     """
     Assigns permissions to a user in an organization.
     """
     # Retrieve the user object based on the provided UUID
-    user = sql.query(frontendModel.FrontendUser).filter_by(
-        uuid=data.uuid
-    ).first()
+    user = sql.query(frontendModel.FrontendUser).filter_by(uuid=data.uuid).first()
     if not user:
         CustomValidations.raize_custom_error(
             error_type="not_exist",
             loc="uuid",
             msg="user does not exist",
             inp=data.uuid,
-            ctx={"uuid": "exist"}
+            ctx={"uuid": "exist"},
         )
 
     # Get organization user object based on the user ID and organization ID
-    org_user = sql.query(model.OrganizationUser).filter_by(
-        user_id=user.id,
-        org_id=organization.id
-    ).first()
+    org_user = (
+        sql.query(model.OrganizationUser)
+        .filter_by(user_id=user.id, org_id=organization.id)
+        .first()
+    )
     if not org_user:
         CustomValidations.raize_custom_error(
             error_type="not_exist",
             loc="uuid",
             msg="user does not exist in the organization",
             inp=data.ruid,
-            ctx={"uuid": "exist"}
+            ctx={"uuid": "exist"},
         )
 
     # Delete any existing role permissions for the organization user
-    sql.query(model.OrganizationRolePermission).filter_by(
-        user_id=org_user.id
-    ).delete()
+    sql.query(model.OrganizationRolePermission).filter_by(user_id=org_user.id).delete()
 
     # Retrieve the requested permissions from the database
     codenames = data.permissions
-    permissions = sql.query(model.OrganizationPermission).filter(
-        model.OrganizationPermission.codename.in_(codenames)
-    ).all()
+    permissions = (
+        sql.query(model.OrganizationPermission)
+        .filter(model.OrganizationPermission.codename.in_(codenames))
+        .all()
+    )
 
     # Assign new permissions for the organization user
     role_permissions = [
         model.OrganizationRolePermission(
-            user_id=org_user.id,
-            permission_id=permission.id
+            user_id=org_user.id, permission_id=permission.id
         )
         for permission in permissions
     ]

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 backenduser/route.py
 Author: Gourav Sahu
@@ -5,7 +6,7 @@ Date: 23/09/2023
 """
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, Path, Query, status, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, Depends, Path, Query, status
 from sqlalchemy.orm import Session
 
 from backenduser.middleware import authenticate_token, check_permission
@@ -16,11 +17,12 @@ from . import controller, model, schema
 backendUserRoutes = APIRouter()
 
 
-@backendUserRoutes.post("/register",
+@backendUserRoutes.post(
+    "/register",
     response_model=schema.BaseUser,
     dependencies=[
         Depends(authenticate_token),
-        Depends(check_permission(["create_user"]))
+        Depends(check_permission(["create_user"])),
     ],
     status_code=status.HTTP_201_CREATED,
     description="Create a new backend user.",
@@ -37,20 +39,21 @@ def register(
     return controller.create_user(data, sql, background_tasks)
 
 
-@backendUserRoutes.get("/get-all",
+@backendUserRoutes.get(
+    "/get-all",
     response_model=schema.ListUsers,
     dependencies=[
         Depends(authenticate_token),
-        Depends(check_permission(["read_user"]))
+        Depends(check_permission(["read_user"])),
     ],
     status_code=status.HTTP_200_OK,
     description="Fetch the list and total count of the backend users.",
-    name="Users list"
+    name="Users list",
 )
 async def get_users_list(
-    limit : Optional[int]=10,
-    offset : Optional[int]=0,
-    sql : Session = Depends(get_db),
+    limit: Optional[int] = 10,
+    offset: Optional[int] = 0,
+    sql: Session = Depends(get_db),
 ):
     """
     Retrieves:
@@ -60,21 +63,20 @@ async def get_users_list(
     return controller.all_backend_users(limit, offset, sql)
 
 
-@backendUserRoutes.get("/get/{user_id}",
+@backendUserRoutes.get(
+    "/get/{user_id}",
     response_model=schema.User,
     dependencies=[
         Depends(authenticate_token),
-        Depends(check_permission(["read_user"]))
+        Depends(check_permission(["read_user"])),
     ],
     status_code=status.HTTP_200_OK,
     description="Fetch the details of a backend user.",
-    name="User details"
+    name="User details",
 )
 async def get_user_details(
-    user_id: str = Path(
-        title="The UUID of the user to get"
-    ),
-    sql : Session = Depends(get_db),
+    user_id: str = Path(title="The UUID of the user to get"),
+    sql: Session = Depends(get_db),
 ):
     """
     Retrieves all details of a user based on the provided user_id.
@@ -82,18 +84,17 @@ async def get_user_details(
     return controller.user_details(user_id, sql)
 
 
-@backendUserRoutes.post("/update-user",
+@backendUserRoutes.post(
+    "/update-user",
     response_model=schema.BaseUser,
-    dependencies=[
-        Depends(check_permission(["update_user"]))
-    ],
+    dependencies=[Depends(check_permission(["update_user"]))],
     status_code=status.HTTP_200_OK,
     description="Update the backend user's details.",
-    name="Update user"
+    name="Update user",
 )
 async def update_user_details(
     data: schema.UpdateUser,
-    sql : Session = Depends(get_db),
+    sql: Session = Depends(get_db),
     auth_token: model.BackendToken = Depends(authenticate_token),
 ):
     """
@@ -102,15 +103,15 @@ async def update_user_details(
     return controller.update_user_role(data, auth_token, sql)
 
 
-
-@backendUserRoutes.get("/verify-token",
+@backendUserRoutes.get(
+    "/verify-token",
     status_code=status.HTTP_202_ACCEPTED,
     description="Verify a email using token sent to that email address.",
-    name="Verify Email"
+    name="Verify Email",
 )
 def verify_email_token(
     token: str = Query(..., description="Email verification token"),
-    sql: Session = Depends(get_db)
+    sql: Session = Depends(get_db),
 ):
     """
     Verify email through token and enable user account login.
@@ -118,11 +119,12 @@ def verify_email_token(
     return controller.verify_email(token, sql)
 
 
-@backendUserRoutes.post("/login",
-    response_model= schema.ShowToken,
+@backendUserRoutes.post(
+    "/login",
+    response_model=schema.ShowToken,
     status_code=status.HTTP_200_OK,
     description="Create and get authtoken for a user.",
-    name="Login"
+    name="Login",
 )
 def login(
     request: schema.LoginUser,
@@ -134,14 +136,15 @@ def login(
     return controller.create_auth_token(request, sql)
 
 
-@backendUserRoutes.delete("/logout",
+@backendUserRoutes.delete(
+    "/logout",
     status_code=status.HTTP_204_NO_CONTENT,
     description="Delete the authtoken from the database",
-    name="Logout"
+    name="Logout",
 )
 def logout(
     sql: Session = Depends(get_db),
-    auth_token: model.BackendToken = Depends(authenticate_token)
+    auth_token: model.BackendToken = Depends(authenticate_token),
 ):
     """
     Deletes the login token associated with a specific user.
@@ -149,14 +152,15 @@ def logout(
     return controller.delete_token(auth_token, sql)
 
 
-@backendUserRoutes.delete("/logout-all",
+@backendUserRoutes.delete(
+    "/logout-all",
     status_code=status.HTTP_204_NO_CONTENT,
     description="Delete all the authtokens from the database for this user.",
-    name="Logout all devices"
+    name="Logout all devices",
 )
 def logout_all(
     sql: Session = Depends(get_db),
-    auth_token: model.BackendToken = Depends(authenticate_token)
+    auth_token: model.BackendToken = Depends(authenticate_token),
 ):
     """
     Deletes all the login token associated with a specific user.
@@ -164,14 +168,15 @@ def logout_all(
     return controller.delete_all_tokens(auth_token, sql)
 
 
-@backendUserRoutes.get("/send-token",
+@backendUserRoutes.get(
+    "/send-token",
     status_code=status.HTTP_200_OK,
     description="Send a token to the email to reset the password",
-    name="Forgot password"
+    name="Forgot password",
 )
 def send_token(
     email: str = Query(..., description="Email of the account"),
-    sql: Session = Depends(get_db)
+    sql: Session = Depends(get_db),
 ):
     """
     Sends a verification token in an email for the forget password feature.
@@ -179,34 +184,33 @@ def send_token(
     return controller.send_verification_mail(email, sql)
 
 
-@backendUserRoutes.post('/create-password',
+@backendUserRoutes.post(
+    "/create-password",
     response_model=schema.ShowUser,
     status_code=status.HTTP_201_CREATED,
     description="Create a new password if you forgot the old one.",
-    name="Reset password"
+    name="Reset password",
 )
-def create_new_password(
-    request: schema.ForgotPassword,
-    sql: Session = Depends(get_db)
-):
+def create_new_password(request: schema.ForgotPassword, sql: Session = Depends(get_db)):
     """
     Verify the token and change the password of the user.
     """
     return controller.create_new_password(request, sql)
 
 
-@backendUserRoutes.post('/create-permission',
+@backendUserRoutes.post(
+    "/create-permission",
     response_model=schema.BasePermission,
     dependencies=[
         Depends(authenticate_token),
-        Depends(check_permission(["create_permission"]))
+        Depends(check_permission(["create_permission"])),
     ],
     status_code=status.HTTP_201_CREATED,
     description="Create a new permission in the database",
-    name="Create permission"
+    name="Create permission",
 )
 def create_permission(
-    request : schema.BasePermission,
+    request: schema.BasePermission,
     sql: Session = Depends(get_db),
 ):
     """
@@ -215,15 +219,16 @@ def create_permission(
     return controller.create_permission(request, sql)
 
 
-@backendUserRoutes.get('/permissions',
+@backendUserRoutes.get(
+    "/permissions",
     response_model=List[schema.BasePermission],
     dependencies=[
         Depends(authenticate_token),
-        Depends(check_permission(["read_permission"]))
+        Depends(check_permission(["read_permission"])),
     ],
     status_code=status.HTTP_200_OK,
     description="Fetch all the permissions from the database.",
-    name="Permissions list"
+    name="Permissions list",
 )
 def get_all_permissions(
     sql: Session = Depends(get_db),
@@ -234,17 +239,16 @@ def get_all_permissions(
     return sql.query(model.BackendPermission).all()
 
 
-@backendUserRoutes.post('/add-role',
+@backendUserRoutes.post(
+    "/add-role",
     response_model=schema.ShowRole,
-    dependencies=[
-        Depends(check_permission(["create_role"]))
-    ],
+    dependencies=[Depends(check_permission(["create_role"]))],
     status_code=status.HTTP_201_CREATED,
     description="Create a new role.",
-    name="Create role"
+    name="Create role",
 )
 def create_new_roles(
-    request : schema.CreateRole,
+    request: schema.CreateRole,
     sql: Session = Depends(get_db),
     auth_token: model.BackendToken = Depends(authenticate_token),
 ):
@@ -254,15 +258,16 @@ def create_new_roles(
     return controller.add_role(request, auth_token.user, sql)
 
 
-@backendUserRoutes.get('/roles',
+@backendUserRoutes.get(
+    "/roles",
     response_model=List[schema.ShowRole],
     dependencies=[
         Depends(authenticate_token),
-        Depends(check_permission(["read_role"]))
+        Depends(check_permission(["read_role"])),
     ],
     status_code=status.HTTP_200_OK,
     description="Fetcch all the roles present in the database.",
-    name="Roles list"
+    name="Roles list",
 )
 def get_all_roles(
     sql: Session = Depends(get_db),
@@ -270,20 +275,19 @@ def get_all_roles(
     """
     Retrieves all Roles from the databsase.
     """
-    return sql.query(model.BackendRole).filter(model.BackendRole.id!=0).all()
+    return sql.query(model.BackendRole).filter(model.BackendRole.id != 0).all()
 
 
-@backendUserRoutes.post('/assign-permission',
+@backendUserRoutes.post(
+    "/assign-permission",
     response_model=schema.ShowRole,
-    dependencies=[
-        Depends(check_permission(["update_role"]))
-    ],
+    dependencies=[Depends(check_permission(["update_role"]))],
     status_code=status.HTTP_201_CREATED,
     description="Assign permissions to a role.",
-    name="Assign permission"
+    name="Assign permission",
 )
 def assign_permission(
-    request : schema.AssignPermissions,
+    request: schema.AssignPermissions,
     sql: Session = Depends(get_db),
     auth_token: model.BackendToken = Depends(authenticate_token),
 ):
@@ -293,33 +297,31 @@ def assign_permission(
     return controller.assign_permissions(request, auth_token, sql)
 
 
-@backendUserRoutes.get('/features',
+@backendUserRoutes.get(
+    "/features",
     response_model=List[schema.ListFeatures],
     status_code=status.HTTP_200_OK,
     description="Fetch all the features from the database.",
-    name="Features List"
+    name="Features List",
 )
-def get_all_features(
-    sql: Session = Depends(get_db)
-):
+def get_all_features(sql: Session = Depends(get_db)):
     """
     Retrieves all the features from the database.
     """
     return controller.get_all_features(sql)
 
 
-@backendUserRoutes.post("/add-subscription",
+@backendUserRoutes.post(
+    "/add-subscription",
     response_model=schema.BaseSubscription,
-    dependencies=[
-        Depends(check_permission(["create_subscription"]))
-    ],
+    dependencies=[Depends(check_permission(["create_subscription"]))],
     status_code=status.HTTP_201_CREATED,
     description="Create a new subscription plan.",
-    name="Create subscription"
+    name="Create subscription",
 )
 async def add_subscription(
     data: schema.CreateSubscription,
-    sql : Session = Depends(get_db),
+    sql: Session = Depends(get_db),
     auth_token: model.BackendToken = Depends(authenticate_token),
 ):
     """
@@ -328,41 +330,42 @@ async def add_subscription(
     return controller.add_subscription(data, auth_token.user, sql)
 
 
-@backendUserRoutes.get('/subscriptions',
+@backendUserRoutes.get(
+    "/subscriptions",
     response_model=List[schema.BaseSubscription],
     dependencies=[
         Depends(authenticate_token),
-        Depends(check_permission(["read_subscription"]))
+        Depends(check_permission(["read_subscription"])),
     ],
     status_code=status.HTTP_200_OK,
     description="Fetch all the subscriptions from the database.",
-    name="Subscriptions list"
+    name="Subscriptions list",
 )
 def all_subscriptions(
-    limit : Optional[int]=10,
-    offset : Optional[int]=0,
-    sql : Session = Depends(get_db),
+    limit: Optional[int] = 10,
+    offset: Optional[int] = 0,
+    sql: Session = Depends(get_db),
 ):
-    """ Returns all subscription plans """
+    """Returns all subscription plans"""
     return controller.all_subscription_plans(limit, offset, sql)
 
 
-@backendUserRoutes.get('/subscriptions/{suid}',
+@backendUserRoutes.get(
+    "/subscriptions/{suid}",
     response_model=schema.BaseSubscription,
     dependencies=[
         Depends(authenticate_token),
-        Depends(check_permission(["read_subscription"]))
+        Depends(check_permission(["read_subscription"])),
     ],
     status_code=status.HTTP_200_OK,
     description="Get the details of a subscription.",
-    name="Subscription details"
+    name="Subscription details",
 )
 def subscription_details(
     suid: str = Path(
-        title="Subscription ID",
-        description="Pass the suid of the subscription to get"
+        title="Subscription ID", description="Pass the suid of the subscription to get"
     ),
-    sql : Session = Depends(get_db),
+    sql: Session = Depends(get_db),
 ):
     """
     Retrieves details of a subscription plan based on the provided suid.
@@ -371,19 +374,20 @@ def subscription_details(
     return controller.subscription_plan_details(suid, sql)
 
 
-@backendUserRoutes.put('/update-subscription',
+@backendUserRoutes.put(
+    "/update-subscription",
     response_model=schema.BaseSubscription,
     dependencies=[
         Depends(authenticate_token),
-        Depends(check_permission(["update_subscription"]))
+        Depends(check_permission(["update_subscription"])),
     ],
     status_code=status.HTTP_200_OK,
     description="Update the fields of a suscription.",
-    name="Update subscription"
+    name="Update subscription",
 )
 def update_subscription(
     data: schema.UpdateSubscription,
-    sql : Session = Depends(get_db),
+    sql: Session = Depends(get_db),
 ):
     """
     Updates the details of a subscription plan in the database.
@@ -391,22 +395,24 @@ def update_subscription(
     return controller.update_subscription_plan(data, sql)
 
 
-@backendUserRoutes.delete('/delete-subscription/{suid}',
+@backendUserRoutes.delete(
+    "/delete-subscription/{suid}",
     response_model=schema.BaseSubscription,
-    dependencies=[Depends(authenticate_token), Depends(check_permission(["delete_subscription"]))],
+    dependencies=[
+        Depends(authenticate_token),
+        Depends(check_permission(["delete_subscription"])),
+    ],
     status_code=status.HTTP_200_OK,
     description="Delete a subscription (is_deleted).",
-    name="Delete subscription"
+    name="Delete subscription",
 )
 def delete_subscription(
-    suid: str = Path(
-        title="Subscription suid"
-    ),
+    suid: str = Path(title="Subscription suid"),
     is_deleted: bool = Query(
         title="delete subscription",
-        description="Pass true to delete or false to restore the susbcription."
+        description="Pass true to delete or false to restore the susbcription.",
     ),
-    sql : Session = Depends(get_db),
+    sql: Session = Depends(get_db),
 ):
     """
     Deletes a subscription plan based on the provided `suid`.
@@ -414,20 +420,21 @@ def delete_subscription(
     return controller.delete_subscription_plan(suid, is_deleted, sql)
 
 
-@backendUserRoutes.get("/get-all-frontend-users",
+@backendUserRoutes.get(
+    "/get-all-frontend-users",
     response_model=schema.FrontenduserList,
     dependencies=[
         Depends(authenticate_token),
-        Depends(check_permission(["read_user"]))
+        Depends(check_permission(["read_user"])),
     ],
     status_code=status.HTTP_200_OK,
     description="Fetch all the frontend users from the database.",
-    name="Frontend users list"
+    name="Frontend users list",
 )
 async def get_frontend_users_list(
-    limit : Optional[int]=10,
-    offset : Optional[int]=0,
-    sql : Session = Depends(get_db),
+    limit: Optional[int] = 10,
+    offset: Optional[int] = 0,
+    sql: Session = Depends(get_db),
 ):
     """
     Retrieves a list of frontend users from the database.
@@ -435,21 +442,20 @@ async def get_frontend_users_list(
     return controller.frontenduserlist(limit, offset, sql)
 
 
-@backendUserRoutes.get("/get-frontend-user/{user_id}",
+@backendUserRoutes.get(
+    "/get-frontend-user/{user_id}",
     response_model=schema.FrontendBaseUser,
     dependencies=[
         Depends(authenticate_token),
-        Depends(check_permission(["read_user"]))
+        Depends(check_permission(["read_user"])),
     ],
     status_code=status.HTTP_200_OK,
     description="Get the details of a frontend user.",
-    name="Frontend user details"
+    name="Frontend user details",
 )
 async def get_frontend_user_details(
-    user_id: str = Path(
-        title="The UUID of the user to get"
-    ),
-    sql : Session = Depends(get_db),
+    user_id: str = Path(title="The UUID of the user to get"),
+    sql: Session = Depends(get_db),
 ):
     """
     Retrieves the details of a frontend user.
@@ -457,19 +463,20 @@ async def get_frontend_user_details(
     return controller.frontenduser_details(user_id, sql)
 
 
-@backendUserRoutes.post("/update-frontend-user",
+@backendUserRoutes.post(
+    "/update-frontend-user",
     response_model=schema.FrontendBaseUser,
     dependencies=[
         Depends(authenticate_token),
-        Depends(check_permission(["update_user"]))
+        Depends(check_permission(["update_user"])),
     ],
     status_code=status.HTTP_200_OK,
     description="Update fields of a frontend user.",
-    name="Update frontend user."
+    name="Update frontend user.",
 )
 async def update_frontend_user_details(
     data: schema.UpdateFrontUser,
-    sql : Session = Depends(get_db),
+    sql: Session = Depends(get_db),
 ):
     """
     Updates the attributes of a user in the database based on the provided data.

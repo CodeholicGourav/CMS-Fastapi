@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 database.py - Database Configuration and ORM Setup
 
@@ -40,8 +41,8 @@ Date: 20/08/2023
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from dependencies import SETTINGS
 
+from dependencies import SETTINGS
 
 DATABASE_URL = SETTINGS.DB_URL
 
@@ -51,11 +52,12 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
 
+
 # @contextmanager
 def get_db():
     """
     Returns a database session object.
-    
+
     Example Usage:
     with get_db() as db:
         # perform database operations using the db session

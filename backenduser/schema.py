@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 backenduser/schema.py
 Author: Gourav Sahu
@@ -145,14 +146,14 @@ class RegisterUser(BaseModel):
     )
 
     @validator("username")
-    def username_valid(cls, value):
+    def username_valid(self, value):
         """
         Validates a given username value.
         """
         return CustomValidations.validate_username(value)
 
     @validator("password")
-    def password_validate(cls, value):
+    def password_validate(self, value):
         """
         Validates a given password value.
         """
@@ -266,7 +267,7 @@ class ForgotPassword(BaseModel):
     )
 
     @validator("password")
-    def _password(cls, value):
+    def _password(self, value):
         return CustomValidations.validate_password( value)
 
 

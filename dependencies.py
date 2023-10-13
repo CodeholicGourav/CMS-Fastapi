@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 dependencies.py
 Author: Gourav Sahu
@@ -17,7 +18,7 @@ from email.mime.text import MIMEText
 from typing import Optional
 
 import requests
-from fastapi import (HTTPException, UploadFile, status)
+from fastapi import HTTPException, UploadFile, status
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
@@ -31,6 +32,7 @@ class Settings(BaseSettings):
     """
     Configuration class that defines various settings for the application.
     """
+
     SECRET_KEY: str
     APP_NAME: str = "Code-CMS"
     APP_URL: HttpUrl = "http://127.0.0.1:8000"
@@ -67,17 +69,19 @@ class ShowUser(BaseModel):
     """
     Represents a user with specific fields such as UUID, username, email, and verification token.
     """
+
     uuid: str
     username: str
     email: str
-    profile_photo: Optional[str]=None
-    verification_token: Optional[str]=None
+    profile_photo: Optional[str] = None
+    verification_token: Optional[str] = None
 
 
 class Hash:
     """
     The `Hash` class provides methods for hashing and verifying passwords using bcrypt algorithm.
     """
+
     pwd_cxt = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
     @staticmethod
@@ -108,7 +112,7 @@ class Hash:
         return Hash.pwd_cxt.verify(plain_password, hashed_password)
 
 
-class FrontendEmail():
+class FrontendEmail:
     """
     A class responsible for sending email verification tokens and forget password tokens to users.
     """
@@ -120,10 +124,14 @@ class FrontendEmail():
         """
         subject = "Email Verification"
 
-        base_url = f"{SETTINGS.FRONTEND_HOST}/{SETTINGS.EMAIL_VERIFY_ENDPOINT_FRONTEND_USER}"
+        base_url = (
+            f"{SETTINGS.FRONTEND_HOST}/{SETTINGS.EMAIL_VERIFY_ENDPOINT_FRONTEND_USER}"
+        )
         verification_token = urllib.parse.quote(user.verification_token)
         verification_link = f"{base_url}?token={verification_token}"
-        message = MIMEText(f"Click the following link to verify your email: {verification_link}")
+        message = MIMEText(
+            f"Click the following link to verify your email: {verification_link}"
+        )
         return send_mail(user.email, subject, message)
 
     @staticmethod
@@ -135,11 +143,13 @@ class FrontendEmail():
         base_url = f"{SETTINGS.FRONTEND_HOST}/{SETTINGS.CREATE_PASSWORD_ENDPOINT_FRONTEND_USER}"
         verification_token = urllib.parse.quote(user.verification_token)
         verification_link = f"{base_url}?token={verification_token}"
-        message = MIMEText(f"Click the following link to reset your password: {verification_link}")
+        message = MIMEText(
+            f"Click the following link to reset your password: {verification_link}"
+        )
         return send_mail(user.email, subject, message)
 
 
-class BackendEmail():
+class BackendEmail:
     """
     A class responsible for sending email verification tokens and forget password tokens to users.
     """
@@ -150,10 +160,14 @@ class BackendEmail():
         Sends an email verification token to the specified user's email address.
         """
         subject = "Email Verification"
-        base_url = f"{SETTINGS.FRONTEND_HOST}/{SETTINGS.EMAIL_VERIFY_ENDPOINT_BACKEND_USER}"
+        base_url = (
+            f"{SETTINGS.FRONTEND_HOST}/{SETTINGS.EMAIL_VERIFY_ENDPOINT_BACKEND_USER}"
+        )
         verification_token = urllib.parse.quote(user.verification_token)
         verification_link = f"{base_url}?token={verification_token}"
-        message = MIMEText(f"Click the following link to verify your email: {verification_link}")
+        message = MIMEText(
+            f"Click the following link to verify your email: {verification_link}"
+        )
         return send_mail(user.email, subject, message)
 
     @staticmethod
@@ -162,17 +176,22 @@ class BackendEmail():
         Sends a forget password token to the specified user's email address.
         """
         subject = "Reset password"
-        base_url = f"{SETTINGS.FRONTEND_HOST}/{SETTINGS.CREATE_PASSWORD_ENDPOINT_BACKEND_USER}"
+        base_url = (
+            f"{SETTINGS.FRONTEND_HOST}/{SETTINGS.CREATE_PASSWORD_ENDPOINT_BACKEND_USER}"
+        )
         verification_token = urllib.parse.quote(user.verification_token)
         verification_link = f"{base_url}?token={verification_token}"
-        message = MIMEText(f"Click the following link to reset your password: {verification_link}")
+        message = MIMEText(
+            f"Click the following link to reset your password: {verification_link}"
+        )
         return send_mail(user.email, subject, message)
 
 
-class CustomValidations():
+class CustomValidations:
     """
     Contains static methods for performing custom validations on user input.
     """
+
     @staticmethod
     # pylint: disable=R0913
     def raize_custom_error(
@@ -181,7 +200,7 @@ class CustomValidations():
         loc: str = "",
         msg: str = "",
         inp: str = "",
-        ctx: dict = None
+        ctx: dict = None,
     ):
         """
         Raises an HTTPException with a custom error detail.
@@ -199,7 +218,6 @@ class CustomValidations():
         }
         raise HTTPException(status_code, detail)
 
-
     @staticmethod
     def validate_username(value: str):
         """
@@ -208,7 +226,7 @@ class CustomValidations():
         Raises:
             HTTPException: If the value does not match the specified pattern.
         """
-        pattern = r'^[a-zA-Z0-9_]+$'
+        pattern = r"^[a-zA-Z0-9_]+$"
         if not re.match(pattern, value):
             detail = {
                 "detail": [
@@ -224,12 +242,10 @@ class CustomValidations():
                 ]
             }
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=detail
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=detail
             )
 
         return value
-
 
     @staticmethod
     def validate_password(value: str):
@@ -239,7 +255,7 @@ class CustomValidations():
         Raises:
             HTTPException: If the password does not meet the specified criteria.
         """
-        pattern = r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@#$%^&+=!]).{8,}$'
+        pattern = r"^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@#$%^&+=!]).{8,}$"
         if not re.match(pattern, value):
             detail = {
                 "detail": [
@@ -262,10 +278,11 @@ class CustomValidations():
                     }
                 ]
             }
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=detail)
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=detail
+            )
 
         return value
-
 
     @staticmethod
     def validate_profile_photo(value: str):
@@ -281,13 +298,15 @@ class CustomValidations():
 
         if file_extension not in allowed_extensions:
             detail = {
-                "detail": [{
-                    "type": "Invalid",
-                    "loc": ["body", "image"],
-                    "msg": "Invalid image type",
-                    "input": value,
-                    "ctx": {"image": f"Use {allowed_extensions} files only"},
-                }]
+                "detail": [
+                    {
+                        "type": "Invalid",
+                        "loc": ["body", "image"],
+                        "msg": "Invalid image type",
+                        "input": value,
+                        "ctx": {"image": f"Use {allowed_extensions} files only"},
+                    }
+                ]
             }
             raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail)
 
@@ -305,7 +324,7 @@ def generate_uuid(unique_str: str) -> str:
     """
     Generates a unique identifier (UUID).
     """
-    encoded_str = base64.urlsafe_b64encode(unique_str.encode('utf-8')).decode('utf-8')
+    encoded_str = base64.urlsafe_b64encode(unique_str.encode("utf-8")).decode("utf-8")
     random_num = random.randint(1111, 9999)
     timestamp = math.floor(time.time())
     uuid = f"{encoded_str}{random_num}{timestamp}"
@@ -348,22 +367,22 @@ def allowed_file(filename: str, allowed_extensions: set[str]):
 def generate_paypal_access_token():
     """
     This function generates an access token for PayPal API authentication.
-    
+
     Returns:
         str: The access token for PayPal API authentication.
     """
     try:
         # Encode the PayPal client ID and secret using base64 encoding
         auth = base64.b64encode(
-            f'{SETTINGS.PAYPAL_CLIENT}:{SETTINGS.PAYPAL_SECRET}'.encode("utf-8")
+            f"{SETTINGS.PAYPAL_CLIENT}:{SETTINGS.PAYPAL_SECRET}".encode("utf-8")
         ).decode("utf-8")
 
         # Send a POST request to the PayPal API to obtain an access token
         response = requests.post(
-            url=f'{PAYPAL_BASE_URL}/v1/oauth2/token',
+            url=f"{PAYPAL_BASE_URL}/v1/oauth2/token",
             data="grant_type=client_credentials",
-            headers={"Authorization": f'Basic {auth}'},
-            timeout=5
+            headers={"Authorization": f"Basic {auth}"},
+            timeout=5,
         )
 
         # Check for HTTP errors
@@ -371,7 +390,7 @@ def generate_paypal_access_token():
 
         # Parse the response as JSON and extract the access token
         data = response.json()
-        access_token = data['access_token']
+        access_token = data["access_token"]
 
     except requests.exceptions.HTTPError as http_error:
         # Handle HTTP-related errors (e.g., 404, 500)
@@ -380,7 +399,7 @@ def generate_paypal_access_token():
             loc="paypal",
             msg=str(http_error),
             inp="paypal",
-            ctx={"paypal": "http_error"}
+            ctx={"paypal": "http_error"},
         )
 
     except requests.exceptions.RequestException as req_error:
@@ -390,7 +409,7 @@ def generate_paypal_access_token():
             loc="paypal",
             msg=str(req_error),
             inp="paypal",
-            ctx={"paypal": "network_error"}
+            ctx={"paypal": "network_error"},
         )
 
     # Return access token if successful, or handle the error cases above
@@ -405,39 +424,38 @@ def convert_currency(currency: str):
         HTTPException: If the currency code is not valid or the API request fails.
     """
     conversion = requests.get(
-        f"{CONVERSION_URL}/pair/{SETTINGS.DEFAULT_CURRENCY}/{currency}", 
-        timeout=5
+        f"{CONVERSION_URL}/pair/{SETTINGS.DEFAULT_CURRENCY}/{currency}", timeout=5
     )
     conversion_json = conversion.json()
-    if conversion.status_code == status.HTTP_404_NOT_FOUND or conversion_json["result"] == "error":
+    if (
+        conversion.status_code == status.HTTP_404_NOT_FOUND
+        or conversion_json["result"] == "error"
+    ):
         CustomValidations.raize_custom_error(
             error_type=conversion_json["error-type"],
             loc="currency",
             msg="Currency does not exist.",
             inp=currency,
-            ctx={"currency": "exist"}
+            ctx={"currency": "exist"},
         )
 
     return conversion_json
 
 
-def create_folder_if_not_exists(
-    folder_path: str,
-    creds: Credentials
-):
+def create_folder_if_not_exists(folder_path: str, creds: Credentials):
     """
     Creates a folder in Google Drive if it does not already exist.
 
     Args:
-        folder_path (str): The path of the folder to be created. 
+        folder_path (str): The path of the folder to be created.
         It should be in the format "Folder1/Folder2/Folder3".
         creds (Credentials): The Google Drive credentials object.
     """
-    parts = folder_path.split('/')
-    current_folder_id = 'root'
+    parts = folder_path.split("/")
+    current_folder_id = "root"
 
     # Build the Google Drive service using the provided credentials
-    service = build('drive', 'v3', credentials=creds)
+    service = build("drive", "v3", credentials=creds)
     try:
         for part in parts:
             # Check if the folder already exists in the current folder using the Drive v3 API
@@ -449,37 +467,35 @@ def create_folder_if_not_exists(
             # pylint: disable=E1101
             folder = service.files().list(q=folder_query).execute()
 
-            if folder.get('files'):
+            if folder.get("files"):
                 # If the folder exists, update current_folder_id with the folder's ID
-                current_folder_id = folder['files'][0]['id']
+                current_folder_id = folder["files"][0]["id"]
             else:
                 # If the folder does not exist,
                 # create the folder with the given name and parent folder ID (if available)
                 folder_metadata = {
-                    'name': part,
-                    'mimeType': 'application/vnd.google-apps.folder',
-                    'parents': [current_folder_id] if current_folder_id else []
+                    "name": part,
+                    "mimeType": "application/vnd.google-apps.folder",
+                    "parents": [current_folder_id] if current_folder_id else [],
                 }
                 # pylint: disable=E1101
-                folder = service.files().create(body=folder_metadata, fields='id').execute()
-                current_folder_id = folder['id']
+                folder = (
+                    service.files().create(body=folder_metadata, fields="id").execute()
+                )
+                current_folder_id = folder["id"]
     except HttpError as error:
         CustomValidations.raize_custom_error(
             error_type="drive",
             loc="google_drive",
             msg=str(error),
             inp="",
-            ctx={"drive": "unexpected error"}
+            ctx={"drive": "unexpected error"},
         )
 
     return folder
 
 
-async def upload_to_drive(
-    file: UploadFile,
-    creds: Credentials,
-    folder_id
-):
+async def upload_to_drive(file: UploadFile, creds: Credentials, folder_id):
     """
     Uploads a file to Google Drive using the Google Drive API.
     """
@@ -489,16 +505,20 @@ async def upload_to_drive(
         media = MediaInMemoryUpload(content, mimetype=file.content_type)
 
         # Call the Drive v3 API
-        service = build('drive', 'v3', credentials=creds)
+        service = build("drive", "v3", credentials=creds)
 
         # pylint: disable=E1101
-        created_file = service.files().create(
-            body={
-                'name': f'{math.floor(time.time())}_{file.filename}',
-                'parents': [folder_id]
-            },
-            media_body=media
-        ).execute()
+        created_file = (
+            service.files()
+            .create(
+                body={
+                    "name": f"{math.floor(time.time())}_{file.filename}",
+                    "parents": [folder_id],
+                },
+                media_body=media,
+            )
+            .execute()
+        )
 
     except HttpError as error:
         CustomValidations.raize_custom_error(
@@ -506,7 +526,7 @@ async def upload_to_drive(
             loc="google_drive",
             msg=str(error),
             inp="",
-            ctx={"drive": "unexpected error"}
+            ctx={"drive": "unexpected error"},
         )
 
     return created_file
@@ -514,11 +534,11 @@ async def upload_to_drive(
 
 SETTINGS = Settings()
 
-TEMPLATES = os.path.join(os.path.dirname(__file__), 'templates')
+TEMPLATES = os.path.join(os.path.dirname(__file__), "templates")
 
-STATIC_FOLDER = 'static'
+STATIC_FOLDER = "static"
 
-UPLOAD_FOLDER = STATIC_FOLDER+'/uploads'
+UPLOAD_FOLDER = STATIC_FOLDER + "/uploads"
 
 PAYPAL_BASE_URL = "https://api-m.sandbox.paypal.com"
 
@@ -535,7 +555,18 @@ CONVERSION_URL = "https://v6.exchangerate-api.com/v6/3a1bbc03599e950fa56cda33"
 ALLOWED_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "gif"}
 
 # Define allowed file extensions
-ALLOWED_FILE_EXTENSIONS = {"csv", "xlsx", "pdf", "jpg", "png", "page", "word", "ppt", "txt", "webp"}
+ALLOWED_FILE_EXTENSIONS = {
+    "csv",
+    "xlsx",
+    "pdf",
+    "jpg",
+    "png",
+    "page",
+    "word",
+    "ppt",
+    "txt",
+    "webp",
+}
 
 # Define maximu file size
 MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024  # 5 MB
@@ -553,10 +584,22 @@ predefined_backend_permissions = [
     {"permission": "Can read permission", "type": 3, "codename": "read_permission"},
     {"permission": "Can update permission", "type": 3, "codename": "update_permission"},
     {"permission": "Can delete permission", "type": 3, "codename": "delete_permission"},
-    {"permission": "Can create subscription", "type": 4, "codename": "create_subscription"},
+    {
+        "permission": "Can create subscription",
+        "type": 4,
+        "codename": "create_subscription",
+    },
     {"permission": "Can read subscription", "type": 4, "codename": "read_subscription"},
-    {"permission": "Can Update subscription", "type": 4, "codename": "update_subscription"},
-    {"permission": "Can delete subscription", "type": 4, "codename": "delete_subscription"}
+    {
+        "permission": "Can Update subscription",
+        "type": 4,
+        "codename": "update_subscription",
+    },
+    {
+        "permission": "Can delete subscription",
+        "type": 4,
+        "codename": "delete_subscription",
+    },
 ]
 
 predefined_organization_permissions = [
@@ -575,7 +618,7 @@ predefined_organization_permissions = [
     {"permission": "Can create project", "type": 4, "codename": "create_project"},
     {"permission": "Can read project", "type": 4, "codename": "read_project"},
     {"permission": "Can update project", "type": 4, "codename": "update_project"},
-    {"permission": "Can delete project", "type": 4, "codename": "delete_project"}
+    {"permission": "Can delete project", "type": 4, "codename": "delete_project"},
 ]
 
 predefined_project_permissions = [

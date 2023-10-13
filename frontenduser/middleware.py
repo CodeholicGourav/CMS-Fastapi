@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 frontenduser/middleware.py
 Author: Gourav Sahu
@@ -16,11 +17,13 @@ from .model import FrontendToken
 
 
 async def authenticate_token(
-    authtoken: Annotated[str, Header(
-        title="Authentication token",
-        description="The token you get from login."
-    )],
-    sql: Session = Depends(get_db)
+    authtoken: Annotated[
+        str,
+        Header(
+            title="Authentication token", description="The token you get from login."
+        ),
+    ],
+    sql: Session = Depends(get_db),
 ):
     """
     Check token from header and return details of current user
@@ -35,15 +38,13 @@ async def authenticate_token(
     Raises:
         HTTPException: If the token is invalid or expired.
     """
-    user_token = sql.query(FrontendToken).filter_by(
-        token=authtoken
-    ).first()
+    user_token = sql.query(FrontendToken).filter_by(token=authtoken).first()
 
     if (
-        not user_token or
-        not user_token.user or
-        not user_token.user.is_active or
-        user_token.user.is_deleted
+        not user_token
+        or not user_token.user
+        or not user_token.user.is_active
+        or user_token.user.is_deleted
     ):
         CustomValidations.raize_custom_error(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -51,7 +52,7 @@ async def authenticate_token(
             loc="authtoken",
             msg="Invalid auth token",
             inp=authtoken,
-            ctx={"authtoken": "valid"}
+            ctx={"authtoken": "valid"},
         )
 
     if datetime.now() > user_token.expire_at:
@@ -61,7 +62,7 @@ async def authenticate_token(
             loc="authtoken",
             msg="Token is expired, try login again.",
             inp=authtoken,
-            ctx={"authtoken": "active"}
+            ctx={"authtoken": "active"},
         )
 
     return user_token

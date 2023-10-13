@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 backenduser/controller.py
 Author: Gourav Sahu
@@ -7,14 +8,17 @@ import getpass
 import secrets
 from datetime import datetime, timedelta
 
-from fastapi import status, BackgroundTasks
-from sqlalchemy import func
+from fastapi import BackgroundTasks, status
 from sqlalchemy.orm import Session
 
 from dependencies import (
-    TOKEN_LIMIT, TOKEN_VALIDITY,
-    BackendEmail,CustomValidations, Hash,
-    generate_token,generate_uuid
+    TOKEN_LIMIT,
+    TOKEN_VALIDITY,
+    BackendEmail,
+    CustomValidations,
+    Hash,
+    generate_token,
+    generate_uuid,
 )
 from frontenduser import controller as frontendUserController
 
@@ -27,12 +31,9 @@ def all_backend_users(limit: int, offset: int, sql: Session):
         Specified number of backend users from the database.
         Total count of all backend users.
     """
-    total = sql.query(func.count(model.BackendUser.id)).scalar()
+    total = sql.query(model.BackendUser.id).count()
     users = sql.query(model.BackendUser).limit(limit).offset(offset).all()
-    return {
-        "users": users,
-        "total": total
-    }
+    return {"users": users, "total": total}
 
 
 def user_details(user_id: str, sql: Session):
@@ -43,29 +44,37 @@ def user_details(user_id: str, sql: Session):
         raize_custom_error: If the user does not exist in the database.
     """
     user = sql.query(model.BackendUser).filter_by(uuid=user_id).first()
+    # pylint: disable=R0801
     if not user:
         CustomValidations.raize_custom_error(
             error_type="not_exist",
             loc="user_id",
             msg="User does not exist",
             inp=user_id,
-            ctx={"user": "exist"}
+            ctx={"user": "exist"},
         )
     return user
 
 
-def create_user(user: schema.RegisterUser, sql: Session, background_tasks: BackgroundTasks):
+def create_user(
+    user: schema.RegisterUser, sql: Session, background_tasks: BackgroundTasks
+):
     """
     Creates a new backend user in the database.
     """
     # Check if a user with the same email or username already exists in the database
-    existing_user = sql.query(model.BackendUser).filter(
-        (model.BackendUser.email == user.email) | (model.BackendUser.username == user.username)
-    ).first()
+    existing_user = (
+        sql.query(model.BackendUser)
+        .filter(
+            (model.BackendUser.email == user.email)
+            | (model.BackendUser.username == user.username)
+        )
+        .first()
+    )
 
     if existing_user:
         # If a user with the same username exists, raise an error
-        if user.username == existing_user.username :
+        if user.username == existing_user.username:
             CustomValidations.raize_custom_error(
                 error_type="exist",
                 loc="username",
@@ -75,7 +84,7 @@ def create_user(user: schema.RegisterUser, sql: Session, background_tasks: Backg
             )
 
         # If a user with the same email exists, raise an error
-        if user.email == existing_user.email :
+        if user.email == existing_user.email:
             CustomValidations.raize_custom_error(
                 error_type="exist",
                 loc="email",
@@ -85,10 +94,11 @@ def create_user(user: schema.RegisterUser, sql: Session, background_tasks: Backg
             )
 
     # Check if the specified role exists in the database
-    role = sql.query(model.BackendRole).filter_by(
-        ruid=user.role_id,
-        is_deleted=False
-    ).first()
+    role = (
+        sql.query(model.BackendRole)
+        .filter_by(ruid=user.role_id, is_deleted=False)
+        .first()
+    )
     if not role:
         CustomValidations.raize_custom_error(
             error_type="not_exist",
@@ -108,7 +118,7 @@ def create_user(user: schema.RegisterUser, sql: Session, background_tasks: Backg
         verification_token=generate_token(32),
     )
 
-     # Add the new user to the database session
+    # Add the new user to the database session
     sql.add(new_user)
     sql.commit()
 
@@ -145,7 +155,9 @@ def createsuperuser(sql: Session):
 
     superuserrole = sql.query(model.BackendRole).filter_by(id=0).first()
     if not superuserrole:
-        superuserrole = model.BackendRole(id=0, ruid=generate_uuid("superuser"), role="superuser")
+        superuserrole = model.BackendRole(
+            id=0, ruid=generate_uuid("superuser"), role="superuser"
+        )
 
         sql.add(superuserrole)
         sql.commit()
@@ -173,21 +185,19 @@ def createsuperuser(sql: Session):
 
 
 def update_user_role(
-    data: schema.UpdateUser,
-    auth_token: model.BackendToken,
-    sql: Session
+    data: schema.UpdateUser, auth_token: model.BackendToken, sql: Session
 ):
     """
     Updates the role and status of a user in the database based on the provided data.
     """
-    if auth_token.user.uuid==data.user_id:
+    if auth_token.user.uuid == data.user_id:
         CustomValidations.raize_custom_error(
             status_code=status.HTTP_403_FORBIDDEN,
             error_type="self_update",
             loc="user_id",
             msg="Can not update self.",
             inp=data.user_id,
-            ctx={"user_id": "self"}
+            ctx={"user_id": "self"},
         )
 
     user = sql.query(model.BackendUser).filter_by(uuid=data.user_id).first()
@@ -197,7 +207,7 @@ def update_user_role(
             loc="user_id",
             msg="No user found.",
             inp=data.user_id,
-            ctx={"user_id": "exist"}
+            ctx={"user_id": "exist"},
         )
 
     if data.role_id:
@@ -208,7 +218,7 @@ def update_user_role(
                 loc="role_id",
                 msg="Role not found",
                 inp=data.role_id,
-                ctx={"role_id": "exist"}
+                ctx={"role_id": "exist"},
             )
         user.role_id = role.id
 
@@ -227,10 +237,11 @@ def verify_email(token: str, sql: Session):
     """
     Verify email through token and enable user account login.
     """
-    user = sql.query(model.BackendUser).filter_by(
-        verification_token=token,
-        is_deleted=False
-    ).first()
+    user = (
+        sql.query(model.BackendUser)
+        .filter_by(verification_token=token, is_deleted=False)
+        .first()
+    )
 
     if not user:
         CustomValidations.raize_custom_error(
@@ -239,7 +250,7 @@ def verify_email(token: str, sql: Session):
             loc="token",
             msg="Invalid verification token",
             inp=token,
-            ctx={"token": "exist"}
+            ctx={"token": "exist"},
         )
 
     if not user.is_active:
@@ -249,7 +260,7 @@ def verify_email(token: str, sql: Session):
             loc="account",
             msg="Your account is deactivated!",
             inp=token,
-            ctx={"account": "active"}
+            ctx={"account": "active"},
         )
 
     user.email_verified_at = datetime.utcnow()
@@ -263,11 +274,15 @@ def create_auth_token(request: schema.LoginUser, sql: Session):
     Create a login token for backend user.
     """
     # Query the database to find the backend user based on the provided username or email
-    user = sql.query(model.BackendUser).filter(
-        (model.BackendUser.email == request.username_or_email) |
-        (model.BackendUser.username == request.username_or_email)
-    ).filter_by(is_deleted=False).first()
-
+    user = (
+        sql.query(model.BackendUser)
+        .filter(
+            (model.BackendUser.email == request.username_or_email)
+            | (model.BackendUser.username == request.username_or_email)
+        )
+        .filter_by(is_deleted=False)
+        .first()
+    )
 
     # If the user does not exist, raise an HTTPException
     if not user:
@@ -277,7 +292,7 @@ def create_auth_token(request: schema.LoginUser, sql: Session):
             loc="username_or_email",
             msg="Email/Username is wrong!",
             inp=request.username_or_email,
-            ctx={"username_or_email": "exist"}
+            ctx={"username_or_email": "exist"},
         )
 
     # If it does not match the stored password, raise an HTTPException
@@ -288,7 +303,7 @@ def create_auth_token(request: schema.LoginUser, sql: Session):
             loc="password",
             msg="Password is wrong!",
             inp=request.password,
-            ctx={"password": "match"}
+            ctx={"password": "match"},
         )
 
     # Check if user's email is not verified, raise an HTTPException
@@ -309,13 +324,15 @@ def create_auth_token(request: schema.LoginUser, sql: Session):
 
     sql.query(model.BackendToken).filter(
         model.BackendToken.user_id == user.id,
-        model.BackendToken.expire_at < datetime.now()
+        model.BackendToken.expire_at < datetime.now(),
     ).delete()
     sql.commit()
     # If number of active tokens exceeds the token limit, raise an HTTPException
-    tokens_count = sql.query(model.BackendToken).filter(
-        model.BackendToken.user_id == user.id
-    ).count()
+    tokens_count = (
+        sql.query(model.BackendToken)
+        .filter(model.BackendToken.user_id == user.id)
+        .count()
+    )
 
     if tokens_count >= TOKEN_LIMIT:
         CustomValidations.raize_custom_error(
@@ -324,14 +341,12 @@ def create_auth_token(request: schema.LoginUser, sql: Session):
             msg=f"Login limit exceed (${TOKEN_LIMIT}).",
         )
 
-
     # Generate a new token, set its expiration time, and save it to the database
     token = model.BackendToken(
         token=generate_token(16),
         user_id=user.id,
         details=request.details.to_string(),
-        expire_at=datetime.utcnow() + timedelta(hours=int(TOKEN_VALIDITY))
-
+        expire_at=datetime.utcnow() + timedelta(hours=int(TOKEN_VALIDITY)),
     )
     sql.add(token)
     sql.commit()
@@ -355,7 +370,7 @@ def send_verification_mail(email: str, sql: Session):
             loc="email",
             msg="No account found.",
             inp=email,
-            ctx={"email": "exist"}
+            ctx={"email": "exist"},
         )
 
     # If the user is not active, raise an exception indicating that the account is suspended
@@ -363,7 +378,7 @@ def send_verification_mail(email: str, sql: Session):
         CustomValidations.raize_custom_error(
             status_code=status.HTTP_403_FORBIDDEN,
             error_type="suspended",
-            msg="Your account is suspended!"
+            msg="Your account is suspended!",
         )
 
     # Generate a verification token
@@ -377,7 +392,7 @@ def send_verification_mail(email: str, sql: Session):
         CustomValidations.raize_custom_error(
             status_code=status.HTTP_417_EXPECTATION_FAILED,
             error_type="mail_sent_error",
-            msg="Cannot send email."
+            msg="Cannot send email.",
         )
     return True
 
@@ -386,10 +401,11 @@ def create_new_password(request: schema.ForgotPassword, sql: Session):
     """
     Verify the token and change the password of the user.
     """
-    user = sql.query(model.BackendUser).filter_by(
-        verification_token=request.token,
-        is_deleted=False
-    ).first()
+    user = (
+        sql.query(model.BackendUser)
+        .filter_by(verification_token=request.token, is_deleted=False)
+        .first()
+    )
 
     if not user:
         CustomValidations.raize_custom_error(
@@ -398,7 +414,7 @@ def create_new_password(request: schema.ForgotPassword, sql: Session):
             loc="token",
             msg="Token is expired!",
             inp=request.token,
-            ctx={"token": "valid"}
+            ctx={"token": "valid"},
         )
 
     if not user.email_verified_at:
@@ -426,22 +442,20 @@ def create_permission(request: schema.BasePermission, sql: Session):
     """
     Creates a new permission in the database.
     """
-    existing_permission = sql.query(model.BackendPermission).filter_by(
-        codename=request.codename
-    ).first()
+    existing_permission = (
+        sql.query(model.BackendPermission).filter_by(codename=request.codename).first()
+    )
     if existing_permission:
         CustomValidations.raize_custom_error(
             error_type="exist",
             loc="codename",
             msg="Permission already exists!",
             inp=request.codename,
-            ctx={"codename": "unique"}
+            ctx={"codename": "unique"},
         )
 
     new_permission = model.BackendPermission(
-        permission=request.permission,
-        type=request.type,
-        codename=request.codename
+        permission=request.permission, type=request.type, codename=request.codename
     )
 
     sql.add(new_permission)
@@ -451,8 +465,8 @@ def create_permission(request: schema.BasePermission, sql: Session):
 
 
 def get_roles_list(sql: Session):
-    """ Returns all roles except superuser """
-    return sql.query(model.BackendRole).filter(model.BackendRole.id!=0).all()
+    """Returns all roles except superuser"""
+    return sql.query(model.BackendRole).filter(model.BackendRole.id != 0).all()
 
 
 def add_role(request: schema.CreateRole, user: model.BackendToken, sql: Session):
@@ -466,13 +480,11 @@ def add_role(request: schema.CreateRole, user: model.BackendToken, sql: Session)
             loc="role",
             msg="Role already exists",
             inp=request.role,
-            ctx={"role": "unique"}
+            ctx={"role": "unique"},
         )
 
     new_role = model.BackendRole(
-        ruid=generate_uuid(request.role),
-        role=request.role,
-        created_by=user.id
+        ruid=generate_uuid(request.role), role=request.role, created_by=user.id
     )
     sql.add(new_role)
     sql.commit()
@@ -481,24 +493,26 @@ def add_role(request: schema.CreateRole, user: model.BackendToken, sql: Session)
 
 
 def assign_permissions(
-    request: schema.AssignPermissions,
-    auth_token: model.BackendToken,
-    sql: Session
+    request: schema.AssignPermissions, auth_token: model.BackendToken, sql: Session
 ):
     """
     Assigns permissions to a role in the database.
     """
-    if auth_token.user.role.ruid==request.ruid:
+    if auth_token.user.role.ruid == request.ruid:
         CustomValidations.raize_custom_error(
             status_code=status.HTTP_403_FORBIDDEN,
             error_type="self_update",
             loc="role_id",
             msg="Can not update self.",
             inp=request.ruid,
-            ctx={"role_id": "self"}
+            ctx={"role_id": "self"},
         )
 
-    role = sql.query(model.BackendRole).filter_by(ruid=request.ruid, is_deleted=False).first()
+    role = (
+        sql.query(model.BackendRole)
+        .filter_by(ruid=request.ruid, is_deleted=False)
+        .first()
+    )
 
     if not role:
         CustomValidations.raize_custom_error(
@@ -506,20 +520,23 @@ def assign_permissions(
             loc="ruid",
             msg="Role not found!",
             inp=request.ruid,
-            ctx={"ruid": "exist"}
+            ctx={"ruid": "exist"},
         )
 
-
     codenames = request.permissions
-    permissions = sql.query(model.BackendPermission).filter(
-        model.BackendPermission.codename.in_(codenames)
-    ).all()
+    permissions = (
+        sql.query(model.BackendPermission)
+        .filter(model.BackendPermission.codename.in_(codenames))
+        .all()
+    )
 
     sql.query(model.BackendRolePermission).filter_by(role_id=role.id).delete()
 
     sql.commit()
     for permission in permissions:
-        role_permission = model.BackendRolePermission(role_id=role.id, permission_id=permission.id)
+        role_permission = model.BackendRolePermission(
+            role_id=role.id, permission_id=permission.id
+        )
         sql.add(role_permission)
 
     sql.commit()
@@ -545,9 +562,9 @@ def delete_all_tokens(auth_token: model.BackendToken, sql: Session):
     return True
 
 
-def all_subscription_plans(limit : int, offset : int, sql: Session):
-    """ Returns all subscription plans """
-    subscriptions =  sql.query(model.Subscription).limit(limit).offset(offset).all()
+def all_subscription_plans(limit: int, offset: int, sql: Session):
+    """Returns all subscription plans"""
+    subscriptions = sql.query(model.Subscription).limit(limit).offset(offset).all()
     return subscriptions
 
 
@@ -563,15 +580,13 @@ def subscription_plan_details(suid: str, sql: Session):
             loc="suid",
             msg="Subscription does not exist",
             inp=suid,
-            ctx={"subscription": "exist"}
+            ctx={"subscription": "exist"},
         )
     return subscription
 
 
 def add_subscription(
-    data: schema.CreateSubscription,
-    current_user: model.BackendUser,
-    sql: Session
+    data: schema.CreateSubscription, current_user: model.BackendUser, sql: Session
 ):
     """
     Creates a new subscription plan.
@@ -583,7 +598,7 @@ def add_subscription(
             loc="name",
             msg="Name already exists!",
             inp=data.name,
-            ctx={"name": "unique"}
+            ctx={"name": "unique"},
         )
 
     # Create a new instance of the Subscription model with the provided data
@@ -604,14 +619,16 @@ def add_subscription(
 
     # Add any features associated with the subscription plan to the database
     for feature in data.features:
-        feature_exit = sql.query(model.Feature).filter_by(
-            feature_code=feature.feature_code
-        ).first()
+        feature_exit = (
+            sql.query(model.Feature)
+            .filter_by(feature_code=feature.feature_code)
+            .first()
+        )
         if feature_exit:
             subscription_feature = model.SubscriptionFeature(
                 subscription_id=subscription.id,
                 feature_id=feature_exit.id,
-                quantity=feature.quantity
+                quantity=feature.quantity,
             )
             sql.add(subscription_feature)
 
@@ -638,7 +655,7 @@ def update_subscription_plan(data: schema.UpdateSubscription, sql: Session):
             loc="suid",
             msg="Subscription does not exist!",
             inp=data.suid,
-            ctx={"suid": "exist"}
+            ctx={"suid": "exist"},
         )
 
     # Update the subscription's data based on the sent data
@@ -673,14 +690,16 @@ def update_subscription_plan(data: schema.UpdateSubscription, sql: Session):
 
         # Add new subscription features
         for feature in data.features:
-            feature_exsit = sql.query(model.Feature).filter_by(
-                feature_code=feature.feature_code
-            ).first()
+            feature_exsit = (
+                sql.query(model.Feature)
+                .filter_by(feature_code=feature.feature_code)
+                .first()
+            )
             if feature_exsit:
                 subscription_feature = model.SubscriptionFeature(
                     subscription_id=subscription.id,
                     feature_id=feature_exsit.id,
-                    quantity=feature.quantity
+                    quantity=feature.quantity,
                 )
                 sql.add(subscription_feature)
 
@@ -707,7 +726,7 @@ def delete_subscription_plan(suid: str, is_deleted: bool, sql: Session):
             loc="suid",
             msg="Subscription does not exist!",
             inp=suid,
-            ctx={"suid": "exist"}
+            ctx={"suid": "exist"},
         )
 
     # Update the `is_deleted` attribute of the subscription
@@ -751,7 +770,11 @@ def coupon_details(coupon_code: str, sql: Session):
     Raises:
         CustomValidations.raize_custom_error: If no coupon is found with the provided coupon code.
     """
-    coupon = sql.query(model.Coupon).filter_by(coupon_code=coupon_code, is_active=True).first()
+    coupon = (
+        sql.query(model.Coupon)
+        .filter_by(coupon_code=coupon_code, is_active=True)
+        .first()
+    )
 
     if not coupon:
         CustomValidations.raize_custom_error(
@@ -759,7 +782,7 @@ def coupon_details(coupon_code: str, sql: Session):
             loc="coupon_code",
             msg="Coupon does not exist",
             inp=coupon_code,
-            ctx={"coupon": "exist"}
+            ctx={"coupon": "exist"},
         )
 
     return coupon
@@ -773,10 +796,7 @@ def get_all_features(sql: Session):
 
 
 def create_subscription_user(
-    subscription_id: int,
-    user_id: int,
-    transaction_id: int,
-    sql: Session
+    subscription_id: int, user_id: int, transaction_id: int, sql: Session
 ):
     """
     Creates a new subscription user by associating a subscription, a user, and a transaction.
@@ -789,7 +809,7 @@ def create_subscription_user(
         subscription_id=subscription.id,
         user_id=user_id,
         transaction_id=transaction_id,
-        expiry=expiry
+        expiry=expiry,
     )
 
     sql.add(subscription_user)

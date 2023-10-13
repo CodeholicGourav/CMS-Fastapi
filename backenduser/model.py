@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 backenduser/model.py
 Author: Gourav Sahu
@@ -6,7 +7,15 @@ Date: 23/09/2023
 from datetime import datetime
 
 from sqlalchemy import (
-    Boolean, Column, DateTime, exc, Float, ForeignKey, Integer, String, Text
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    exc,
 )
 from sqlalchemy.orm import relationship
 
@@ -18,7 +27,8 @@ class BackendUser(Base):
     """
     Represents a table in the database that stores information about backend users.
     """
-    __tablename__ = 'backendusers'
+
+    __tablename__ = "backendusers"
 
     id = Column(Integer, primary_key=True, index=True)
     uuid = Column(String(50), unique=True, nullable=False, index=True)
@@ -33,17 +43,17 @@ class BackendUser(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    role = relationship('BackendRole', foreign_keys=role_id)
-    subscriptions = relationship('Subscription', back_populates='creator')
+    role = relationship("BackendRole", foreign_keys=role_id)
+    subscriptions = relationship("Subscription", back_populates="creator")
 
     def __repr__(self):
         return (
             "BackendUser("
-                f"id={self.id}, "
-                f"uuid={self.uuid}, "
-                f"username={self.username}, "
-                f"email={self.email}, "
-                f"password={self.password}"
+            f"id={self.id}, "
+            f"uuid={self.uuid}, "
+            f"username={self.username}, "
+            f"email={self.email}, "
+            f"password={self.password}"
             ")"
         )
 
@@ -55,7 +65,8 @@ class BackendRole(Base):
     """
     Represents a table in the database that stores information about backend roles.
     """
-    __tablename__ = 'backendroles'
+
+    __tablename__ = "backendroles"
 
     id = Column(Integer, primary_key=True, index=True)
     ruid = Column(String(50), index=True, unique=True)
@@ -65,15 +76,15 @@ class BackendRole(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    creator = relationship('BackendUser', foreign_keys=created_by)
-    permissions = relationship('BackendRolePermission', back_populates='role')
+    creator = relationship("BackendUser", foreign_keys=created_by)
+    permissions = relationship("BackendRolePermission", back_populates="role")
 
     def __repr__(self):
         return (
             "<BackendRole("
-                f"id={self.id}, "
-                f"ruid='{self.ruid}', "
-                f"role='{self.role}')"
+            f"id={self.id}, "
+            f"ruid='{self.ruid}', "
+            f"role='{self.role}')"
             ">"
         )
 
@@ -85,7 +96,8 @@ class BackendPermission(Base):
     """
     Represents a table in the database called `backendpermissions`.
     """
-    __tablename__ = 'backendpermissions'
+
+    __tablename__ = "backendpermissions"
 
     id = Column(Integer, primary_key=True, index=True)
     permission = Column(String(255), nullable=False)
@@ -95,10 +107,10 @@ class BackendPermission(Base):
     def __repr__(self):
         return (
             "<BackendPermission("
-                "id={self.id}, "
-                "permission={self.permission}, "
-                "type={self.type}, "
-                "codename={self.codename})"
+            "id={self.id}, "
+            "permission={self.permission}, "
+            "type={self.type}, "
+            "codename={self.codename})"
             ">"
         )
 
@@ -114,7 +126,8 @@ def create_permissions():
     try:
         sql = SessionLocal()
         permissions = [
-            BackendPermission(**permission) for permission in predefined_backend_permissions
+            BackendPermission(**permission)
+            for permission in predefined_backend_permissions
         ]
         sql.add_all(permissions)
         sql.commit()
@@ -127,10 +140,11 @@ def create_permissions():
 
 class BackendRolePermission(Base):
     """
-    Represents a table in the database that stores 
+    Represents a table in the database that stores
     information about the permissions associated with backend roles.
     """
-    __tablename__ = 'backendrolepermissions'
+
+    __tablename__ = "backendrolepermissions"
 
     id = Column(Integer, primary_key=True, index=True)
     role_id = Column(Integer, ForeignKey("backendroles.id"), nullable=False)
@@ -142,25 +156,28 @@ class BackendRolePermission(Base):
     def __repr__(self):
         return (
             "<BackendRolePermission("
-                f"id={self.id}, "
-                f"role_id={self.role_id}, "
-                f"permission_id={self.permission_id})"
-            ">")
+            f"id={self.id}, "
+            f"role_id={self.role_id}, "
+            f"permission_id={self.permission_id})"
+            ">"
+        )
 
     def __str__(self):
         return (
             "<BackendRolePermission("
-                f"id={self.id}, "
-                f"role_id={self.role_id}, "
-                f"permission_id={self.permission_id})"
-            ">")
+            f"id={self.id}, "
+            f"role_id={self.role_id}, "
+            f"permission_id={self.permission_id})"
+            ">"
+        )
 
 
 class BackendToken(Base):
     """
     Represents a token for backend authentication.
     """
-    __tablename__ = 'backendtokens'
+
+    __tablename__ = "backendtokens"
 
     id = Column(Integer, primary_key=True, index=True)
     token = Column(String(255), unique=True, index=True, nullable=False)
@@ -169,10 +186,12 @@ class BackendToken(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     expire_at = Column(DateTime, default=datetime.utcnow)
 
-    user = relationship('BackendUser', foreign_keys=user_id)
+    user = relationship("BackendUser", foreign_keys=user_id)
 
     def __repr__(self):
-        return f"<BackendToken(id={self.id}, token={self.token}, user_id={self.user_id})>"
+        return (
+            f"<BackendToken(id={self.id}, token={self.token}, user_id={self.user_id})>"
+        )
 
     def __str__(self):
         return f"BackendToken: {self.token}"
@@ -182,7 +201,8 @@ class Subscription(Base):
     """
     Represents a table in the database that stores information about subscriptions.
     """
-    __tablename__ = 'subscriptions'
+
+    __tablename__ = "subscriptions"
 
     id = Column(Integer, primary_key=True, index=True)
     suid = Column(String(50), index=True, unique=True)
@@ -208,58 +228,24 @@ class Subscription(Base):
 
 class SubscriptionUser(Base):
     """
-    Represents a table in a database 
+    Represents a table in a database
     that stores information about users who have subscribed to a service.
     """
-    __tablename__ = 'subscription_users'
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True
-    )
-    subscription_id = Column(
-        Integer,
-        ForeignKey("subscriptions.id")
-    )
-    user_id = Column(
-        Integer,
-        ForeignKey("frontendusers.id")
-    )
-    transaction_id = Column(
-        Integer,
-        ForeignKey("transactions.id"),
-        nullable=True
-    )
-    order_id = Column(
-        Integer,
-        ForeignKey("orders.id"),
-        nullable=True
-    )
-    expiry = Column(
-        DateTime
-    )
-    created_at = Column(
-        DateTime,
-        default=datetime.utcnow
-    )
+    __tablename__ = "subscription_users"
 
-    subscription = relationship(
-        "Subscription",
-        foreign_keys=subscription_id
-    )
-    user = relationship(
-        "FrontendUser",
-        foreign_keys=user_id
-    )
-    transaction = relationship(
-        "Transaction",
-        foreign_keys=transaction_id
-    )
-    order = relationship(
-        "Order",
-        foreign_keys=order_id
-    )
+    id = Column(Integer, primary_key=True, index=True)
+    subscription_id = Column(Integer, ForeignKey("subscriptions.id"))
+    user_id = Column(Integer, ForeignKey("frontendusers.id"))
+    transaction_id = Column(Integer, ForeignKey("transactions.id"), nullable=True)
+    order_id = Column(Integer, ForeignKey("orders.id"), nullable=True)
+    expiry = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    subscription = relationship("Subscription", foreign_keys=subscription_id)
+    user = relationship("FrontendUser", foreign_keys=user_id)
+    transaction = relationship("Transaction", foreign_keys=transaction_id)
+    order = relationship("Order", foreign_keys=order_id)
 
     def __repr__(self):
         """
@@ -267,11 +253,12 @@ class SubscriptionUser(Base):
         """
         return (
             "<SubscriptionUser("
-                f"id={self.id}, "
-                f"subscription_id={self.subscription_id}, "
-                f"user_id={self.user_id}, "
-                f"transaction_id={self.transaction_id})"
-            ">")
+            f"id={self.id}, "
+            f"subscription_id={self.subscription_id}, "
+            f"user_id={self.user_id}, "
+            f"transaction_id={self.transaction_id})"
+            ">"
+        )
 
     def __str__(self):
         """
@@ -279,11 +266,12 @@ class SubscriptionUser(Base):
         """
         return (
             "<SubscriptionUser("
-                f"id={self.id}, "
-                f"subscription_id={self.subscription_id}, "
-                f"user_id={self.user_id}, "
-                f"transaction_id={self.transaction_id})"
-            ">")
+            f"id={self.id}, "
+            f"subscription_id={self.subscription_id}, "
+            f"user_id={self.user_id}, "
+            f"transaction_id={self.transaction_id})"
+            ">"
+        )
 
 
 class Feature(Base):
@@ -292,7 +280,8 @@ class Feature(Base):
     It has fields for the feature's ID, type, and code.
     It also has a relationship with the `SubscriptionFeature` class.
     """
-    __tablename__ = 'features'
+
+    __tablename__ = "features"
 
     id = Column(Integer, primary_key=True)
     feature_type = Column(String(255), unique=True)
@@ -303,18 +292,18 @@ class Feature(Base):
     def __repr__(self):
         return (
             "Feature("
-                f"id={self.id}, "
-                f"feature_type='{self.feature_type}', "
-                f"feature_code='{self.feature_code}'"
+            f"id={self.id}, "
+            f"feature_type='{self.feature_type}', "
+            f"feature_code='{self.feature_code}'"
             ")"
         )
 
     def __str__(self):
         return (
             "Feature("
-                f"id={self.id}, "
-                f"feature_type='{self.feature_type}', "
-                f"feature_code='{self.feature_code}'"
+            f"id={self.id}, "
+            f"feature_type='{self.feature_type}', "
+            f"feature_code='{self.feature_code}'"
             ")"
         )
 
@@ -340,7 +329,8 @@ class SubscriptionFeature(Base):
     """
     Represents a table in the database called `subscription_features`.
     """
-    __tablename__ = 'subscription_features'
+
+    __tablename__ = "subscription_features"
 
     id = Column(Integer, primary_key=True)
     subscription_id = Column(Integer, ForeignKey("subscriptions.id"))
@@ -348,28 +338,28 @@ class SubscriptionFeature(Base):
     quantity = Column(Integer)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    subscription = relationship('Subscription', foreign_keys=subscription_id)
-    feature = relationship('Feature', foreign_keys=feature_id)
+    subscription = relationship("Subscription", foreign_keys=subscription_id)
+    feature = relationship("Feature", foreign_keys=feature_id)
 
     def __repr__(self):
         return (
             "SubscriptionFeature("
-                f"id={self.id}, "
-                f"subscription_id={self.subscription_id}, "
-                f"feature_id={self.feature_id}, "
-                f"quantity={self.quantity}, "
-                f"created_at={self.created_at}"
+            f"id={self.id}, "
+            f"subscription_id={self.subscription_id}, "
+            f"feature_id={self.feature_id}, "
+            f"quantity={self.quantity}, "
+            f"created_at={self.created_at}"
             ")"
         )
 
     def __str__(self):
         return (
             "SubscriptionFeature("
-                f"id={self.id}, "
-                f"subscription_id={self.subscription_id}, "
-                f"feature_id={self.feature_id}, "
-                f"quantity={self.quantity}, "
-                f"created_at={self.created_at}"
+            f"id={self.id}, "
+            f"subscription_id={self.subscription_id}, "
+            f"feature_id={self.feature_id}, "
+            f"quantity={self.quantity}, "
+            f"created_at={self.created_at}"
             ")"
         )
 
@@ -378,7 +368,8 @@ class Coupon(Base):
     """
     Represents a coupon in a database.
     """
-    __tablename__ = 'coupons'
+
+    __tablename__ = "coupons"
 
     id = Column(Integer, primary_key=True)
     coupon_code = Column(String(50), unique=True)
@@ -392,15 +383,16 @@ class Coupon(Base):
     def __repr__(self):
         return (
             "Coupon("
-                f"id={self.id}, "
-                f"coupon_code='{self.coupon_code}', "
-                f"name='{self.name}', "
-                f"percentage={self.percentage}, "
-                f"coupon_type='{self.coupon_type}', "
-                f"is_active={self.is_active}, "
-                f"created_at={self.created_at}, "
-                f"updated_at={self.updated_at}"
+            f"id={self.id}, "
+            f"coupon_code='{self.coupon_code}', "
+            f"name='{self.name}', "
+            f"percentage={self.percentage}, "
+            f"coupon_type='{self.coupon_type}', "
+            f"is_active={self.is_active}, "
+            f"created_at={self.created_at}, "
+            f"updated_at={self.updated_at}"
             ")"
         )
+
     def __str__(self):
         return f"Coupon: {self.name} ({self.coupon_code}) - {self.percentage}% off"

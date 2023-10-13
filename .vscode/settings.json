@@ -4,5 +4,7 @@
     },
     "files.exclude": {
         "**/.git": false
-    }
+    },
+    "python.analysis.typeCheckingMode": "off",
+    "python.analysis.autoImportCompletions": true
 }

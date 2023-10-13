@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 app.py - FastAPI Application and Routing Configuration
 Author: Gourav Sahu
@@ -5,16 +6,17 @@ Date: 20/08/2023
 """
 
 import os
+
 from fastapi import FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+
 from backenduser.route import backendUserRoutes
 from dependencies import SETTINGS, TEMPLATES
 from frontenduser.route import frontendUserRoutes
 from organization.route import organizationRoutes
 from taskmanagement.route import taskmanagementRoutes
-
 
 # Create a FastAPI instance
 app = FastAPI(
@@ -25,10 +27,7 @@ app = FastAPI(
         "A FastAPI-based Content Management System (CMS) empowers users to "
         "efficiently manage digital content for their websites or web applications."
     ),
-    contact={
-        "owner":"hello@codeholic.in",
-        "developer": "codeholic.gourav@gmail.com"
-    },
+    contact={"owner": "hello@codeholic.in", "developer": "codeholic.gourav@gmail.com"},
 )
 
 
@@ -42,20 +41,16 @@ app.add_middleware(
 )
 
 
-app.mount(
-    "/static",
-    StaticFiles(directory="static"),
-    name="static"
-)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 # Define a route for the root URL ("/")
 @app.get(
-    path='/',
+    path="/",
     response_class=FileResponse,
     status_code=status.HTTP_200_OK,
     description="It is a welcome page of the app.",
-    name="Welcome page"
+    name="Welcome page",
 )
 def index():
     """
