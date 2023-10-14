@@ -12,6 +12,17 @@ from pydantic import BaseModel, EmailStr, constr, validator
 from dependencies import CustomValidations
 
 
+class ShowSubscription(BaseModel):
+    """
+    A pydantic model
+    """
+    suid : str
+    name : str
+    validity : int
+    is_deleted : bool
+    created_at : datetime
+
+
 class BaseUser(BaseModel):
     """
     A pydantic model
@@ -28,7 +39,7 @@ class BaseUser(BaseModel):
     email_verified_at: Optional[datetime] = None
     storage_token: Optional[str] = None
     storage_platform: Optional[str] = None
-    active_plan: Optional[int] = None
+    subscription: Optional[ShowSubscription] = None
     social_token: Optional[str] = None
     social_platform: Optional[str] = None
     is_active: bool

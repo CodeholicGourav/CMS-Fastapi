@@ -368,6 +368,17 @@ class BaseSubscription(BaseModel):
     features: list[SubscriptionFeaturesMapping]
 
 
+class ShowSubscription(BaseModel):
+    """
+    A pydantic model
+    """
+    suid : str
+    name : str
+    validity : int
+    is_deleted : bool
+    created_at : datetime
+
+
 class UpdateSubscription(BaseModel):
     """
     A pydantic model
@@ -399,25 +410,13 @@ class FrontendBaseUser(BaseModel):
     email_verified_at: Optional[datetime] = None
     storage_token: Optional[str] = None
     storage_platform: Optional[str] = None
-    active_plan: Optional[str] = None
+    subscription: Optional[ShowSubscription] = None
     social_token: Optional[str] = None
     social_platform: Optional[str] = None
     is_active: bool
     is_deleted: bool
     created_at: datetime
     updated_at: datetime
-
-    def __str__(self):
-        return (
-            "BaseUser("
-                f"uuid={self.uuid}, "
-                f"email={self.email}, "
-                f"username={self.username}, "
-                f"is_active={self.is_active}, "
-                f"is_deleted={self.is_deleted}, "
-                f"created_at={self.created_at}, "
-                f"updated_at={self.updated_at}"
-            ")")
 
 
 class FrontenduserList(BaseModel):
